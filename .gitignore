@@ -103,6 +103,7 @@ thirdparty/rttr/macos/*
 !thirdparty/rttr/macos/universal
 thirdparty/rttr/msvc/*
 !thirdparty/rttr/msvc/x86_64
+!thirdparty/rttr/msvc/x86_64/lib
 thirdparty/rttr/linux/*
 !thirdparty/rttr/linux/x86_64
 !thirdparty/rttr/linux/armhf
