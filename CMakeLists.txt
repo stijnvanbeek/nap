@@ -43,6 +43,9 @@ add_subdirectory(tools/licensegenerator)
 add_subdirectory(apps/example)
 # END_SOURCE_ARCHIVE_REMOVED_SECTION (don't remove)
 
+add_subdirectory(audioplugins/napstatic)
+add_subdirectory(audioplugins/ExampleAudioPlugin)
+
 # demo targets
 add_subdirectory(demos/helloworld)
 add_subdirectory(demos/vinyl)
