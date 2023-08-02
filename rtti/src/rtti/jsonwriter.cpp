@@ -94,14 +94,14 @@ namespace nap
 
 		bool JSONWriter::writeProperty(const std::string& propertyName)
 		{
-			return mWriter.String(propertyName);
+			return mWriter.String(propertyName.c_str());
 		}
 
 
 		bool JSONWriter::writePointer(const std::string& pointeeID)
 		{
 			//std::string pointee_id = "<" + pointeeID + ">";
-			return mWriter.String(pointeeID);
+			return mWriter.String(pointeeID.c_str());
 		}
 
 
@@ -112,7 +112,7 @@ namespace nap
 				if (type == rtti::TypeInfo::get<bool>())
 					return mWriter.Bool(value.to_bool());
 				else if (type == rtti::TypeInfo::get<char>())
-					return mWriter.String(value.to_string());
+					return mWriter.String(value.to_string().c_str());
 				else if (type == rtti::TypeInfo::get<int8_t>())
 					return mWriter.Int(value.to_int8());
 				else if (type == rtti::TypeInfo::get<int16_t>())
@@ -143,7 +143,7 @@ namespace nap
 				auto result = value.to_string(&conversion_succeeded);
 				if (conversion_succeeded)
 				{
-					return mWriter.String(value.to_string());
+					return mWriter.String(value.to_string().c_str());
 				}
 				else
 				{
@@ -158,7 +158,7 @@ namespace nap
 			}
 			else if (type == rtti::TypeInfo::get<std::string>())
 			{
-				return mWriter.String(value.to_string());
+				return mWriter.String(value.to_string().c_str());
 			}
 
 			return false;
