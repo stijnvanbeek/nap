@@ -19,6 +19,8 @@
 #include <rtti/jsonreader.h>
 #include <rtti/jsonwriter.h>
 #include <mathutils.h>
+#include <renderservice.h>
+#include <constantshader.h>
 
 // local
 #include <naputils.h>
@@ -103,6 +105,13 @@ Document* AppContext::loadDocument(const QString& filename)
 
 const nap::ProjectInfo* AppContext::loadProject(const QString& projectFilename)
 {
+	if (!QFileInfo(projectFilename).exists())
+	{
+		nap::Logger::error("Failed to load project, unable to locate file: %s",
+			projectFilename.toStdString().c_str());
+		return nullptr;
+	}
+
 	// If there's a project already loaded in the current context, quit and restart.
 	// The editor can only load 1 project because it needs to load modules that can't be freed.
 	QString project_file_name = QString::fromStdString(nap::utility::forceSeparator(projectFilename.toStdString()));
@@ -126,10 +135,8 @@ const nap::ProjectInfo* AppContext::loadProject(const QString& projectFilename)
 	}
 	progressChanged(0.5f);
 
-	// Clone current project information, allows us to edit it
-	const auto* project_info = mCore.getProjectInfo();
-	mProjectInfo = nap::rtti::cloneObject(*project_info, mCore.getResourceManager()->getFactory());
-	mProjectInfo->setFilename(project_info->getFilename());
+	// Clone current project information -> allows us to edit it in Napkin
+	mProjectInfo = mCore.getProjectInfo()->clone();
 
 	// Load service configuration
 	mServiceConfig = std::make_unique<ServiceConfig>(mCore, *mProjectInfo);
@@ -137,6 +144,19 @@ const nap::ProjectInfo* AppContext::loadProject(const QString& projectFilename)
 	// Signal initialization
 	coreInitialized();
 	progressChanged(0.75f);
+
+	// Enable shader compilation if render service has been loaded
+	mRenderService = mCore.getService<nap::RenderService>();
+	if (mRenderService != nullptr)
+	{
+		nap::Logger::info("Initializing %s", mRenderService->getTypeName().data());
+		if (!mRenderService->initShaderCompilation(err))
+		{
+			nap::Logger::error(err.toString());
+			progressChanged(1.0f);
+			return nullptr;
+		}
+	}
 
 	// Load document (data file)
 	addRecentlyOpenedProject(project_file_name);
@@ -147,10 +167,11 @@ const nap::ProjectInfo* AppContext::loadProject(const QString& projectFilename)
 		nap::Logger::error("No data file specified");
 
 	// All good
+	projectLoaded(*mProjectInfo);
 	progressChanged(1.0f);
-	return mCore.getProjectInfo();
-}
 
+	return mProjectInfo.get();
+}
 
 const nap::ProjectInfo* AppContext::getProjectInfo() const
 {
@@ -185,6 +206,7 @@ Document* AppContext::newDocument()
 	documentChanged(mDocument.get());
 	return mDocument.get();
 }
+
 
 Document* AppContext::loadDocumentFromString(const std::string& data, const QString& filename)
 {
@@ -252,6 +274,7 @@ bool AppContext::saveDocumentAs(const QString& filename)
 	return true;
 }
 
+
 std::string AppContext::documentToString() const
 {
 	ObjectList ser_objects;
@@ -277,9 +300,10 @@ std::string AppContext::documentToString() const
 void AppContext::openRecentProject()
 {
 	auto lastFilename = AppContext::get().getLastOpenedProjectFilename();
-	if (lastFilename.isNull())
-		return;
-	AppContext::get().loadProject(lastFilename);
+	if (!lastFilename.isNull())
+	{
+		AppContext::get().loadProject(lastFilename);
+	}
 }
 
 
@@ -414,10 +438,12 @@ void AppContext::handleURI(const QString& uri)
 	}
 }
 
+
 nap::Core& AppContext::getCore()
 {
 	return mCore;
 }
+
 
 Document* AppContext::getDocument()
 {
@@ -426,10 +452,12 @@ Document* AppContext::getDocument()
 	return mDocument.get();
 }
 
+
 const Document* AppContext::getDocument() const
 {
 	return mDocument.get();
 }
+
 
 void AppContext::onUndoIndexChanged()
 {
@@ -470,9 +498,21 @@ bool napkin::AppContext::hasServiceConfig() const
 }
 
 
-const napkin::ServiceConfig* napkin::AppContext::getServiceConfig() const
+bool napkin::AppContext::canRender() const
+{
+	return mRenderService != nullptr;
+}
+
+
+napkin::ServiceConfig* napkin::AppContext::getServiceConfig() const
 {
 	return mServiceConfig.get();
+}
+
+
+nap::RenderService* napkin::AppContext::getRenderService() const
+{
+	return mRenderService;
 }
 
 
@@ -496,13 +536,13 @@ napkin::ThemeManager& napkin::AppContext::getThemeManager()
 
 void napkin::AppContext::executeCommand(QUndoCommand* cmd)
 {
+	if (!hasDocument())
+	{
+		nap::Logger::warn("Unable to execute command '%s' - Document not loaded",
+			cmd->text().toStdString().c_str());
+		return;
+	}
 	getDocument()->executeCommand(cmd);
-}
-
-
-napkin::ServiceConfig* napkin::AppContext::getServiceConfig()
-{
-	return mServiceConfig.get();
 }
 
 

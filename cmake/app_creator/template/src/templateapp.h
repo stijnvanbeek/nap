@@ -69,7 +69,6 @@ namespace nap
 
 	private:
 		ResourceManager*			mResourceManager = nullptr;		///< Manages all the loaded data
-		std::string					mFilename = "";					///< The JSON file that is loaded on initialization
 		RenderService*				mRenderService = nullptr;		///< Render Service that handles render calls
 		SceneService*				mSceneService = nullptr;		///< Manages all the objects in the scene
 		InputService*				mInputService = nullptr;		///< Input service for processing input

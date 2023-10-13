@@ -40,12 +40,12 @@ namespace nap
 
 		// Get the camera entity
 		mCameraEntity = mScene->findEntity("CameraEntity");
-		if (!error.check(mCameraEntity != nullptr, "unable to find camera entity with name: %s", "CameraEntity"))
+		if (!error.check(mCameraEntity != nullptr, "unable to find entity with name: %s", "CameraEntity"))
 			return false;
 
 		// Get the Gnomon entity
 		mGnomonEntity = mScene->findEntity("GnomonEntity");
-		if (!error.check(mGnomonEntity != nullptr, "unable to find origin Gnomon entity with name: %s", "GnomonEntity"))
+		if (!error.check(mGnomonEntity != nullptr, "unable to find entity with name: %s", "GnomonEntity"))
 			return false;
 
 		// All done!
@@ -53,7 +53,7 @@ namespace nap
 	}
 	
 	
-	// Called when the window is updating
+	// Update app
 	void @APP_NAME_INPUTCASE@App::update(double deltaTime)
 	{
 		// Use a default input router to forward input events (recursively) to all input components in the default scene
@@ -62,7 +62,7 @@ namespace nap
 	}
 	
 	
-	// Called when the window is going to render
+	// Render app
 	void @APP_NAME_INPUTCASE@App::render()
 	{
 		// Signal the beginning of a new frame, allowing it to be recorded.

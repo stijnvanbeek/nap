@@ -16,6 +16,7 @@
 #include <rtti/jsonwriter.h>
 #include <utility/errorstate.h>
 #include <entity.h>
+#include <shader.h>
 
 using namespace napkin;
 
@@ -96,11 +97,12 @@ OpenProjectAction::OpenProjectAction() : Action("Open...", QRC_ICONS_FILE)
 
 void OpenProjectAction::perform()
 {
-	QString filename = napkinutils::getOpenFilename(nullptr, "Select NAP Project", "", JSON_PROJECT_FILTER);
-	if (filename.isNull())
-		return;
+	utility::Context nap_ctx = utility::Context::get();
+	QString filename = napkin::utility::getOpenFilename(nullptr, "Select NAP Project", nap_ctx.getRoot(),
+		QString("NAP Project File (%1)").arg(PROJECT_INFO_FILENAME));
 
-	AppContext::get().loadProject(filename);
+	if (!filename.isEmpty())
+		AppContext::get().loadProject(filename);
 }
 
 
@@ -285,7 +287,7 @@ void napkin::OpenFileAction::perform()
 	}
 
 	// Get file to open
-	QString filename = napkinutils::getOpenFilename(nullptr, "Select NAP Data File", dir, JSON_DATA_FILTER);
+	QString filename = napkin::utility::getOpenFilename(nullptr, "Select NAP Data File", dir, JSON_DATA_FILTER);
 	if (filename.isNull())
 		return;
 
@@ -673,6 +675,7 @@ void DeleteObjectAction::perform()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
 napkin::DeleteGroupAction::DeleteGroupAction(nap::IGroup& group) :
 	Action(nap::utility::stringFormat("Delete '%s'", group.mID.c_str()).c_str(), QRC_ICONS_DELETE),
 	mGroup(group)
@@ -722,10 +725,47 @@ void napkin::DeleteGroupAction::perform()
 	AppContext::get().executeCommand(new DeleteObjectCommand(mGroup));
 }
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+LoadShaderAction::LoadShaderAction(nap::BaseShader& shader) :
+	Action(nap::utility::stringFormat("(Re)Load '%s'", shader.mID.c_str()).c_str(), QRC_ICONS_RELOAD),
+	mShader(shader)
+{ }
+
+
+void LoadShaderAction::perform()
+{
+	nap::utility::ErrorState error;
+	if (!loadShader(mShader, AppContext::get().getCore(), error))
+	{
+		QMessageBox msg(parentWidget());
+		msg.setText(QString("Failed to (re)load %1").arg(QString::fromStdString(mShader.mID)));
+		msg.setStandardButtons(QMessageBox::Ok);
+		msg.setDefaultButton(QMessageBox::Ok);
+		msg.setDetailedText(QString::fromStdString(error.toString()));
+		msg.setIcon(QMessageBox::Critical);
+		msg.setWindowTitle("Error");
+		QSpacerItem* spacer = new QSpacerItem(300, 0, QSizePolicy::Minimum, QSizePolicy::Expanding);
+		QGridLayout* layout = (QGridLayout*)msg.layout();
+		layout->addItem(spacer, layout->rowCount(), 0, 1, layout->columnCount());
+		msg.exec();
+
+		nap::Logger::error("Failed to load '%s'", mShader.mID.c_str());
+		nap::Logger::error(error.toString());
+	}
+	else
+	{
+		QMessageBox::information(parentWidget(), "Information",
+			QString("Successfully (re)loaded %1").arg(QString::fromStdString(mShader.mID)), QMessageBox::Ok);
+	}
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 RemoveChildEntityAction::RemoveChildEntityAction(EntityItem& entityItem) :
-	Action(nap::utility::stringFormat("Remove '%s'", entityItem.getEntity()->mID.c_str()).c_str(), QRC_ICONS_REMOVE),
+	Action(nap::utility::stringFormat("Remove '%s'", entityItem.getEntity().mID.c_str()).c_str(), QRC_ICONS_REMOVE),
 	mEntityItem(&entityItem)
 { }
 
@@ -750,7 +790,7 @@ void RemoveChildEntityAction::perform()
 		return true;
 	}, mEntityItem->index());
 
-	doc->removeChildEntity(*parentItem->getEntity(), index);
+	doc->removeChildEntity(parentItem->getEntity(), index);
 }
 
 
@@ -884,7 +924,7 @@ void napkin::OpenServiceConfigAction::perform()
 		ctx.getServiceConfig()->getFilename();
 
 	// Get file to open
-	QString filename = napkinutils::getOpenFilename(nullptr, "Select NAP Config File", dir, JSON_CONFIG_FILTER);
+	QString filename = napkin::utility::getOpenFilename(nullptr, "Select NAP Config File", dir, JSON_CONFIG_FILTER);
 	if (filename.isNull())
 		return;
 	
