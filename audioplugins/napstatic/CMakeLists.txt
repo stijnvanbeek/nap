@@ -25,8 +25,9 @@ set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
 
 # Add NAP module sources and include directories
 add_napmodule_static(rtti)
-add_napmodule_static(systemmodules/napscene)
-add_napmodule_static(systemmodules/napmath)
+add_napmodule_static(utility)
+add_napmodule_static(system_modules/napscene)
+add_napmodule_static(system_modules/napmath)
 add_napcore_static()
 
 # Link NAP thirdparty dependencies
@@ -39,6 +40,7 @@ elseif(UNIX)
 endif ()
 
 # Set compile definitions
+target_compile_definitions(${PROJECT_NAME} PRIVATE _USE_MATH_DEFINES MODULE_NAME=${PROJECT_NAME})
 if(MSVC)
     target_compile_definitions(${PROJECT_NAME} PUBLIC NOMINMAX)
 endif()
