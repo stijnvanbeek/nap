@@ -133,6 +133,10 @@ else()
     endif()
     add_include_to_interface_target(naprender ${FREEIMAGE_INCLUDE_DIR})
 
+    find_sdl2()
+    add_include_to_interface_target(naprender ${SDL2_INCLUDE_DIR})
+    target_link_libraries(naprender INTERFACE ${SDL2_LIBRARY})
+
     # Add Vulkan library
     set(MODULE_EXTRA_LIBS ${VULKANSDK_LIBS})
 
