@@ -18,24 +18,37 @@ endif()
 # Add all cpp files to SOURCES
 file(GLOB_RECURSE SOURCES src/*.cpp)
 file(GLOB_RECURSE HEADERS src/*.h src/*.hpp)
-file(GLOB_RECURSE SHADERS data/shaders/*.frag data/shaders/*.vert data/shaders/*.comp)
+# Collect all data files
+file(GLOB_RECURSE DATA_FILES ${CMAKE_CURRENT_SOURCE_DIR} data/* )
+set(project_info ${CMAKE_CURRENT_SOURCE_DIR}/app.json)
 
 # Declare target
-add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${SHADERS})
+add_executable(${PROJECT_NAME} MACOSX_BUNDLE ${SOURCES} ${HEADERS} ${DATA_FILES} ${project_info})
+
+# Set the project info MacOS path property
+set_property(SOURCE ${project_info} PROPERTY MACOSX_PACKAGE_LOCATION "MacOS")
+
+# Set the MacOs path properties of the data files
+foreach(DATA_PATH ${DATA_FILES})
+    # Get the relative path from the data-folder to the particular file
+    file(RELATIVE_PATH RELATIVE_DATA_PATH ${CMAKE_CURRENT_SOURCE_DIR} ${DATA_PATH})
+    # Get the relative path to the file.
+    get_filename_component(RELATIVE_DATA_DIR ${RELATIVE_DATA_PATH} DIRECTORY)
+    # Set it's location inside the app package (under Resources)
+    set_property(SOURCE ${DATA_PATH} PROPERTY MACOSX_PACKAGE_LOCATION "Resources/${RELATIVE_DATA_DIR}")
+endforeach(DATA_PATH)
 
 # Create apps and demos IDE folders
 cmake_path(GET CMAKE_CURRENT_SOURCE_DIR PARENT_PATH parent_path)
 cmake_path(GET parent_path STEM LAST_ONLY parent_dir)
-if(NAP_BUILD_CONTEXT MATCHES "source")
-    if(DEFINED APP_CUSTOM_IDE_FOLDER)
-        set(app_folder_name ${APP_CUSTOM_IDE_FOLDER})
-    elseif(parent_dir MATCHES "^apps$")
-        set(app_folder_name Apps)
-    else()
-        set(app_folder_name Demos)
-    endif()
-    set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER ${app_folder_name})
+if(DEFINED APP_CUSTOM_IDE_FOLDER)
+    set(app_folder_name ${APP_CUSTOM_IDE_FOLDER})
+elseif(parent_dir MATCHES "^demos$")
+    set(app_folder_name Demos)
+else()
+    set(app_folder_name Apps)
 endif()
+set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER ${app_folder_name})
 
 # Pull in a app module if it exists
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/module/)
@@ -44,7 +57,7 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/module/)
 endif()
 
 # Read required modules from the app json file
-file(READ ${CMAKE_CURRENT_SOURCE_DIR}/app.json app_json)
+file(READ ${project_info} app_json)
 string(JSON required_modules_json GET ${app_json} RequiredModules)
 string(JSON required_module_count LENGTH ${app_json} RequiredModules)
 set(module_index 0)
@@ -102,3 +115,5 @@ add_custom_command(TARGET ${PROJECT_NAME}
         COMMAND ${BIN_DIR}/fbxconverter -o ${data_dir} ${data_dir}/*.fbx
         COMMENT "Exporting FBX in '${data_dir}'"
 )
+
+#install(TARGETS ${PROJECT_NAME} BUNDLE DESTINATION AppBundles)

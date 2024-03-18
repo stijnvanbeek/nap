@@ -25,20 +25,30 @@ namespace nap
 
 	bool Core::findProjectInfoFile(std::string& foundFilePath) const
 	{
-		// Locate the app.json file without using the path mapping system as it hasn't been initialized yet.
+        // Locate the app.json file without using the path mapping system as it hasn't been initialized yet.
+        const std::string exeDir = utility::getExecutableDir();
 
-		const std::string exeDir = utility::getExecutableDir();
+        auto tryFind = [exeDir](const std::string& projectInfoFilename, std::string& foundFilePath)
+        {
+            const std::string& projectInfoPath = utility::joinPath({exeDir, projectInfoFilename});
+            nap::Logger::debug("Looking for %s in '%s'...", projectInfoFilename.c_str(), exeDir.c_str());
+            if (utility::fileExists(projectInfoPath))
+            {
+                foundFilePath = projectInfoPath;
+                return true;
+            }
+            return false;
+        };
+
+        // First try find project info in app.json
+        if (tryFind(PROJECT_INFO_FILENAME, foundFilePath))
+            return true;
+
+        // Then try find json file with project name
         const std::string projectName = utility::getFileNameWithoutExtension(utility::getExecutablePath());
-        const std::string projectInfoFilename = projectName + ".json";
+        if (tryFind(projectName + ".json", foundFilePath))
+            return true;
 
-		// Check for its projectInfo location, beside the binary
-		const std::string alongsideBinaryPath = utility::joinPath({exeDir, projectInfoFilename});
-		nap::Logger::debug("Looking for %s in '%s'...", projectInfoFilename.c_str(), exeDir.c_str());
-		if (utility::fileExists(alongsideBinaryPath))
-		{
-			foundFilePath = alongsideBinaryPath;
-			return true;
-		}
         return false;
 	}
 
