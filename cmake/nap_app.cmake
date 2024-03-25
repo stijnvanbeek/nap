@@ -1,88 +1,60 @@
-if(NOT DEFINED NAP_BUILD_CONTEXT)
-    set(NAP_BUILD_CONTEXT "framework_release")
-    get_filename_component(NAP_ROOT ${CMAKE_CURRENT_LIST_DIR}/../ REALPATH)
-    message(STATUS "Using NAP root: ${NAP_ROOT}")
-    get_filename_component(THIRDPARTY_DIR ${NAP_ROOT}/thirdparty REALPATH)
-    message(STATUS "Using thirdparty directory: ${THIRDPARTY_DIR}")
+cmake_minimum_required(VERSION 3.19)
 
-    # Set our install prefix for app packaging
-    set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/bin_package)
+# Get the app name from the directory name
+get_filename_component(app_name ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
-    include(${NAP_ROOT}/cmake/macros_and_functions.cmake)
-
-    bootstrap_environment()
-
-    # Set our default build type if we haven't specified one (Linux)
-    set_default_build_type()
-endif()
-
-unset(PACKAGING_INCLUDE_ONLY_WITH_NAIVI_APPS)
-unset(PACKAGING_FORCE_PACKAGE_USER_APP)
-unset(APP_CUSTOM_IDE_FOLDER)
-
-# Get our modules list from app.json
-app_json_to_cmake()
+project(${app_name})
 
 # Bring in any additional app logic (pre-target definition)
-set(APP_EXTRA_PRE_TARGET_CMAKE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/app_extra_pre_target.cmake)
-if(EXISTS ${APP_EXTRA_PRE_TARGET_CMAKE_PATH})
+set(app_extra_pre_target_cmake_path ${CMAKE_CURRENT_SOURCE_DIR}/app_extra_pre_target.cmake)
+if(EXISTS ${app_extra_pre_target_cmake_path})
     unset(SKIP_APP)
-    include(${APP_EXTRA_PRE_TARGET_CMAKE_PATH})
+    include(${app_extra_pre_target_cmake_path})
     if(SKIP_APP)
         return()
     endif()
 endif()
 
-include_directories(${NAP_ROOT}/include/)
+#set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Add all cpp files to SOURCES
 file(GLOB_RECURSE SOURCES src/*.cpp)
 file(GLOB_RECURSE HEADERS src/*.h src/*.hpp)
 file(GLOB_RECURSE SHADERS data/shaders/*.frag data/shaders/*.vert data/shaders/*.comp)
 
-# Create IDE groups
-create_hierarchical_source_groups_for_files("${SOURCES}" ${CMAKE_CURRENT_SOURCE_DIR}/src "Sources")
-create_hierarchical_source_groups_for_files("${HEADERS}" ${CMAKE_CURRENT_SOURCE_DIR}/src "Headers")
-create_hierarchical_source_groups_for_files("${SHADERS}" ${CMAKE_CURRENT_SOURCE_DIR}/src "Shaders")
-
 # Declare target
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${SHADERS})
 
-# Pull in NAP core
-if(NAP_BUILD_CONTEXT MATCHES "framework_release")
-    find_package(napcore REQUIRED)
-    find_package(naprtti REQUIRED)
-    find_package(naputility REQUIRED)
+set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
+
+# Pull in the app module if it exists
+if (TARGET nap${PROJECT_NAME})
+    target_link_libraries(${PROJECT_NAME} nap${PROJECT_NAME})
 endif()
 
-cmake_path(GET CMAKE_CURRENT_SOURCE_DIR PARENT_PATH parent_path)
-cmake_path(GET parent_path STEM LAST_ONLY parent_dir)
+# Create the cache directory in source
+set(cache_dir ${CMAKE_CURRENT_SOURCE_DIR}/cache)
+file(MAKE_DIRECTORY ${cache_dir})
 
-if(NAP_BUILD_CONTEXT MATCHES "source")
-    if(DEFINED APP_CUSTOM_IDE_FOLDER)
-        set(app_folder_name ${APP_CUSTOM_IDE_FOLDER})
-    elseif(parent_dir MATCHES "^apps$")
-        set(app_folder_name Apps)
-    else()
-        set(app_folder_name Demos)
-    endif()
-    set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER ${app_folder_name})
+# Read app.json from file
+set(app_json_path ${CMAKE_CURRENT_SOURCE_DIR}/app.json)
+file(READ ${app_json_path} app_json)
+
+# Read required modules from the app json file
+string(JSON required_modules_json GET ${app_json} RequiredModules)
+string(JSON required_module_count LENGTH ${app_json} RequiredModules)
+set(module_index 0)
+while(NOT ${module_index} EQUAL ${required_module_count})
+    string(JSON module GET ${required_modules_json} ${module_index})
+    list(APPEND required_modules ${module})
+    math(EXPR module_index "${module_index}+1")
+endwhile()
+
+if (NOT required_modules)
+    set(required_modules napcore)
 endif()
+target_link_libraries(${PROJECT_NAME} ${required_modules})
 
-# Pull in a app module if it exists
-add_app_module()
-
-if(NAP_BUILD_CONTEXT MATCHES "framework_release")
-    # Fetch our (deep) module dependencies
-    fetch_module_dependencies("${NAP_MODULES}")
-
-    # Find each NAP module
-    foreach(NAP_MODULE ${NAP_MODULES})
-        find_nap_module(${NAP_MODULE})
-    endforeach()
-endif()
-
-target_link_libraries(${PROJECT_NAME} napcore naprtti naputility ${NAP_MODULES} ${SDL2_LIBRARY})
 if(NAP_ENABLE_PYTHON)
     target_link_libraries(${PROJECT_NAME} ${PYTHON_LIBRARIES})
 endif()
@@ -92,84 +64,99 @@ if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/app_extra.cmake)
     include(${CMAKE_CURRENT_SOURCE_DIR}/app_extra.cmake)
 endif()
 
-# Run FBX converter post-build
-export_fbx()
-
-if(NAP_BUILD_CONTEXT MATCHES "source")
-    add_dependencies(${PROJECT_NAME} fbxconverter)
+# Check if path mapping is set in app.json
+string(JSON path_mapping_path GET ${app_json} PathMapping)
+set(path_mapping_abs_path ${CMAKE_CURRENT_SOURCE_DIR}/${path_mapping_path})
+if ("${path_mapping_path}" STREQUAL "")
+    message(FATAL_ERROR "No path mapping found for App target ${PROJECT_NAME}. Set the path mapping in App.json")
 endif()
 
-# macOS specifics
+# Check if pathmapping file from app.json exists, otherwise copy from default
+if((NOT EXISTS ${path_mapping_abs_path}))
+    file(COPY_FILE ${NAP_ROOT}/cmake/default_path_mapping.json ${path_mapping_abs_path})
+endif()
+
+# Set the path mapping variable in patched app.json to copy of path mapping in project root.
+cmake_path(GET path_mapping_path FILENAME path_mapping_filename)
+string(JSON patched_path_mapping_app_json SET ${app_json} "PathMapping" \"${path_mapping_filename}\")
+
+# Copy path mapping to app specific install data directory in bin
+set(app_install_data_dir ${BIN_DIR}/app_install_data/${PROJECT_NAME})
+file(MAKE_DIRECTORY ${app_install_data_dir})
+add_custom_command(
+        TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${path_mapping_abs_path} ${app_install_data_dir}/${path_mapping_filename})
+
+# Write app json with patched path mapping to source cache
+file(WRITE ${cache_dir}/patched_path_mapping_app.json ${patched_path_mapping_app_json})
+# Write app json with patched path mapping to bin for installation
+add_custom_command(
+        TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${cache_dir}/patched_path_mapping_app.json
+        ${app_install_data_dir}/app.json)
+
+# Patch data path in app json
+string(JSON data_file_path GET ${app_json} Data)
+set(absolute_data_file_path ${CMAKE_CURRENT_SOURCE_DIR}/${data_file_path})
+string(JSON patched_data_app_json SET ${app_json} "Data" \"${absolute_data_file_path}\")
+string(JSON patched_data_app_json SET ${patched_data_app_json} "PathMapping" \"app_install_data/${PROJECT_NAME}/${path_mapping_filename}\")
+
+# Write app json with patched data path and path mapping to bin for running apps from source
+file(WRITE ${cache_dir}/patched_data_app.json ${patched_data_app_json})
+add_custom_command(
+        TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${cache_dir}/patched_data_app.json
+        ${BIN_DIR}/${PROJECT_NAME}.json)
+
+# Update executable rpath
 if(APPLE)
-    # Add the runtime paths for RTTR
-    if(NAP_BUILD_CONTEXT MATCHES "source")
-        macos_add_rttr_rpath()
-    endif()
-
-    # Add plist files if found
-    file(GLOB_RECURSE INFO_PLIST macos/*.plist)
-    if(INFO_PLIST)
-        create_hierarchical_source_groups_for_files("${INFO_PLIST}" ${CMAKE_CURRENT_SOURCE_DIR}/macos "PropertyList")
-        target_sources(${PROJECT_NAME} PUBLIC ${INFO_PLIST})
-        copy_files_to_bin(${INFO_PLIST})
-    endif()
+    add_custom_command(TARGET ${PROJECT_NAME}
+            POST_BUILD COMMAND
+            ${CMAKE_INSTALL_NAME_TOOL} -add_rpath "@executable_path/${LIB_RPATH}/." $<TARGET_FILE:${PROJECT_NAME}>)
 endif()
 
-# Copy path mapping
-if(NOT NAP_PACKAGED_BUILD)
-    deploy_single_path_mapping(${CMAKE_CURRENT_SOURCE_DIR} ${NAP_BUILD_CONTEXT})
+# Copy data directory to app specific bin
+set(bin_data_dir ${app_install_data_dir}/data)
+add_custom_command(
+        TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/data ${bin_data_dir})
+
+# Run FBX converter post-build within bin data dir
+add_dependencies(${PROJECT_NAME} fbxconverter)
+add_custom_command(TARGET ${PROJECT_NAME}
+        POST_BUILD
+        COMMAND ${BIN_DIR}/fbxconverter -o ${bin_data_dir} ${bin_data_dir}/*.fbx
+        COMMENT "Exporting FBX in '${bin_data_dir}'")
+
+# Copy NAP license files
+set(bin_license_dir ${BIN_DIR}/license)
+add_custom_command(
+        TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${NAP_ROOT}/docs/license ${bin_license_dir}/NAP)
+
+# Install to packaged app
+install(FILES $<TARGET_FILE:${PROJECT_NAME}> PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE TYPE BIN OPTIONAL)
+install(FILES ${app_install_data_dir}/app.json TYPE BIN OPTIONAL)
+install(FILES ${app_install_data_dir}/${path_mapping_filename} TYPE BIN OPTIONAL)
+install(DIRECTORY ${bin_data_dir} TYPE DATA OPTIONAL)
+install(DIRECTORY ${bin_license_dir} TYPE DOC OPTIONAL)
+
+# Configure Info.plist, copy to bin and install to packaged app
+if (APPLE)
+    set(plist ${CMAKE_CURRENT_SOURCE_DIR}/cache/Info.plist)
+    if(NOT EXISTS ${plist})
+        string(JSON APP_TITLE GET ${app_json} Title)
+        configure_file(${NAP_ROOT}/cmake/Info.plist.in ${plist})
+    endif ()
+    add_custom_command(
+            TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${plist} ${BIN_DIR})
+    install(FILES ${BIN_DIR}/Info.plist TYPE INFO OPTIONAL)
 endif()
 
-if(NAP_BUILD_CONTEXT MATCHES "framework_release")
-    # Set our app output directory
-    set_framework_release_output_directories()
-
-    if(WIN32)
-        set_target_properties(${PROJECT_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "$(OutDir)")
-        # Set app as startup project in Visual Studio
-        set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
-    endif()
-
-    # Deploy into packaged app
-    install(DIRECTORY ${CMAKE_SOURCE_DIR}/data DESTINATION .)
-    install(FILES ${CMAKE_SOURCE_DIR}/app.json DESTINATION .)
-    install(FILES ${NAP_ROOT}/cmake/app_creator/NAP.txt DESTINATION .)
-
-    if(NOT WIN32)
-        # Set RPATH to search in ./lib
-        if(APPLE)
-            set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "@executable_path/lib/")
-            # Install Information Propertly List file if present
-            if(INFO_PLIST)
-                install(FILES ${INFO_PLIST} DESTINATION .)
-            endif()
-        else()
-            set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN/lib/")
-        endif()
-        install(TARGETS ${PROJECT_NAME} DESTINATION .)
-    endif()
-
-    # Package Napkin if we're doing a build from against released NAP or we're packaging a app with napkin
-    if(NOT DEFINED PACKAGE_NAPKIN OR PACKAGE_NAPKIN)
-        include(${CMAKE_CURRENT_LIST_DIR}/install_napkin_with_app.cmake)
-    endif()
-
-    # Package redistributable help on Windows
-    if(WIN32)
-        install(FILES ${NAP_ROOT}/tools/buildsystem/Microsoft\ Visual\ C++\ Redistributable\ Help.txt DESTINATION .)
-    endif()
-
-    # Provide Gatekeeper unquarantine script on macOS
-    if(APPLE)
-        set(app_template_dir "${NAP_ROOT}/cmake/app_creator/template")
-        install(PROGRAMS "${app_template_dir}/Unquarantine App.command" DESTINATION .)
-        install(FILES "${app_template_dir}/Help launching on macOS.txt" DESTINATION .)
-    endif()
-else()
-    if(NAP_PACKAGED_BUILD)
-        # Package into framework release
-        package_app_into_framework_release(${parent_dir}/${PROJECT_NAME})
-        # Don't build the apps while doing a framework packaging build unless explicitly requested
-        set_target_properties(${PROJECT_NAME} PROPERTIES EXCLUDE_FROM_ALL TRUE)
-    endif()
-endif()
