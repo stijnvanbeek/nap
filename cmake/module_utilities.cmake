@@ -114,6 +114,7 @@ function(add_static_import_library target_name implib include_dir)
     add_library(${target_name} STATIC IMPORTED GLOBAL)
     target_include_directories(${target_name} INTERFACE ${include_dir})
     set_property(TARGET ${target_name} PROPERTY IMPORTED_LOCATION ${implib})
+    set_property(TARGET ${target_name} PROPERTY INCLUDE_DIRECTORIES ${include_dir})
 endfunction()
 
 
