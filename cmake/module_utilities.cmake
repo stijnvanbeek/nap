@@ -67,10 +67,10 @@ function(add_import_library target_name implib dll include_dir)
     if (UNIX)
         get_filename_component(library_name ${dll} NAME)
         if (APPLE)
-            # The library id needs to be set once on every dylib to @rpath/[library filename]:
-            # install_name_tool -id @rpath/[library filename] [path to library]
-            # The line below automates this, however when generating multiple configurations at the same time the processes clash.
-            # Hence it is advised to instead call install_name_tool manually on every newly added external shared library.
+# The library id needs to be set once on every dylib to @rpath/[library filename]:
+# install_name_tool -id @rpath/[library filename] [path to library]
+# The line below automates this, however when generating multiple configurations at the same time the processes clash.
+# Hence it is advised to instead call install_name_tool manually on every newly added external shared library.
 #            execute_process(COMMAND install_name_tool -id
 #                    @rpath/${library_name}
 #                    ${dll}
