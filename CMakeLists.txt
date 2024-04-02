@@ -1,10 +1,10 @@
-cmake_minimum_required(VERSION 3.18.4)
+cmake_minimum_required(VERSION 3.19)
 set(CMAKE_OSX_ARCHITECTURES arm64;x86_64)
 project(NAP)
 
 set(NAP_ROOT ${CMAKE_CURRENT_LIST_DIR})
 include(${NAP_ROOT}/cmake/setup.cmake)
-include(${NAP_ROOT}/cmake/module_utilities.cmake)
+include(${NAP_ROOT}/cmake/nap_utilities.cmake)
 
 setup()
 
