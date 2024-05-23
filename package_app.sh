@@ -99,7 +99,6 @@ if [ $# = "1" ]; then
   echo Removing build directory...
   rm -rf build
 fi
-
 ## Remove local installation of jq.exe
 #if [ "$(uname)" != "Darwin" ] && [ "$(uname)" != "Linux" ]; then
 #  echo Removing local installation of jq.exe...
