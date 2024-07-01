@@ -53,28 +53,6 @@ namespace nap
 			virtual void disconnectAll() = 0;
 			
 			/**
-			 * Returns wether this pin is connected to one or more other pins.
-			 */
-			virtual bool isConnected() const = 0;
-			
-			/**
-			 * Enqueues a connect() call the be executed on the audio thread.
-			 * This is the connect() function that is exposed to RTTR and to python.
-			 */
-			void enqueueConnect(OutputPin& pin);
-			
-			/**
-			 * Enqueues a disconnect() call the be executed on the audio thread
-			 * This is the disconnect() function that is exposed to RTTR and to python.
-			 */
-			void enqueueDisconnect(OutputPin& pin);
-            
-            /**
-             * Enqueues a disconnectAll() call the be executed on the audio thread
-             */
-            void enqueueDisconnectAll();
-			
-			/**
 			 * @return the node that owns this input.
 			 */
 			Node& getNode() { return *mNode; }
@@ -128,11 +106,6 @@ namespace nap
 			 */
 			void disconnectAll() override;
 			
-			/**
-			 * @return wether the input is connected
-			 */
-			bool isConnected() const override { return mInput != nullptr; }
-		
 		private:
 			/*
 			 * The audio output connected to this input.
@@ -177,23 +150,30 @@ namespace nap
 			 * @param input the pin to be disconnected from this pin
 			 */
 			void disconnect(OutputPin& input) override;
-			
+
+			/**
+			 * Overload for connect function to defer multiple connections at once to the audio thread
+			 * @param pins Pins to be connected to this pin
+			 */
+			void connect(const std::vector<OutputPin*>& pins);
+
+			/**
+			 * Overload for disconnect function to defer multiple connections at once to the audio thread
+			 * @param pins Pins to be disconnected to this pin
+			 */
+			void disconnect(const std::vector<OutputPin*>& pins);
+
 			/**
 			 * Disconnects this input from all the connected pins.
 			 */
 			void disconnectAll() override;
 			
 			/**
-			 * @return wether the input is connected to any outputs
-			 */
-			bool isConnected() const override { return !mInputs.empty(); }
-			
-			/**
 			 * Allocates memory to be able to handle the specified number of inputs without having to perform allocations on the audio thread.
 			 * @param inputCount the maximum number of inputs that will be connected to this pin.
 			 */
 			void reserveInputs(unsigned int inputCount);
-		
+
 		private:
 			std::vector<OutputPin*> mInputs;
 			std::vector<OutputPin*> mInputsCache;
@@ -227,12 +207,6 @@ namespace nap
 			 * Disconnects the output from all connected inputs.
 			 */
 			void disconnectAll();
-			
-			/**
-			 * Checks wether the output is connected to any inputs
-			 */
-			bool isConnected() const
-			{ return !mOutputs.empty(); }
 			
 			/**
 			 * Used by InputPin to poll this output for a new buffer of output samples
