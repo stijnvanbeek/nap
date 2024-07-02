@@ -12,9 +12,8 @@
 #include <audio/core/audionodemanager.h>
 
 RTTI_BEGIN_CLASS_NO_DEFAULT_CONSTRUCTOR(nap::audio::InputPinBase)
-	RTTI_FUNCTION("connect", &nap::audio::InputPinBase::enqueueConnect)
-	RTTI_FUNCTION("disconnect", &nap::audio::InputPinBase::enqueueDisconnect)
-	RTTI_FUNCTION("isConnected", &nap::audio::InputPinBase::isConnected)
+	RTTI_FUNCTION("connect", &nap::audio::InputPinBase::connect)
+	RTTI_FUNCTION("disconnect", &nap::audio::InputPinBase::disconnect)
 RTTI_END_CLASS
 
 RTTI_BEGIN_CLASS_NO_DEFAULT_CONSTRUCTOR(nap::audio::InputPin)
@@ -44,39 +43,45 @@ namespace nap
 		{
 			mNode->mInputs.erase(this);
 		}
-		
-		
-		void InputPinBase::enqueueConnect(OutputPin& pin)
-		{
-			OutputPin* pinPtr = &pin;
-			pin.mNode->getNodeManager().enqueueTask([&, pinPtr]() {
-				connect(*pinPtr);
-			});
-		}
-		
-		
-		void InputPinBase::enqueueDisconnect(OutputPin& pin)
-		{
-			OutputPin* pinPtr = &pin;
-			pin.mNode->getNodeManager().enqueueTask([&, pinPtr]() {
-				disconnect(*pinPtr);
-			});
-		}
-		
-    
-        void InputPinBase::enqueueDisconnectAll()
-        {
-            getNode().getNodeManager().enqueueTask([&]() {
-                disconnectAll();
-            });
-        }
 
-    
+
+		void InputPinBase::connect(OutputPin& connection)
+		{
+			auto connectionPtr = &connection;
+
+			getNode().getNodeManager().enqueueTask([&, connectionPtr](){
+				connectNow(*connectionPtr);
+			});
+		}
+
+
+		void InputPinBase::disconnect(OutputPin& connection)
+		{
+			auto connectionPtr = &connection;
+
+			getNode().getNodeManager().enqueueTask([&, connectionPtr]() {
+				disconnectNow(*connectionPtr);
+			});
+		}
+
+
+		void InputPinBase::disconnectAll()
+		{
+			getNode().getNodeManager().enqueueTask([&]() {
+				disconnectAllNow();
+			});
+		}
+
+
 		// --- InputPin --- //
 		
 		InputPin::~InputPin()
 		{
-			disconnectAll();
+			if (mInput)
+			{
+				mInput->mOutputs.erase(this);
+				mInput = nullptr;
+			}
 		}
 		
 		
@@ -89,21 +94,21 @@ namespace nap
 		}
 		
 		
-		void InputPin::connect(OutputPin& input)
+		void InputPin::connectNow(OutputPin& connection)
 		{
 			// remove old connection
 			if (mInput)
 				mInput->mOutputs.erase(this);
-			
+
 			// make the input and output point to one another
-			mInput = &input;
+			mInput = &connection;
 			mInput->mOutputs.emplace(this);
 		}
 		
 		
-		void InputPin::disconnect(OutputPin& input)
+		void InputPin::disconnectNow(OutputPin& connection)
 		{
-			if (&input == mInput)
+			if (&connection == mInput)
 			{
 				mInput->mOutputs.erase(this);
 				mInput = nullptr;
@@ -111,7 +116,7 @@ namespace nap
 		}
 		
 		
-		void InputPin::disconnectAll()
+		void InputPin::disconnectAllNow()
 		{
 			if (mInput)
 			{
@@ -131,7 +136,7 @@ namespace nap
 		
 		MultiInputPin::~MultiInputPin()
 		{
-			disconnectAll();
+			disconnectAllNow();
 		}
 		
 		
@@ -146,25 +151,25 @@ namespace nap
 		}
 		
 		
-		void MultiInputPin::connect(OutputPin& input)
+		void MultiInputPin::connectNow(OutputPin& connection)
 		{
-			auto it = std::find(mInputs.begin(), mInputs.end(), &input);
+			auto it = std::find(mInputs.begin(), mInputs.end(), &connection);
 			if (it == mInputs.end())
-				mInputs.emplace_back(&input);
-			input.mOutputs.emplace(this);
+				mInputs.emplace_back(&connection);
+			connection.mOutputs.emplace(this);
 		}
 		
 		
-		void MultiInputPin::disconnect(OutputPin& input)
+		void MultiInputPin::disconnectNow(OutputPin& connection)
 		{
-			auto it = std::find(mInputs.begin(), mInputs.end(), &input);
+			auto it = std::find(mInputs.begin(), mInputs.end(), &connection);
 			if (it != mInputs.end())
 				mInputs.erase(it);
-			input.mOutputs.erase(this);
+			connection.mOutputs.erase(this);
 		}
-		
-		
-		void MultiInputPin::disconnectAll()
+
+
+		void MultiInputPin::disconnectAllNow()
 		{
 			while (!mInputs.empty())
 			{
@@ -200,14 +205,15 @@ namespace nap
 		OutputPin::~OutputPin()
 		{
 			mNode->mOutputs.erase(this);
-			disconnectAll();
+			disconnectAllNow();
 		}
 		
 		
 		void OutputPin::disconnectAll()
 		{
-			while (!mOutputs.empty())
-				(*mOutputs.begin())->disconnect(*this);
+			getNode().getNodeManager().enqueueTask([&]() {
+				disconnectAllNow();
+			});
 		}
 		
 		
@@ -216,12 +222,20 @@ namespace nap
 			mNode->update();
 			return &mBuffer;
 		}
-		
-		
+
+
+		void OutputPin::disconnectAllNow()
+		{
+			while (!mOutputs.empty())
+				(*mOutputs.begin())->disconnectNow(*this);
+		}
+
+
 		void OutputPin::setBufferSize(int bufferSize)
 		{
 			mBuffer.resize(bufferSize, 0.f);
 		}
 		
 	}
+
 }
