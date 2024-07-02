@@ -32,6 +32,9 @@ namespace nap
 		class NAPAPI InputPinBase
 		{
 			RTTI_ENABLE()
+
+			friend class OutputPin;
+
 		public:
 			InputPinBase(Node* node);
 			
@@ -39,18 +42,21 @@ namespace nap
 			
 			/**
 			 * Connects a pin to this input. Disconnects the current connection first if necessary.
+			 * For threadsafety connection is enqueued on the audio thread.
 			 */
-			virtual void connect(OutputPin& input) = 0;
+			void connect(OutputPin& input);
 			
 			/**
 			 * Disconnects a pin from this input, if it is connected.
+			 * For threadsafety connection is enqueued on the audio thread.
 			 */
-			virtual void disconnect(OutputPin& input) = 0;
+			void disconnect(OutputPin& input);
 			
 			/**
 			 * Disconnects all pins connected to this pint.
+			 * For threadsafety connection is enqueued on the audio thread.
 			 */
-			virtual void disconnectAll() = 0;
+			void disconnectAll();
 			
 			/**
 			 * @return the node that owns this input.
@@ -58,6 +64,21 @@ namespace nap
 			Node& getNode() { return *mNode; }
 		
 		private:
+			/**
+			 * Connects a pin to this input. Disconnects the current connection first if necessary.
+			 */
+			virtual void connectNow(OutputPin& input) = 0;
+
+			/**
+			 * Disconnects a pin from this input, if it is connected.
+			 */
+			virtual void disconnectNow(OutputPin& input) = 0;
+
+			/**
+			 * Disconnects all pins connected to this pint.
+			 */
+			virtual void disconnectAllNow() = 0;
+
 			// The node that owns this input
 			Node* mNode = nullptr;
 		};
@@ -87,26 +108,26 @@ namespace nap
 			 */
 			SampleBuffer* pull();
 			
+		private:
 			/**
 			 * Connects another node's OutputPin to this input.
 			 * If either this ipnut or the connected output is already connected it will be disconnected first.
 			 * @param input: The output that this InputPin will be connected to.
 			 */
-			void connect(OutputPin& input) override;
-			
-			
+			void connectNow(OutputPin& input) override;
+
+
 			/**
 			 * Disconnects this input from the specified output, if this connections exists.
 			 */
-			void disconnect(OutputPin& input) override;
-			
-			
+			void disconnectNow(OutputPin& input) override;
+
+
 			/**
 			 * If connected, disconnects this pin.
 			 */
-			void disconnectAll() override;
-			
-		private:
+			void disconnectAllNow() override;
+
 			/*
 			 * The audio output connected to this input.
 			 * When it is a nullptr this input is not connected.
@@ -140,41 +161,29 @@ namespace nap
 			void pull(std::vector<SampleBuffer*>& result);
 			
 			/**
-			 * Connect another node's output to this pin.
-			 * @param input to be connected to this pin.
-			 */
-			void connect(OutputPin& input) override;
-			
-			/**
-			 * Disconnect another node's output from this pin, if it is connected to this pin.
-			 * @param input the pin to be disconnected from this pin
-			 */
-			void disconnect(OutputPin& input) override;
-
-			/**
-			 * Overload for connect function to defer multiple connections at once to the audio thread
-			 * @param pins Pins to be connected to this pin
-			 */
-			void connect(const std::vector<OutputPin*>& pins);
-
-			/**
-			 * Overload for disconnect function to defer multiple connections at once to the audio thread
-			 * @param pins Pins to be disconnected to this pin
-			 */
-			void disconnect(const std::vector<OutputPin*>& pins);
-
-			/**
-			 * Disconnects this input from all the connected pins.
-			 */
-			void disconnectAll() override;
-			
-			/**
 			 * Allocates memory to be able to handle the specified number of inputs without having to perform allocations on the audio thread.
 			 * @param inputCount the maximum number of inputs that will be connected to this pin.
 			 */
 			void reserveInputs(unsigned int inputCount);
 
 		private:
+			/**
+			 * Connect another node's output to this pin.
+			 * @param input to be connected to this pin.
+			 */
+			void connectNow(OutputPin& input) override;
+
+			/**
+			 * Disconnect another node's output from this pin, if it is connected to this pin.
+			 * @param input the pin to be disconnected from this pin
+			 */
+			void disconnectNow(OutputPin& input) override;
+
+			/**
+			 * Disconnects this input from all the connected pins.
+			 */
+			void disconnectAllNow() override;
+
 			std::vector<OutputPin*> mInputs;
 			std::vector<OutputPin*> mInputsCache;
 		};
@@ -205,6 +214,7 @@ namespace nap
 			
 			/**
 			 * Disconnects the output from all connected inputs.
+			 * For threadsafety connection is enqueued on the audio thread.
 			 */
 			void disconnectAll();
 			
@@ -223,6 +233,11 @@ namespace nap
 			SampleBuffer mBuffer; ///< The buffer containing the latest output
 		
 		private:
+			/**
+			 * Disconnects the output from all connected inputs.
+			 */
+			void disconnectAllNow();
+
 			// Used by the NodeManager to resize the internal buffers when necessary
 			void setBufferSize(int bufferSize);
 			
