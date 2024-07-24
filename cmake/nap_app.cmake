@@ -174,6 +174,7 @@ if (APPLE)
     set(plist ${CMAKE_CURRENT_SOURCE_DIR}/cache/Info.plist)
     if(NOT EXISTS ${plist})
         string(JSON APP_TITLE GET ${app_json} Title)
+        string(JSON ICON_PATH ERROR_VARIABLE icon_error GET ${app_json} Icon)
         configure_file(${NAP_ROOT}/cmake/Info.plist.in ${plist})
     endif ()
     add_custom_command(

@@ -16,5 +16,7 @@
 	<string>${PROJECT_NAME} microphone use</string>
 	<key>NSHighResolutionCapable</key>
 	<string>True</string>
+	<key>CFBundleIconFile</key>
+	<string>${ICON_PATH}</string>
 </dict>
 </plist>
