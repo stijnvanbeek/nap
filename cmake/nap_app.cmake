@@ -159,7 +159,7 @@ add_license(tclap ${NAP_ROOT}/thirdparty/tclap/COPYING)
 if(APPLE)
     add_custom_command(TARGET ${PROJECT_NAME}
             POST_BUILD COMMAND
-            ${CMAKE_INSTALL_NAME_TOOL} -add_rpath "@executable_path/${LIB_RPATH}/." $<TARGET_FILE:${PROJECT_NAME}>)
+            if ! otool -l $<TARGET_FILE:${PROJECT_NAME}> | grep -q @executable_path/${LIB_RPATH}/.\; then ${CMAKE_INSTALL_NAME_TOOL} -add_rpath "@executable_path/${LIB_RPATH}/." $<TARGET_FILE:${PROJECT_NAME}>\; fi)
 endif()
 
 # Install to packaged app
