@@ -286,7 +286,8 @@ namespace nap
 		bool getFileModificationTime(const std::string& path, uint64_t& modTime)
 		{
 			struct stat result;
-			if (stat(path.c_str(), &result) != 0)
+			
+			if (stat(utility::getAbsolutePath(path).c_str(), &result) != 0)
 				return false;
 
 			// Fail if not a file
