@@ -147,11 +147,11 @@ namespace nap {
             if (mPImpl->callbackInfo.modifiedFiles.empty())
                 return false;
             
-            std::string comparable_watched_path = std::filesystem::canonical(mPImpl->currentPath);
+            std::string comparable_watched_path = utility::toComparableFilename(mPImpl->currentPath);
             
             for (auto& modified_file : mPImpl->callbackInfo.modifiedFiles)
             {
-                std::string comparable_modified_file = std::filesystem::canonical(modified_file);
+                std::string comparable_modified_file = utility::toComparableFilename(modified_file);
                 if (!std::filesystem::is_directory(modified_file))
                 {
                     // check if the watched path is found at the start if the modified file's path
