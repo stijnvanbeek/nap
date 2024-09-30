@@ -26,7 +26,7 @@ add_subdirectory(system_modules/napcameracontrol)
 add_subdirectory(system_modules/napaudio)
 add_subdirectory(system_modules/napportaudio)
 add_subdirectory(system_modules/napmidi)
-add_subdirectory(system_modules/naposc)
+#add_subdirectory(system_modules/naposc)
 add_subdirectory(system_modules/napudp)
 add_subdirectory(system_modules/napasio)
 
