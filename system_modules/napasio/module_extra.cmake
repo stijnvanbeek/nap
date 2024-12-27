@@ -10,4 +10,4 @@ if(WIN32)
     target_compile_definitions(${PROJECT_NAME} PUBLIC WIN32_LEAN_AND_MEAN _WIN32_WINNT=0x0A00)
 endif()
 
-add_license(asio ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/asio/LICENSE_1_1.txt)
+add_license(asio ${ASIO_LICENSE_FILES})
