@@ -1022,8 +1022,8 @@ namespace nap
 			{
 				color_blend_attachment_state.blendEnable = VK_TRUE;
 				color_blend_attachment_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-				color_blend_attachment_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-				color_blend_attachment_state.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+				color_blend_attachment_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+				color_blend_attachment_state.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
 				color_blend_attachment_state.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
 				break;
 			}
@@ -1521,7 +1521,7 @@ namespace nap
 	void RenderService::renderObjects(IRenderTarget& renderTarget, CameraComponentInstance& camera, const SortFunction& sortFunction, RenderMask renderMask)
 	{
 		// Get all render-able components
-		// Only gather renderable components that can be rendered using the given caera
+		// Only gather visible renderable components that can be rendered using the given caera
 		std::vector<nap::RenderableComponentInstance*> render_comps;
 		std::vector<nap::RenderableComponentInstance*> entity_render_comps;
 		for (Scene* scene : mSceneService->getScenes())
@@ -1533,14 +1533,31 @@ namespace nap
 				render_comps.reserve(render_comps.size() + entity_render_comps.size());
 				for (const auto& comp : entity_render_comps) 
 				{
-					if (comp->isSupported(camera) && comp->includesMask(renderMask))
+					if (comp->isVisible() && comp->isSupported(camera))
 						render_comps.emplace_back(comp);
 				}
 			}
 		}
 
-		// Render these objects
-		renderObjects(renderTarget, camera, render_comps, sortFunction);
+		// Apply mask
+		render_comps = filterObjects(render_comps, renderMask);
+
+		// Before we render, we always set aspect ratio. This avoids overly complex
+		// responding to various changes in render target sizes.
+		camera.setRenderTargetSize(renderTarget.getBufferSize());
+
+		// Extract camera projection matrix
+		const auto& projection_matrix = camera.getRenderProjectionMatrix();
+
+		// Extract view matrix
+		auto view_matrix = camera.getViewMatrix();
+
+		// Sort objects to render
+		sortFunction(render_comps, view_matrix);
+
+		// Draw components
+		for (auto& comp : render_comps)
+			comp->draw(renderTarget, mCurrentCommandBuffer, view_matrix, projection_matrix);
 	}
 
 
@@ -1552,25 +1569,35 @@ namespace nap
 
 	void RenderService::renderObjects(IRenderTarget& renderTarget, CameraComponentInstance& camera, const std::vector<RenderableComponentInstance*>& comps, const SortFunction& sortFunction, RenderMask renderMask)
 	{
-		// Only gather renderable components that can be rendered using the given camera and mask
+		assert(mCurrentCommandBuffer != VK_NULL_HANDLE);	// BeginRendering is not called if this assert is fired
+
+		// Only gather visible renderable components that can be rendered using the given camera and mask
 		std::vector<nap::RenderableComponentInstance*> render_comps;
 		for (const auto& comp : comps)
 		{
-			if (comp->isSupported(camera) && comp->includesMask(renderMask))
+			if (comp->isVisible() && comp->isSupported(camera))
 				render_comps.emplace_back(comp);
 		}
+
+		// Apply mask
+		render_comps = filterObjects(render_comps, renderMask);
 
 		// Before we render, we always set aspect ratio. This avoids overly complex
 		// responding to various changes in render target sizes.
 		camera.setRenderTargetSize(renderTarget.getBufferSize());
 
 		// Extract camera projection matrix
-		const glm::mat4& projection_matrix = camera.getRenderProjectionMatrix();
+		const auto& projection_matrix = camera.getRenderProjectionMatrix();
 
 		// Extract view matrix
-		glm::mat4x4 view_matrix = camera.getViewMatrix();
+		auto view_matrix = camera.getViewMatrix();
 
-		renderObjects(renderTarget, projection_matrix, view_matrix, render_comps, sortFunction);
+		// Sort objects to render
+		sortFunction(render_comps, view_matrix);
+
+		// Draw components
+		for (auto& comp : render_comps)
+			comp->draw(renderTarget, mCurrentCommandBuffer, view_matrix, projection_matrix);
 	}
 
 
@@ -1578,8 +1605,16 @@ namespace nap
 	{
 		assert(mCurrentCommandBuffer != VK_NULL_HANDLE);	// BeginRendering is not called if this assert is fired
 
-		// Only gather renderable components that can be rendered using the given mask
-		auto render_comps = filterObjects(comps, renderMask);
+		// Only gather visible renderable components that can be rendered using the given camera and mask
+		std::vector<nap::RenderableComponentInstance*> render_comps;
+		for (const auto& comp : comps)
+		{
+			if (comp->isVisible())
+				render_comps.emplace_back(comp);
+		}
+
+		// Apply mask
+		render_comps = filterObjects(comps, renderMask);
 
 		// Sort objects to render
 		sortFunction(render_comps, view);
@@ -1602,6 +1637,9 @@ namespace nap
 
 	std::vector<RenderableComponentInstance*> RenderService::filterObjects(const std::vector<RenderableComponentInstance*>& comps, RenderMask renderMask)
 	{
+		if (renderMask == mask::all)
+			return comps;
+
 		// Only gather renderable components that can be rendered using the given mask
 		std::vector<RenderableComponentInstance*> render_comps;
 		render_comps.reserve(comps.size());
@@ -1619,22 +1657,22 @@ namespace nap
 		SurfaceDescriptor settings = { 1, 1, ESurfaceDataType::BYTE, ESurfaceChannels::RGBA };
 		mEmptyTexture2D = std::make_unique<Texture2D>(getCore());
 		mEmptyTexture2D->mID = utility::stringFormat("%s_EmptyTexture2D_%s", RTTI_OF(Texture2D).get_name().to_string().c_str(), math::generateUUID().c_str());
-		if (!mEmptyTexture2D->init(settings, false, 0, errorState))
+		if (!mEmptyTexture2D->init(settings, Texture2D::EUsage::Internal, 1, glm::zero<glm::vec4>(), 0, errorState))
 			return false;
 
 		mEmptyTextureCube = std::make_unique<TextureCube>(getCore());
 		mEmptyTextureCube->mID = utility::stringFormat("%s_EmptyTextureCube_%s", RTTI_OF(TextureCube).get_name().to_string().c_str(), math::generateUUID().c_str());
-		if (!mEmptyTextureCube->init(settings, false, glm::zero<glm::vec4>(), 0, errorState))
+		if (!mEmptyTextureCube->init(settings, 1, glm::zero<glm::vec4>(), 0, errorState))
 			return false;
 
 		mErrorTexture2D = std::make_unique<Texture2D>(getCore());
 		mErrorTexture2D->mID = utility::stringFormat("%s_ErrorTexture2D_%s", RTTI_OF(Texture2D).get_name().to_string().c_str(), math::generateUUID().c_str());
-		if (!mErrorTexture2D->init(settings, false, mErrorColor.toVec4(), 0, errorState))
+		if (!mErrorTexture2D->init(settings, Texture2D::EUsage::Internal, 1, mErrorColor.toVec4(), 0, errorState))
 			return false;
 
 		mErrorTextureCube = std::make_unique<TextureCube>(getCore());
 		mErrorTextureCube->mID = utility::stringFormat("%s_ErrorTextureCube_%s", RTTI_OF(TextureCube).get_name().to_string().c_str(), math::generateUUID().c_str());
-		if (!mErrorTextureCube->init(settings, false, mErrorColor.toVec4(), 0, errorState))
+		if (!mErrorTextureCube->init(settings, 1, mErrorColor.toVec4(), 0, errorState))
 			return false;
 
 		return true;
@@ -2831,6 +2869,15 @@ namespace nap
 		return mDepthFormat != VK_FORMAT_D32_SFLOAT ? 
 			VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT : 
 			VK_IMAGE_ASPECT_DEPTH_BIT;
+	}
+
+
+	bool RenderService::getMipSupport(const SurfaceDescriptor& descriptor) const
+	{
+		// Get format properties
+		VkFormatProperties properties;
+		vkGetPhysicalDeviceFormatProperties(mPhysicalDevice.getHandle(), utility::getTextureFormat(descriptor), &properties);
+		return (properties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT) > 0;
 	}
 
 
