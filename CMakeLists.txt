@@ -30,6 +30,7 @@ add_subdirectory(system_modules/naposc)
 add_subdirectory(system_modules/napudp)
 add_subdirectory(system_modules/napasio)
 add_subdirectory(system_modules/napapi)
+add_subdirectory(system_modules/napcalendar)
 
 set(NAP_BUILD_CONTEXT source) # This is here just to guarantee backwards compatibility with 0.6 style NAP modules
 add_subdirectory_modules(modules)
@@ -46,3 +47,4 @@ add_subdirectory(tools/fbxconverter)
 add_subdirectory(qt)
 add_subdirectory(tools/napkin)
 
+add_subdirectory(apps/test)
