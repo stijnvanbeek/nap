@@ -46,5 +46,3 @@ add_subdirectory(demos/udpreceive)
 add_subdirectory(tools/fbxconverter)
 add_subdirectory(qt)
 add_subdirectory(tools/napkin)
-
-add_subdirectory(apps/test)
