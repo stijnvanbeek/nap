@@ -17,16 +17,13 @@ function(target_link_import_library target library)
     get_target_property(include_dir ${library} INCLUDE_DIRECTORIES)
     get_target_property(library_type ${library} TYPE)
 
+    message("${library} ${include_dir} ${library_path}" ${library_type})
     if (EXISTS ${include_dir})
         target_include_directories(${target} PUBLIC ${include_dir})
     endif ()
 
     if (${library_type} STREQUAL SHARED_LIBRARY)
-        if(LINUX)
-            target_link_libraries(${target} ${library_path})
-        else ()
-            target_link_libraries(${target} ${library})
-        endif()
+        target_link_libraries(${target} ${library})
         add_custom_command(
                 TARGET ${target} POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
