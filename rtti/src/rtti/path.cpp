@@ -5,6 +5,7 @@
 // Local Includes
 #include "path.h"
 #include "object.h"
+#include "objectptr.h"
 
 // External Includes
 #include <utility/stringutils.h>
@@ -78,6 +79,9 @@ namespace nap
 			if (mLength == 0)
 				return false;
 
+			// Reset resolvedPath in case it still holds any information from previous use
+			resolvedPath.mLength = 0;
+
 			for (int index = 0; index < mLength; ++index)
 			{
 				const PathElement& element = mElements[index];
@@ -109,7 +113,10 @@ namespace nap
 
 						// See if the object that's currently on the resolved path has a property with this name.
 						// If not, it means the path is invalid
-						rtti::Property property = current_context.get_type().get_property(element.Attribute.Name);
+						rtti::TypeInfo current_context_type = current_context.get_type();
+						if (current_context_type.is_derived_from<ObjectPtrBase>())
+							current_context_type = current_context_type.get_wrapped_type().get_raw_type();
+						rtti::Property property = current_context_type.get_property(element.Attribute.Name);
 						if (!property.is_valid())
 							return false;
 
