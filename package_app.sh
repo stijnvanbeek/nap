@@ -18,7 +18,7 @@ fi
 # Make sure jq is installed on unix
 if [ "$(uname)" = "Darwin" ]; then
   if ! [ -x "$(command -v jq)" ]; then
-    echo Jq json parser not found. To install from hemobrew run:
+    echo Jq json parser not found. To install from homebrew run:
     echo brew install jq
     exit 0
   fi
