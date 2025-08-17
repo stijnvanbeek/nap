@@ -30,7 +30,7 @@ namespace nap
 		const std::string exeDir = utility::getExecutableDir();
 
 		// Check for location of app.json beside the binary
-		const std::string defaultProjectInfoPath = utility::joinPath({exeDir, PROJECT_INFO_FILENAME});
+		std::string defaultProjectInfoPath = utility::joinPath({exeDir, PROJECT_INFO_FILENAME});
 		nap::Logger::debug("Looking for %s in '%s'...", PROJECT_INFO_FILENAME, exeDir.c_str());
 		if (utility::fileExists(defaultProjectInfoPath))
 		{
@@ -38,16 +38,32 @@ namespace nap
 			return true;
 		}
 
-        // Check for location of {PROJECT_NAME}.json beside the binary. This filename is used in source context by the build system
-        const std::string projectName = utility::getFileNameWithoutExtension(utility::getExecutablePath());
-        const std::string projectInfoFilename = projectName + ".json";
-        const std::string projectNamePath = utility::joinPath({exeDir, projectInfoFilename});
-        nap::Logger::debug("Looking for %s in '%s'...", projectInfoFilename.c_str(), exeDir.c_str());
-        if (utility::fileExists(projectNamePath))
-        {
-            foundFilePath = projectNamePath;
-            return true;
-        }
+		// Check for location of {PROJECT_NAME}.json beside the binary. This filename is used in source context by the build system
+		const std::string projectName = utility::getFileNameWithoutExtension(utility::getExecutablePath());
+		const std::string projectInfoFilename = projectName + ".json";
+		std::string projectNamePath = utility::joinPath({exeDir, projectInfoFilename});
+		nap::Logger::debug("Looking for %s in '%s'...", projectInfoFilename.c_str(), exeDir.c_str());
+		if (utility::fileExists(projectNamePath))
+		{
+			foundFilePath = projectNamePath;
+			return true;
+		}
+
+#ifdef __APPLE__
+		// Check for both app.json as {PROJECT_NAME}.json in the macos app bundle Resources folder
+		defaultProjectInfoPath = utility::joinPath({exeDir, "..", "Resources", PROJECT_INFO_FILENAME});
+		if (utility::fileExists(defaultProjectInfoPath))
+		{
+			foundFilePath = defaultProjectInfoPath;
+			return true;
+		}
+		projectNamePath = utility::joinPath({exeDir, "..", "Resources", projectName + ".json"});
+		if (utility::fileExists(projectNamePath))
+		{
+			foundFilePath = projectNamePath;
+			return true;
+		}
+#endif
 
         return false;
 	}

@@ -43,12 +43,17 @@ if (NAP_ENABLE_PYTHON)
 endif()
 
 target_link_libraries(${PROJECT_NAME} naputility RTTR::Core)
-
 if(APPLE)
     target_link_libraries(${PROJECT_NAME} "-framework CoreServices")
 elseif(UNIX)
     target_link_libraries(${PROJECT_NAME} dl pthread)
 endif ()
+
+# Codesign the shared libraries
+get_target_property(rttr_library_path RTTR::Core IMPORTED_LOCATION_RELEASE)
+message("rttr lib: ${rttr_library_path}")
+codesign(${rttr_library_path})
+codesign_target(${PROJECT_NAME})
 
 # Copy RTTR::Core libraries to bin
 add_custom_command(
@@ -61,4 +66,4 @@ add_custom_command(
 install(FILES $<TARGET_FILE:RTTR::Core> TYPE LIB OPTIONAL)
 
 # Package naprtti library
-install(TARGETS ${PROJECT_NAME} LIBRARY OPTIONAL)
+install(FILES $<TARGET_FILE:${PROJECT_NAME}> TYPE LIB OPTIONAL)

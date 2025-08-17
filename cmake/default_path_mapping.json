@@ -6,7 +6,8 @@
   "ModulePaths":
   [
     "{ROOT}",
-    "{ROOT}/lib"
+    "{ROOT}/lib",
+    "{ROOT}/../Resources"
   ],
   "BuildPath": "{PROJECT_DIR}",
   "DataPath":  "{PROJECT_DIR}/../Resources/"

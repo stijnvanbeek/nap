@@ -82,4 +82,6 @@ elseif(UNIX)
     target_link_libraries(${PROJECT_NAME} dl pthread)
 endif ()
 
-install(TARGETS ${PROJECT_NAME} LIBRARY OPTIONAL)
+codesign_target(${PROJECT_NAME})
+
+install(FILES $<TARGET_FILE:${PROJECT_NAME}> TYPE LIB OPTIONAL)

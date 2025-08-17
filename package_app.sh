@@ -40,6 +40,14 @@ else
   build_directory=$2
 fi
 
+# If there is a code signature provided pass it on as environment variable
+if [ "$(uname)" = "Darwin" ]; then
+  if [ "$#" -gt "2" ]; then
+    echo Using signature: $3
+    export MACOS_CODE_SIGNATURE="$3"
+  fi
+fi
+
 # Remove bin directory from previous builds
 # This is important otherwise artifacts from previous builds could be included in the app installation
 echo Cleaning previous build output...
@@ -63,7 +71,7 @@ if ! [ $? -eq 0 ]; then
   exit 0
 fi
 
-# Read app Title from project json
+# Read app Title and Version from project json
 if [ "$target" = "napkin" ]; then
   if [ "$(uname)" = "Darwin" ]; then
     # Add app bundle file extension on MacOS
@@ -74,36 +82,83 @@ if [ "$target" = "napkin" ]; then
 else
   if [ "$(uname)" = "Darwin" ]; then
     # Add app bundle file extension on MacOS
-    app_title=`jq -r '.Title' $build_directory/bin/$target.json`.app
+    app_title=`jq -r '.Title' $build_directory/bin/$target.json`
+    app_version=`jq -r '.Version' $build_directory/bin/$target.json`
+    app_directory="$app_title.app"
   elif [ "$(uname)" = "Linux" ]; then
     app_title=`jq -r '.Title' $build_directory/bin/$target.json`
+    app_version=`jq -r '.Version' $build_directory/bin/$target.json`
+    app_directory=$app_title
   else
     # Use bundled jq.exe
     app_title=`./thirdparty/jq/msvc/x86_64/jq.exe -r '.Title' $build_directory/bin/$target.json`
+    app_version=`./thirdparty/jq/msvc/x86_64/jq.exe -r '.Version' $build_directory/bin/$target.json`
+    app_directory=$app_title
   fi
   if ! [ $? -eq 0 ]; then
     exit 0
   fi
 fi
 echo App title is: $app_title
+echo App version is: $app_version
 
 # Cleaning previous install, if any
 echo Cleaning previous install output...
-rm -rf "install/$app_title"
+rm -rf "install/$app_directory"
 
 # Rename output directory to app title
 if [ "$(uname)" = "Darwin" ]; then
-  mv "install/MyApp.app" "install/$app_title"
+  mv "install/MyApp.app" "install/$app_directory"
 else
-  mv "install/MyApp" "install/$app_title"
+  mv "install/MyApp" "install/$app_directory"
 fi
 
-# Codesign MacOS app bundle
 if [ "$(uname)" = "Darwin" ]; then
+  # Codesign MacOS app bundle
   if [ "$#" -gt "2" ]; then
     echo Codesigning MacOS bundle...
-    codesign --deep -s "$3" -f -i "com.$target.napframework.www" -f "install/$app_title"
+    codesign -s "$3" -f "install/$app_directory" --options runtime
   fi
+
+  # Perform notarization
+  if [ "$#" -gt "3" ]; then
+    echo Performing MacOS notarization
+    notary_profile=$4
+    cd install
+
+    # Zip app bundle to upload for notarization
+    notary_zip="${app_title}.zip"
+    echo zipping "${notary_zip}" "${app_directory}"
+    zip -r "${notary_zip}" "${app_directory}"
+    # Notarize
+    xcrun notarytool submit "${notary_zip}" --keychain-profile "${notary_profile}" --wait
+    # Remove original app bundle and unzip notarized bundle
+    rm -rf "${app_directory}"
+    unzip "${notary_zip}"
+    rm "${notary_zip}"
+    # Run stapler
+    xcrun stapler staple "${app_directory}"
+
+    cd ..
+  fi
+fi
+
+# Zip the output directory
+if [ "$(uname)" = "Darwin" ]; then
+  app_zip="$app_title $app_version MacOS.zip"
+  cd install
+  zip -r "${app_zip}" "${app_directory}"
+  cd ..
+elif [ "$(uname)" = "Linux" ]; then
+  app_zip="$app_title $app_version Linux.zip"
+  cd install
+  zip -r "${app_zip}" "${app_directory}"
+  cd ..
+else
+  app_zip="$app_title $app_version Win.zip"
+  cd install
+  ../thirdparty/zip/msvc/zip -r "${app_zip}" "${app_directory}"
+  cd ..
 fi
 
 # Remove the build directory if it wasn't specified

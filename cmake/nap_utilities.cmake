@@ -17,7 +17,6 @@ function(target_link_import_library target library)
     get_target_property(include_dir ${library} INCLUDE_DIRECTORIES)
     get_target_property(library_type ${library} TYPE)
 
-    message("${library} ${include_dir} ${library_path}" ${library_type})
     if (EXISTS ${include_dir})
         target_include_directories(${target} PUBLIC ${include_dir})
     endif ()
@@ -83,8 +82,14 @@ function(add_import_library target_name implib dll include_dir)
 #                message(FATAL_ERROR "Failed to set RPATH on ${library_name} using install_name_tool -id.")
 #            endif()
 
-            # Codesign the library with an ad hoc sign
-            execute_process(COMMAND codesign --force -s - ${dll})
+            if (DEFINED ENV{MACOS_CODE_SIGNATURE})
+                # Codesign the executable with signature in environment variable
+                execute_process(COMMAND codesign --force -s $ENV{MACOS_CODE_SIGNATURE} ${dll})
+            else ()
+                # Perform ad hoc signing
+                execute_process(COMMAND codesign --force -s - ${dll})
+            endif ()
+
         else ()
             # Set so name or rpath for linux
             execute_process(COMMAND patchelf --set-soname
@@ -95,7 +100,6 @@ function(add_import_library target_name implib dll include_dir)
                 message(FATAL_ERROR "Failed to set RPATH on ${library_name} using patchelf. Is patchelf installed?")
             endif()
         endif()
-
     endif()
 endfunction()
 
@@ -207,4 +211,39 @@ function(add_license name license_path)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
             ${license_path}
             ${BIN_DIR}/license/${name}/${license_filename})
+endfunction()
+
+
+# Codesign the target's output file post build on MacOS
+function(codesign_target target)
+    if (APPLE)
+        set(signature "-") # Use add hoc sign as default
+        if (DEFINED ENV{MACOS_CODE_SIGNATURE})
+            set(signature $ENV{MACOS_CODE_SIGNATURE}) # If defined, use environment variable as signature
+        endif ()
+        # Codesign the target post build
+        message("Codesigning ${target} with signature ${signature}")
+        add_custom_command(TARGET ${target} POST_BUILD
+                COMMAND codesign --force -s ${signature} $<TARGET_FILE:${target}>)
+    endif ()
+endfunction()
+
+
+## Codesign imported dynamic library
+#function(codesign_import_library library)
+#    codesign($<TARGET_FILE:${library}>)
+#endfunction()
+
+
+# Codesign imported dynamic library
+function(codesign path)
+    if (APPLE)
+        set(signature "-") # Use add hoc sign as default
+        if (DEFINED ENV{MACOS_CODE_SIGNATURE})
+            set(signature $ENV{MACOS_CODE_SIGNATURE}) # If defined, use environment variable as signature
+        endif ()
+        # Codesign the file
+        message("Codesigning ${path} with signature ${signature}")
+        execute_process(COMMAND codesign --force -s ${signature} ${path})
+    endif ()
 endfunction()
