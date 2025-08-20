@@ -40,33 +40,32 @@ namespace napkin
 		 */
 		Context::Context()
 		{
-			QDir root_dir = QString::fromStdString(nap::utility::getExecutableDir());
-			assert(root_dir.exists());
+			QDir exe_dir = QString::fromStdString(nap::utility::getExecutableDir());
+			assert(exe_dir.exists());
 
 			// Package Release
-			root_dir.cdUp();
-			if (root_dir.dirName().toLower() == DIR_TOOLS)
+			QDir tools_dir = exe_dir;
+			tools_dir.cdUp();
+			if (tools_dir.dirName().toLower() == DIR_TOOLS)
 			{
-				root_dir.cdUp();
-				mRoot = root_dir.path();
+				tools_dir.cdUp();
+				mRoot = tools_dir.path();
 				mType = Context::EType::Package;
 				return;
 			}
 
 			// Application Release
-			if (QFileInfo(root_dir.path(), PROJECT_INFO_FILENAME).exists())
+			if (QFileInfo(exe_dir, PROJECT_INFO_FILENAME).exists())
 			{
 				mType = Context::EType::Application;
-				mRoot = root_dir.path();
+				mRoot = exe_dir.path();
 				return;
 			}
 
 			// Source
-			root_dir.cdUp();
-			if (root_dir.dirName().toLower() == DIR_BIN)
+			if (exe_dir.dirName().toLower() == DIR_BIN)
 			{
-				root_dir.cdUp();
-				mRoot = root_dir.path();
+				mRoot = exe_dir.path();
 				mType = Context::EType::Source;
 			}
 		}
