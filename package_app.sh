@@ -1,13 +1,14 @@
 #!bin/sh
 
 echo Package NAP app.
-echo Usage: sh package_app.sh [target] [optional: build directory] [optional: MacOS code signature]
-
-# Check if target is specified
-if [ "$#" -lt "1" ]; then
-  echo "Specify a target."
-  exit 0
-fi
+echo Usage: sh package_app.sh [target name]
+echo Options:
+echo "-b Build directory (If not specified \"build\" is used as default and will be removed when finished)"
+echo "-z Zip the output"
+echo "-e Include the Napkin editor"
+echo "-s MacOS code signature"
+echo "-n MacOS notarization profile"
+echo
 
 # Make sure cmake is installed
 if ! [ -x "$(command -v cmake)" ]; then
@@ -33,20 +34,53 @@ elif [ "$(uname)" = "Linux" ]; then
   # curl -L -o jq.exe https://github.com/stedolan/jq/releases/latest/download/jq-win64.exe
 fi
 
+# Check if target is specified
+if [ "$#" -lt "1" ]; then
+  echo "Specify a target."
+  exit 0
+fi
 target=$1
-if [ $# = "1" ]; then
-  build_directory="build"
-else
-  build_directory=$2
-fi
 
-# If there is a code signature provided pass it on as environment variable
-if [ "$(uname)" = "Darwin" ]; then
-  if [ "$#" -gt "2" ]; then
-    echo Using signature: $3
-    export MACOS_CODE_SIGNATURE="$3"
-  fi
-fi
+shift 1
+
+# default
+temp_build_directory=true
+build_directory="build"
+code_signature=""
+notary_profile=""
+zip_output=false
+include_napkin=false
+
+while getopts 'b:s:n:ze' OPTION; do
+  case "$OPTION" in
+    b)
+      build_directory="$OPTARG"
+      temp_build_directory=false
+      echo "The build directory: $OPTARG"
+      ;;
+    s)
+      export MACOS_CODE_SIGNATURE="$OPTARG"
+      code_signature="$OPTARG"
+      echo "Using MacOS code signature: $OPTARG"
+      ;;
+    n)
+      notary_profile="$OPTARG"
+      echo "Using MacOS notarization profile: $OPTARG"
+      ;;
+    z)
+      zip_output=true
+      echo "Output will be zipped."
+      ;;
+    e)
+      include_napkin=true;
+      echo "Napkin editor will be included"
+      ;;
+    ?)
+      exit 1
+      ;;
+  esac
+done
+echo
 
 # Remove bin directory from previous builds
 # This is important otherwise artifacts from previous builds could be included in the app installation
@@ -54,15 +88,23 @@ echo Cleaning previous build output...
 rm -rf $build_directory/bin
 
 # Generate the build directory
-cmake -S . -B $build_directory -DCMAKE_BUILD_TYPE=RELEASE
+cmake -S . -B $build_directory -DCMAKE_BUILD_TYPE=DEBUG
 if ! [ $? -eq 0 ]; then
   exit 0
 fi
 
 # Build the specified target
-cmake --build $build_directory --target $target --config Release --parallel 8
+cmake --build $build_directory --target $target --config Debug --parallel 8
 if ! [ $? -eq 0 ]; then
   exit 0
+fi
+
+# Build napkin
+if ! [ $target = "napkin" ]; then
+  cmake --build $build_directory --target napkin --config Debug --parallel 8
+  if ! [ $? -eq 0 ]; then
+    exit 0
+  fi
 fi
 
 # Run cmake install process
@@ -76,8 +118,10 @@ if [ "$target" = "napkin" ]; then
   if [ "$(uname)" = "Darwin" ]; then
     # Add app bundle file extension on MacOS
     app_title=Napkin.app
+    app_directory=$app_title
   else
     app_title=Napkin
+    app_directory=$app_title
   fi
 else
   if [ "$(uname)" = "Darwin" ]; then
@@ -103,7 +147,7 @@ echo App title is: $app_title
 echo App version is: $app_version
 
 # Cleaning previous install, if any
-echo Cleaning previous install output...
+echo "Cleaning previous install output... install/$app_directory"
 rm -rf "install/$app_directory"
 
 # Rename output directory to app title
@@ -115,26 +159,24 @@ fi
 
 if [ "$(uname)" = "Darwin" ]; then
   # Codesign MacOS app bundle
-  if [ "$#" -gt "2" ]; then
+  if ! [ $code_signature = "" ]; then
     echo Codesigning MacOS bundle...
     codesign -s "$3" -f "install/$app_directory" --options runtime
   fi
 
   # Perform notarization
-  if [ "$#" -gt "3" ]; then
+  if ! [ $notary_profile = "" ]; then
     echo Performing MacOS notarization
-    notary_profile=$4
     cd install
 
     # Zip app bundle to upload for notarization
     notary_zip="${app_title}.zip"
-    echo zipping "${notary_zip}" "${app_directory}"
-    zip -r "${notary_zip}" "${app_directory}"
+    zip -q -r "${notary_zip}" "${app_directory}"
     # Notarize
     xcrun notarytool submit "${notary_zip}" --keychain-profile "${notary_profile}" --wait
     # Remove original app bundle and unzip notarized bundle
     rm -rf "${app_directory}"
-    unzip "${notary_zip}"
+    unzip -q "${notary_zip}"
     rm "${notary_zip}"
     # Run stapler
     xcrun stapler staple "${app_directory}"
@@ -144,25 +186,29 @@ if [ "$(uname)" = "Darwin" ]; then
 fi
 
 # Zip the output directory
-if [ "$(uname)" = "Darwin" ]; then
-  app_zip="$app_title $app_version MacOS.zip"
-  cd install
-  zip -r "${app_zip}" "${app_directory}"
-  cd ..
-elif [ "$(uname)" = "Linux" ]; then
-  app_zip="$app_title $app_version Linux.zip"
-  cd install
-  zip -r "${app_zip}" "${app_directory}"
-  cd ..
-else
-  app_zip="$app_title $app_version Win.zip"
-  cd install
-  ../thirdparty/zip/msvc/zip -r "${app_zip}" "${app_directory}"
-  cd ..
+if [ $zip_output = true ]; then
+  echo "Zipping the output.."
+  if [ "$(uname)" = "Darwin" ]; then
+    app_zip="$app_title $app_version MacOS.zip"
+    cd install
+    zip -q -r "${app_zip}" "${app_directory}"
+    cd ..
+  elif [ "$(uname)" = "Linux" ]; then
+    app_zip="$app_title $app_version Linux.zip"
+    cd install
+    zip -q -r "${app_zip}" "${app_directory}"
+    cd ..
+  else
+    app_zip="$app_title $app_version Win.zip"
+    cd install
+    ../thirdparty/zip/msvc/zip -q -r "${app_zip}" "${app_directory}"
+    cd ..
+  fi
+  rm -rf "install/${app_directory}"
 fi
 
 # Remove the build directory if it wasn't specified
-if [ $# = "1" ]; then
+if [ $temp_build_directory = true ]; then
   echo Removing build directory...
-  rm -rf build
+  rm -rf ${build_directory}
 fi
