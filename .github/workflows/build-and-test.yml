@@ -21,7 +21,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-
+    - name: Install prerequisites
+      run: sudo apt install libx11-dev
     - name: Build and test
       run: sh package_app.sh helloworld -b build -e -t -d
 
