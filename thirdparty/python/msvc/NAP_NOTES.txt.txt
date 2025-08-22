@@ -1,3 +1,0 @@
-This is python-3.6.4-embed-amd64.zip with..
-- include and libs from python-3.6.4-amd64.exe
-- python36._pth removed
