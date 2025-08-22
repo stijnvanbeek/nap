@@ -5,15 +5,16 @@ echo Usage: sh package_app.sh [target name]
 echo Options:
 echo "-b Build directory (If not specified \"build\" is used as default and will be removed when finished)"
 echo "-z Zip the output"
+echo "-d Delete the output (don't remove the optional zip)"
 echo "-e Include the Napkin editor"
 echo "-s MacOS code signature"
 echo "-n MacOS notarization profile"
-echo
+echo "-t Perform testing"
 
 # Make sure cmake is installed
 if ! [ -x "$(command -v cmake)" ]; then
   echo Cmake is not installed. Install it for your system.
-  exit 0
+  exit 2
 fi
 
 # Make sure jq is installed on unix
@@ -21,13 +22,13 @@ if [ "$(uname)" = "Darwin" ]; then
   if ! [ -x "$(command -v jq)" ]; then
     echo Jq json parser not found. To install from homebrew run:
     echo brew install jq
-    exit 0
+    exit 2
   fi
 elif [ "$(uname)" = "Linux" ]; then
   if ! [ -x "$(command -v jq)" ]; then
     echo Jq json parser not found. To install from package manager run:
     echo sudo apt install jq
-    exit 0
+    exit 2
   fi
 #else
   # Windows
@@ -37,7 +38,7 @@ fi
 # Check if target is specified
 if [ "$#" -lt "1" ]; then
   echo "Specify a target."
-  exit 0
+  exit 3
 fi
 target=$1
 
@@ -46,12 +47,16 @@ shift 1
 # default
 temp_build_directory=true
 build_directory="build"
+codesign=false
 code_signature=""
+notarize=false
 notary_profile=""
 zip_output=false
 include_napkin=false
+perform_testing=false
+delete_output=false
 
-while getopts 'b:s:n:ze' OPTION; do
+while getopts 'b:s:n:zetd' OPTION; do
   case "$OPTION" in
     b)
       build_directory="$OPTARG"
@@ -61,10 +66,12 @@ while getopts 'b:s:n:ze' OPTION; do
     s)
       export MACOS_CODE_SIGNATURE="$OPTARG"
       code_signature="$OPTARG"
+      codesign=true
       echo "Using MacOS code signature: $OPTARG"
       ;;
     n)
       notary_profile="$OPTARG"
+      notarize=true
       echo "Using MacOS notarization profile: $OPTARG"
       ;;
     z)
@@ -72,11 +79,19 @@ while getopts 'b:s:n:ze' OPTION; do
       echo "Output will be zipped."
       ;;
     e)
-      include_napkin=true;
+      include_napkin=true
       echo "Napkin editor will be included"
       ;;
+    t)
+      perform_testing=true
+      echo "Testing enabled"
+      ;;
+    d)
+      delete_output=true
+      echo "Output will be deleted"
+      ;;
     ?)
-      exit 1
+      exit 3
       ;;
   esac
 done
@@ -90,27 +105,33 @@ rm -rf $build_directory/bin
 # Generate the build directory
 cmake -S . -B $build_directory -DCMAKE_BUILD_TYPE=DEBUG
 if ! [ $? -eq 0 ]; then
-  exit 0
+  exit $?
 fi
 
 # Build the specified target
 cmake --build $build_directory --target $target --config Debug --parallel 8
 if ! [ $? -eq 0 ]; then
-  exit 0
+  exit $?
 fi
 
 # Build napkin
 if ! [ $target = "napkin" ]; then
-  cmake --build $build_directory --target napkin --config Debug --parallel 8
-  if ! [ $? -eq 0 ]; then
-    exit 0
+  if [ $include_napkin = true ]; then
+    echo Including napkin
+    if [ "$(uname)" = "Darwin" ]; then
+      echo Warning: MacOS app bundle structure might conflict with including napkin in the package.
+    fi
+    cmake --build $build_directory --target napkin --config Debug --parallel 8
+    if ! [ $? -eq 0 ]; then
+      exit $?
+    fi
   fi
 fi
 
 # Run cmake install process
 cmake --install $build_directory --prefix install
 if ! [ $? -eq 0 ]; then
-  exit 0
+  exit $?
 fi
 
 # Read app Title and Version from project json
@@ -140,7 +161,7 @@ else
     app_directory=$app_title
   fi
   if ! [ $? -eq 0 ]; then
-    exit 0
+    exit $?
   fi
 fi
 echo App title is: $app_title
@@ -157,15 +178,41 @@ else
   mv "install/MyApp" "install/$app_directory"
 fi
 
+# Perform testing
+if [ $perform_testing = true ]; then
+  echo "Testing the app"
+  if [ "$(uname)" = "Darwin" ]; then
+    exe_dir=install/$app_directory/contents/macos
+    app_data_dir=install/$app_directory/contents/resources
+  else
+    exe_dir=install/$app_directory
+    app_data_dir=install/$app_directory
+  fi
+  sh tools/buildsystem/test.sh ${exe_dir}/${target}
+  if ! [ $? -eq 0 ]; then
+    exit $?
+  fi
+  echo "Testing napkin"
+  if [ $include_napkin = true ]; then
+      sh tools/buildsystem/test.sh ${exe_dir}/napkin -p ${app_data_dir}/app.json
+      if ! [ $? -eq 0 ]; then
+        exit $?
+      fi
+  fi
+fi
+
 if [ "$(uname)" = "Darwin" ]; then
   # Codesign MacOS app bundle
-  if ! [ $code_signature = "" ]; then
+  if [ $codesign = true ]; then
     echo Codesigning MacOS bundle...
     codesign -s "$3" -f "install/$app_directory" --options runtime
+    if ! [ $? -eq 0 ]; then
+      exit $?
+    fi
   fi
 
   # Perform notarization
-  if ! [ $notary_profile = "" ]; then
+  if [ $notarize = true ]; then
     echo Performing MacOS notarization
     cd install
 
@@ -174,12 +221,18 @@ if [ "$(uname)" = "Darwin" ]; then
     zip -q -r "${notary_zip}" "${app_directory}"
     # Notarize
     xcrun notarytool submit "${notary_zip}" --keychain-profile "${notary_profile}" --wait
+    if ! [ $? -eq 0 ]; then
+      exit $?
+    fi
     # Remove original app bundle and unzip notarized bundle
     rm -rf "${app_directory}"
     unzip -q "${notary_zip}"
     rm "${notary_zip}"
     # Run stapler
     xcrun stapler staple "${app_directory}"
+    if ! [ $? -eq 0 ]; then
+      exit $?
+    fi
 
     cd ..
   fi
@@ -204,6 +257,11 @@ if [ $zip_output = true ]; then
     ../thirdparty/zip/msvc/zip -q -r "${app_zip}" "${app_directory}"
     cd ..
   fi
+fi
+
+# Remove output app folder
+if [ $delete_output = true ]; then
+  echo "Removing output app directory."
   rm -rf "install/${app_directory}"
 fi
 
