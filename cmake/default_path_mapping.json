@@ -7,7 +7,7 @@
   [
     "{ROOT}",
     "{ROOT}/lib",
-    "{ROOT}/../Resources"
+    "{ROOT}/../Resources/lib"
   ],
   "BuildPath": "{PROJECT_DIR}",
   "DataPath":  "{PROJECT_DIR}/../Resources/"

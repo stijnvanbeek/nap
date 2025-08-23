@@ -35,12 +35,9 @@ target_link_libraries(${PROJECT_NAME} ${LIBRARIES})
 target_link_libraries(${PROJECT_NAME} debug ${SPIRVCROSS_LIBS_DEBUG} optimized ${SPIRVCROSS_LIBS_RELEASE})
 target_link_libraries(${PROJECT_NAME} debug "${GLSLANG_LIBS_DEBUG}" optimized "${GLSLANG_LIBS_RELEASE}")
 
-# Codesign vulkan libraries that are not linked using the standardized logic for import libraries
-codesign(${VULKAN_LIB})
-codesign(${MOLTENVK_LIB})
-
 # Copy vulkan shared library to bin and install
 # We are not copying the whole vulkansdk target because it links OS installed libraries as well
+codesign(${VULKAN_LIB})
 add_custom_command(
         TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy
@@ -49,6 +46,7 @@ add_custom_command(
 install(FILES ${VULKAN_LIB} TYPE LIB OPTIONAL)
 
 if (APPLE)
+    codesign(${MOLTENVK_LIB})
     add_custom_command(
             TARGET ${PROJECT_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy
@@ -63,7 +61,8 @@ add_custom_command(
         COMMAND ${CMAKE_COMMAND} -E copy
         ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/vulkansdk/macos/universal/share/vulkan/icd.d/MoltenVK_icd.json
         ${LIB_DIR}/MoltenVK_icd.json)
-install(FILES ${LIB_DIR}/MoltenVK_icd.json TYPE DATA OPTIONAL)
+install(FILES ${LIB_DIR}/MoltenVK_icd.json DESTINATION ${CMAKE_INSTALL_MODULEINFODIR} OPTIONAL)
+#install(FILES ${LIB_DIR}/MoltenVK_icd.json TYPE DATA OPTIONAL)
 
 # Copy thirdparty licenses
 add_license(assimp ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/assimp/source/LICENSE)
