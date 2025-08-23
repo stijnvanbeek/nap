@@ -32,6 +32,7 @@ sleep 10
 echo "Trying to close ${executable}"
 kill ${pid}
 if ! [ $? -eq 0 ]; then
+  echon "Failed to close ${executable}"
   exit $?
 fi
 sleep 3
@@ -40,7 +41,7 @@ sleep 3
 echo "Checking if app is closed."
 kill -0 ${pid}
 if ! [ $? -eq 1 ]; then
-  echo "Failed to close ${executable}"
+  echo "${executable} is still running despite trying to close it."
   exit 2
 fi
 echo "${executable} successfully closed."
