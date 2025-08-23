@@ -19,23 +19,23 @@ fi
 pid=$!
 echo "pid: ${pid}"
 
+echo "Waiting for ${executable} to run"
+sleep 10
+
 # Check if app is running
 kill -0 ${pid}
 if ! [ $? -eq 0 ]; then
   exit $?
 fi
 
-echo "Waiting for ${executable} to run"
-sleep 10
-
 # Try to close app
 echo "Trying to close ${executable}"
 kill ${pid}
 if ! [ $? -eq 0 ]; then
   echo "Failed to close ${executable}"
-  exit $?
+  exit 2
 fi
-sleep 3
+sleep 5
 
 # Check if app is closed
 echo "Checking if app is closed."
