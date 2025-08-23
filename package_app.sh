@@ -6,13 +6,13 @@ echo Usage: sh package_app.sh [target] [optional: build directory] [optional: Ma
 # Check if target is specified
 if [ "$#" -lt "1" ]; then
   echo "Specify a target."
-  exit 0
+  exit 1
 fi
 
 # Make sure cmake is installed
 if ! [ -x "$(command -v cmake)" ]; then
   echo Cmake is not installed. Install it for your system.
-  exit 0
+  exit 1
 fi
 
 # Make sure jq is installed on unix
@@ -20,13 +20,13 @@ if [ "$(uname)" = "Darwin" ]; then
   if ! [ -x "$(command -v jq)" ]; then
     echo Jq json parser not found. To install from homebrew run:
     echo brew install jq
-    exit 0
+    exit 1
   fi
 elif [ "$(uname)" = "Linux" ]; then
   if ! [ -x "$(command -v jq)" ]; then
     echo Jq json parser not found. To install from package manager run:
     echo sudo apt install jq
-    exit 0
+    exit 1
   fi
 #else
   # Windows
@@ -56,19 +56,19 @@ rm -rf $build_directory/bin
 # Generate the build directory
 cmake -S . -B $build_directory -DCMAKE_BUILD_TYPE=RELEASE
 if ! [ $? -eq 0 ]; then
-  exit 0
+  exit $?
 fi
 
 # Build the specified target
 cmake --build $build_directory --target $target --config Release --parallel 8
 if ! [ $? -eq 0 ]; then
-  exit 0
+  exit $?
 fi
 
 # Run cmake install process
 cmake --install $build_directory --prefix install
 if ! [ $? -eq 0 ]; then
-  exit 0
+  exit $?
 fi
 
 # Read app Title and Version from project json
@@ -96,7 +96,7 @@ else
     app_directory=$app_title
   fi
   if ! [ $? -eq 0 ]; then
-    exit 0
+    exit $?
   fi
 fi
 echo App title is: $app_title
@@ -118,6 +118,9 @@ if [ "$(uname)" = "Darwin" ]; then
   if [ "$#" -gt "2" ]; then
     echo Codesigning MacOS bundle...
     codesign -s "$3" -f "install/$app_directory" --options runtime
+    if ! [ $? -eq 0 ]; then
+      exit $?
+    fi
   fi
 
   # Perform notarization
@@ -130,14 +133,23 @@ if [ "$(uname)" = "Darwin" ]; then
     notary_zip="${app_title}.zip"
     echo zipping "${notary_zip}" "${app_directory}"
     zip -r "${notary_zip}" "${app_directory}"
+
     # Notarize
     xcrun notarytool submit "${notary_zip}" --keychain-profile "${notary_profile}" --wait
+    if ! [ $? -eq 0 ]; then
+      exit $?
+    fi
+
     # Remove original app bundle and unzip notarized bundle
     rm -rf "${app_directory}"
     unzip "${notary_zip}"
     rm "${notary_zip}"
+
     # Run stapler
     xcrun stapler staple "${app_directory}"
+    if ! [ $? -eq 0 ]; then
+      exit $?
+    fi
 
     cd ..
   fi
