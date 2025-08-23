@@ -103,13 +103,13 @@ echo Cleaning previous build output...
 rm -rf $build_directory/bin
 
 # Generate the build directory
-cmake -S . -B $build_directory -DCMAKE_BUILD_TYPE=DEBUG
+cmake -S . -B $build_directory -DCMAKE_BUILD_TYPE=RELEASE
 if ! [ $? -eq 0 ]; then
   exit $?
 fi
 
 # Build the specified target
-cmake --build $build_directory --target $target --config Debug --parallel 8
+cmake --build $build_directory --target $target --config Release --parallel 8
 if ! [ $? -eq 0 ]; then
   exit $?
 fi
@@ -192,12 +192,13 @@ if [ $perform_testing = true ]; then
   if ! [ $? -eq 0 ]; then
     exit $?
   fi
-  echo "Testing napkin"
+
   if [ $include_napkin = true ]; then
-      ./${exe_dir}/napkin --no-project-reopen --exit-after-load -p ${app_data_dir}/app.json
-      if ! [ $? -eq 0 ]; then
-        exit $?
-      fi
+    echo "Testing napkin"
+    ./${exe_dir}/napkin --no-project-reopen --exit-after-load -p ${app_data_dir}/app.json
+    if ! [ $? -eq 0 ]; then
+      exit $?
+    fi
   fi
 fi
 
@@ -230,7 +231,7 @@ if [ "$(uname)" = "Darwin" ]; then
     rm -rf "${app_directory}"
     unzip -q "${notary_zip}"
     rm "${notary_zip}"
-    
+
     # Run stapler
     xcrun stapler staple "${app_directory}"
     if ! [ $? -eq 0 ]; then

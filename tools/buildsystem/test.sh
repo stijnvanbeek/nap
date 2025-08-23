@@ -31,6 +31,9 @@ sleep 10
 # Try to close app
 echo "Trying to close ${executable}"
 kill ${pid}
+if ! [ $? -eq 0 ]; then
+  exit $?
+fi
 sleep 3
 
 # Check if app is closed
