@@ -21,9 +21,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Virtual X11
-      shell: bash
-      run: startx
     - name: Install prerequisites
       shell: bash
       run: sudo apt install -y libx11-dev mesa-vulkan-drivers build-essential libxcb-xinerama0 libxcb-cursor0 libglu1-mesa-dev libxkbcommon-dev xvfb
