@@ -17,7 +17,6 @@ fi
 
 # Determine process id
 pid=$!
-echo "pid: ${pid}"
 
 echo "Waiting for ${executable} to run"
 sleep 10
@@ -25,7 +24,8 @@ sleep 10
 # Check if app is running
 kill -0 ${pid}
 if ! [ $? -eq 0 ]; then
-  exit $?
+  echo "App has shut down."
+  exit 2
 fi
 
 # Try to close app

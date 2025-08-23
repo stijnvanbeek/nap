@@ -190,14 +190,16 @@ if [ $perform_testing = true ]; then
   fi
   sh tools/buildsystem/test.sh ${exe_dir}/${target}
   if ! [ $? -eq 0 ]; then
-    exit $?
+    echo "Test failed"
+    exit 2
   fi
 
   if [ $include_napkin = true ]; then
     echo "Testing napkin"
     ./${exe_dir}/napkin --no-project-reopen --exit-after-load -p ${app_data_dir}/app.json
     if ! [ $? -eq 0 ]; then
-      exit $?
+      echo "Napkin test failed"
+      exit 2
     fi
   fi
 fi
