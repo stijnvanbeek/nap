@@ -14,7 +14,7 @@ echo "-t Perform testing"
 # Make sure cmake is installed
 if ! [ -x "$(command -v cmake)" ]; then
   echo Cmake is not installed. Install it for your system.
-  exit 2
+  exit 1
 fi
 
 # Make sure jq is installed on unix
@@ -22,13 +22,13 @@ if [ "$(uname)" = "Darwin" ]; then
   if ! [ -x "$(command -v jq)" ]; then
     echo Jq json parser not found. To install from homebrew run:
     echo brew install jq
-    exit 2
+    exit 1
   fi
 elif [ "$(uname)" = "Linux" ]; then
   if ! [ -x "$(command -v jq)" ]; then
     echo Jq json parser not found. To install from package manager run:
     echo sudo apt install jq
-    exit 2
+    exit 1
   fi
 #else
   # Windows
@@ -38,7 +38,7 @@ fi
 # Check if target is specified
 if [ "$#" -lt "1" ]; then
   echo "Specify a target."
-  exit 3
+  exit 1
 fi
 target=$1
 
@@ -91,7 +91,7 @@ while getopts 'b:s:n:zetd' OPTION; do
       echo "Output will be deleted"
       ;;
     ?)
-      exit 3
+      exit 1
       ;;
   esac
 done
@@ -219,15 +219,18 @@ if [ "$(uname)" = "Darwin" ]; then
     # Zip app bundle to upload for notarization
     notary_zip="${app_title}.zip"
     zip -q -r "${notary_zip}" "${app_directory}"
+
     # Notarize
     xcrun notarytool submit "${notary_zip}" --keychain-profile "${notary_profile}" --wait
     if ! [ $? -eq 0 ]; then
       exit $?
     fi
+
     # Remove original app bundle and unzip notarized bundle
     rm -rf "${app_directory}"
     unzip -q "${notary_zip}"
     rm "${notary_zip}"
+    
     # Run stapler
     xcrun stapler staple "${app_directory}"
     if ! [ $? -eq 0 ]; then
