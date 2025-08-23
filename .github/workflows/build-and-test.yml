@@ -22,7 +22,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Install prerequisites
-      run: sudo apt install libx11-dev mesa-vulkan-drivers
+      run: sudo apt install libx11-dev mesa-vulkan-drivers build-essential libxcb-xinerama0 libxcb-cursor0 libglu1-mesa-dev libxkbcommon-dev
     - name: Check build environment
       shell: bash
       run: sh check_build_environment.sh
