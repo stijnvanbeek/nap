@@ -22,14 +22,16 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Virtual X11
+      shell: bash
       run: startx
     - name: Install prerequisites
-      run: sudo apt install -y libx11-dev mesa-vulkan-drivers build-essential libxcb-xinerama0 libxcb-cursor0 libglu1-mesa-dev libxkbcommon-dev
+      shell: bash
+      run: sudo apt install -y libx11-dev mesa-vulkan-drivers build-essential libxcb-xinerama0 libxcb-cursor0 libglu1-mesa-dev libxkbcommon-dev xvfb
     - name: Check build environment
       shell: bash
       run: sh check_build_environment.sh
     - name: Build and test helloworld
       shell: bash
-      run: sh package_app.sh helloworld -b build -t -d
+      run: xvfb-run sh package_app.sh helloworld -b build -t -d
 
 
