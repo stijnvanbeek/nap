@@ -23,6 +23,9 @@ jobs:
     - uses: actions/checkout@v4
     - name: Install prerequisites
       run: sudo apt install libx11-dev
+    - name: Check build environment
+      shell: bash
+      run: sh check_build_environment.sh
     - name: Build and test
       shell: bash
       run: sh package_app.sh helloworld -b build -t -d
