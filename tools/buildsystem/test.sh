@@ -32,7 +32,7 @@ sleep 10
 echo "Trying to close ${executable}"
 kill ${pid}
 if ! [ $? -eq 0 ]; then
-  echon "Failed to close ${executable}"
+  echo "Failed to close ${executable}"
   exit $?
 fi
 sleep 3

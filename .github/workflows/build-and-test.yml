@@ -24,6 +24,7 @@ jobs:
     - name: Install prerequisites
       run: sudo apt install libx11-dev
     - name: Build and test
+      shell: bash
       run: sh package_app.sh helloworld -b build -t -d
 
 
