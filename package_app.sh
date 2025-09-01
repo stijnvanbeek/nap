@@ -208,7 +208,7 @@ if [ "$(uname)" = "Darwin" ]; then
   # Codesign MacOS app bundle
   if [ $codesign = true ]; then
     echo Codesigning MacOS bundle...
-    codesign -s "$3" -f "install/$app_directory" --options runtime
+    codesign -s "$code_signature" -f "install/$app_directory" --options runtime
     if ! [ $? -eq 0 ]; then
       exit $?
     fi
