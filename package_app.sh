@@ -103,13 +103,13 @@ echo Cleaning previous build output...
 rm -rf $build_directory/bin
 
 # Generate the build directory
-cmake -S . -B $build_directory -DCMAKE_BUILD_TYPE=DEBUG
+cmake -S . -B $build_directory -DCMAKE_BUILD_TYPE=RELEASE
 if ! [ $? -eq 0 ]; then
   exit $?
 fi
 
 # Build the specified target
-cmake --build $build_directory --target $target --config Debug --parallel 8
+cmake --build $build_directory --target $target --config Release --parallel 8
 if ! [ $? -eq 0 ]; then
   exit $?
 fi
@@ -121,7 +121,7 @@ if ! [ $target = "napkin" ]; then
     if [ "$(uname)" = "Darwin" ]; then
       echo Warning: MacOS app bundle structure might conflict with including napkin in the package.
     fi
-    cmake --build $build_directory --target napkin --config Debug --parallel 8
+    cmake --build $build_directory --target napkin --config Release --parallel 8
     if ! [ $? -eq 0 ]; then
       exit $?
     fi
@@ -205,7 +205,7 @@ if [ "$(uname)" = "Darwin" ]; then
   # Codesign MacOS app bundle
   if [ $codesign = true ]; then
     echo Codesigning MacOS bundle...
-    codesign -s "$3" -f "install/$app_directory" --options runtime
+    codesign -s "$code_signature" -f "install/$app_directory" --options runtime
     if ! [ $? -eq 0 ]; then
       exit $?
     fi
