@@ -39,11 +39,25 @@ set(LIBS
 
 target_link_libraries(${PROJECT_NAME} ${LIBS})
 
-# Update executable rpath
 if(APPLE)
+    # Update executable rpath if it hasn't been set already
+    # Using a bash script, it checks if the '@executablepath/%{LIB_RPATH}/' already exists in the list displayed by 'otool -l'. If not, it calls the CMAKE_INSTALL_NAME_TOOL to install the name.
     add_custom_command(TARGET ${PROJECT_NAME}
             POST_BUILD COMMAND
-            ${CMAKE_INSTALL_NAME_TOOL} -add_rpath "@executable_path/${LIB_RPATH}/." $<TARGET_FILE:${PROJECT_NAME}>)
+            if ! otool -l $<TARGET_FILE:${PROJECT_NAME}> | grep -q @executable_path/${LIB_RPATH}/.\; then ${CMAKE_INSTALL_NAME_TOOL} -add_rpath "@executable_path/${LIB_RPATH}/." $<TARGET_FILE:${PROJECT_NAME}>\; fi)
+
+    # Codesign the shared library
+    set(signature "-")
+    if (DEFINED ${MACOS_CODE_SIGNATURE})
+        set(signature ${MACOS_CODE_SIGNATURE})
+        # Codesign the executable with signature in environment variable with runtime option
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND codesign --force -s ${MACOS_CODE_SIGNATURE} $<TARGET_FILE:${PROJECT_NAME}> --options runtime)
+    else ()
+        # Codesign the executable with an ad hoc sign
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND codesign --force -s - $<TARGET_FILE:${PROJECT_NAME}>)
+    endif ()
 endif()
 
 # Copy resources to bin and install to packaged app
@@ -52,7 +66,7 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
                    ${CMAKE_CURRENT_LIST_DIR}/resources
                    ${BIN_DIR}/resources
                    COMMENT "Copy Resources")
-install(DIRECTORY ${BIN_DIR}/resources TYPE BIN OPTIONAL)
+install(DIRECTORY ${BIN_DIR}/resources TYPE DATA OPTIONAL)
 
 # Install executable to packaged app
 install(FILES $<TARGET_FILE:${PROJECT_NAME}> PERMISSIONS OWNER_EXECUTE OWNER_READ OWNER_WRITE TYPE BIN OPTIONAL)

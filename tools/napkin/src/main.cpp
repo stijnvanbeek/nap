@@ -55,7 +55,13 @@ void initializeSettings()
 			settingsDir.mkpath(".");
 		}
 
+#ifdef __APPLE__
+		auto defaultSettingsFilename = QString("%1/%2").arg(exeDir, napkin::APPLE_DEFAULT_SETTINGS_FILE);
+		if (!QFileInfo::exists(defaultSettingsFilename))
+			defaultSettingsFilename = QString("%1/%2").arg(exeDir, napkin::DEFAULT_SETTINGS_FILE);
+#else
 		auto defaultSettingsFilename = QString("%1/%2").arg(exeDir, napkin::DEFAULT_SETTINGS_FILE);
+#endif
 		if (!QFileInfo::exists(defaultSettingsFilename))
 		{
 			nap::Logger::error("File not found: %s", defaultSettingsFilename.toStdString().c_str());
