@@ -103,7 +103,13 @@ echo Cleaning previous build output...
 rm -rf $build_directory/bin
 
 # Generate the build directory
-cmake -S . -B $build_directory -DCMAKE_BUILD_TYPE=RELEASE
+if [ "$(uname)" = "Darwin" ]; then
+  cmake -S . -B $build_directory -DCMAKE_BUILD_TYPE=RELEASE
+elif [ "$(uname)" = "Linux" ]; then
+  cmake -S . -B $build_directory -DCMAKE_BUILD_TYPE=RELEASE
+else
+  cmake -S . -B $build_directory -G "Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=RELEASE
+fi
 if ! [ $? -eq 0 ]; then
   exit 2
 fi
