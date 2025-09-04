@@ -127,7 +127,7 @@ if ! [ $target = "napkin" ]; then
     if [ "$(uname)" = "Darwin" ]; then
       echo Warning: MacOS app bundle structure might conflict with including napkin in the package.
     fi
-    cmake --build $build_directory --target napkin --config Debug --parallel 8
+    cmake --build $build_directory --target napkin --config Release --parallel 8
     if ! [ $? -eq 0 ]; then
       exit 2
     fi
