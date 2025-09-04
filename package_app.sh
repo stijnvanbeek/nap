@@ -105,13 +105,13 @@ rm -rf $build_directory/bin
 # Generate the build directory
 cmake -S . -B $build_directory -DCMAKE_BUILD_TYPE=RELEASE
 if ! [ $? -eq 0 ]; then
-  exit $?
+  exit 2
 fi
 
 # Build the specified target
 cmake --build $build_directory --target $target --config Release --parallel 8
 if ! [ $? -eq 0 ]; then
-  exit $?
+  exit 2
 fi
 
 # Build napkin
@@ -123,7 +123,7 @@ if ! [ $target = "napkin" ]; then
     fi
     cmake --build $build_directory --target napkin --config Debug --parallel 8
     if ! [ $? -eq 0 ]; then
-      exit $?
+      exit 2
     fi
   fi
 fi
@@ -131,7 +131,7 @@ fi
 # Run cmake install process
 cmake --install $build_directory --prefix install
 if ! [ $? -eq 0 ]; then
-  exit $?
+  exit 2
 fi
 
 # Read app Title and Version from project json
@@ -161,7 +161,7 @@ else
     app_directory=$app_title
   fi
   if ! [ $? -eq 0 ]; then
-    exit $?
+    exit 2
   fi
 fi
 echo App title is: $app_title
@@ -210,7 +210,7 @@ if [ "$(uname)" = "Darwin" ]; then
     echo Codesigning MacOS bundle...
     codesign -s "$code_signature" -f "install/$app_directory" --options runtime
     if ! [ $? -eq 0 ]; then
-      exit $?
+      exit 2
     fi
   fi
 
@@ -226,7 +226,7 @@ if [ "$(uname)" = "Darwin" ]; then
     # Notarize
     xcrun notarytool submit "${notary_zip}" --keychain-profile "${notary_profile}" --wait
     if ! [ $? -eq 0 ]; then
-      exit $?
+      exit 2
     fi
 
     # Remove original app bundle and unzip notarized bundle
@@ -237,7 +237,7 @@ if [ "$(uname)" = "Darwin" ]; then
     # Run stapler
     xcrun stapler staple "${app_directory}"
     if ! [ $? -eq 0 ]; then
-      exit $?
+      exit 2
     fi
 
     cd ..
