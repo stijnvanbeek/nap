@@ -108,7 +108,7 @@ if [ "$(uname)" = "Darwin" ]; then
 elif [ "$(uname)" = "Linux" ]; then
   cmake -S . -B $build_directory -DCMAKE_BUILD_TYPE=RELEASE
 else
-  cmake -S . -B $build_directory -G "Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=RELEASE
+  cmake -S . -B $build_directory -G"Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=RELEASE
 fi
 if ! [ $? -eq 0 ]; then
   exit 2
