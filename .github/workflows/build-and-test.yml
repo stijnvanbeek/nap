@@ -37,7 +37,7 @@ jobs:
       shell: bash
       run: sh check_build_environment.sh
     - name: Build and test helloworld
-      shell: bash
+      shell: gitbash
       run: |
         if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
           xvfb-run sh package_app.sh helloworld -b build -t -d
