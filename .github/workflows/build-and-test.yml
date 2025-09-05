@@ -29,6 +29,8 @@ jobs:
       shell: bash
       run: |
         if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+          sudo apt get update --fix-missing
+          sudo apt get install -f
           sudo apt install -y libx11-dev mesa-vulkan-drivers build-essential libxcb-xinerama0 libxcb-cursor0 libglu1-mesa-dev libxkbcommon-dev xvfb
         fi
     - name: Check build environment
