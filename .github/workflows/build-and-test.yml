@@ -40,22 +40,16 @@ jobs:
       shell: bash
       if: matrix.os == 'ubuntu-latest'
       run: |
-        if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
-          xvfb-run sh package_app.sh helloworld -b build -t -d
-        fi
+        xvfb-run sh package_app.sh helloworld -b build -t -d
     - name: Build and test win
       shell: gitbash
       if: matrix.os == 'windows-latest'
       run: |
-        if [ "${{ matrix.os }}" == "windows-latest" ]; then
-          sh package_app.sh helloworld -b build -t -d
-        fi
+        sh package_app.sh helloworld -b build -t -d
     - name: Build and test macos
       shell: bash
       if: matrix.os == 'macos-latest'
       run: |
-        if [ "${{ matrix.os }}" == "macos-latest" ]; then
-          sh package_app.sh helloworld -b build -t -d
-        fi
+        sh package_app.sh helloworld -b build -t -d
 
 
