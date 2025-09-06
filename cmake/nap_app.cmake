@@ -143,11 +143,11 @@ add_custom_command(
         ${CMAKE_CURRENT_SOURCE_DIR}/data ${bin_data_dir})
 
 # Run FBX converter post-build within bin data dir
-add_dependencies(${PROJECT_NAME} fbxconverter)
-add_custom_command(TARGET ${PROJECT_NAME}
-        POST_BUILD
-        COMMAND ${BIN_DIR}/fbxconverter -o ${bin_data_dir} ${bin_data_dir}/*.fbx
-        COMMENT "Exporting FBX in '${bin_data_dir}'")
+#add_dependencies(${PROJECT_NAME} fbxconverter)
+#add_custom_command(TARGET ${PROJECT_NAME}
+#        POST_BUILD
+#        COMMAND ${BIN_DIR}/fbxconverter -o ${bin_data_dir} ${bin_data_dir}/*.fbx
+#        COMMENT "Exporting FBX in '${bin_data_dir}'")
 
 # Copy core license files
 set(bin_license_dir ${BIN_DIR}/license)

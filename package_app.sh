@@ -14,7 +14,7 @@ echo "-t Perform testing"
 # Make sure cmake is installed
 if ! [ -x "$(command -v cmake)" ]; then
   echo Cmake is not installed. Install it for your system.
-  exit 2
+  exit 1
 fi
 
 # Make sure jq is installed on unix
@@ -22,13 +22,13 @@ if [ "$(uname)" = "Darwin" ]; then
   if ! [ -x "$(command -v jq)" ]; then
     echo Jq json parser not found. To install from homebrew run:
     echo brew install jq
-    exit 2
+    exit 1
   fi
 elif [ "$(uname)" = "Linux" ]; then
   if ! [ -x "$(command -v jq)" ]; then
     echo Jq json parser not found. To install from package manager run:
     echo sudo apt install jq
-    exit 2
+    exit 1
   fi
 #else
   # Windows
@@ -38,7 +38,7 @@ fi
 # Check if target is specified
 if [ "$#" -lt "1" ]; then
   echo "Specify a target."
-  exit 3
+  exit 1
 fi
 target=$1
 
@@ -91,7 +91,7 @@ while getopts 'b:s:n:zetd' OPTION; do
       echo "Output will be deleted"
       ;;
     ?)
-      exit 3
+      exit 1
       ;;
   esac
 done
@@ -103,15 +103,21 @@ echo Cleaning previous build output...
 rm -rf $build_directory/bin
 
 # Generate the build directory
-cmake -S . -B $build_directory -DCMAKE_BUILD_TYPE=RELEASE
+if [ "$(uname)" = "Darwin" ]; then
+  cmake -S . -B $build_directory -DCMAKE_BUILD_TYPE=RELEASE
+elif [ "$(uname)" = "Linux" ]; then
+  cmake -S . -B $build_directory -DCMAKE_BUILD_TYPE=RELEASE
+else
+  cmake -S . -B $build_directory -G"Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=RELEASE
+fi
 if ! [ $? -eq 0 ]; then
-  exit $?
+  exit 2
 fi
 
 # Build the specified target
 cmake --build $build_directory --target $target --config Release --parallel 8
 if ! [ $? -eq 0 ]; then
-  exit $?
+  exit 2
 fi
 
 # Build napkin
@@ -123,7 +129,7 @@ if ! [ $target = "napkin" ]; then
     fi
     cmake --build $build_directory --target napkin --config Release --parallel 8
     if ! [ $? -eq 0 ]; then
-      exit $?
+      exit 2
     fi
   fi
 fi
@@ -131,7 +137,7 @@ fi
 # Run cmake install process
 cmake --install $build_directory --prefix install
 if ! [ $? -eq 0 ]; then
-  exit $?
+  exit 2
 fi
 
 # Read app Title and Version from project json
@@ -161,7 +167,7 @@ else
     app_directory=$app_title
   fi
   if ! [ $? -eq 0 ]; then
-    exit $?
+    exit 2
   fi
 fi
 echo App title is: $app_title
@@ -184,20 +190,31 @@ if [ $perform_testing = true ]; then
   if [ "$(uname)" = "Darwin" ]; then
     exe_dir=install/$app_directory/contents/macos
     app_data_dir=install/$app_directory/contents/resources
+    exe_name=${target}
+  elif [ "$(uname)" = "Linux" ]; then
+    exe_dir=install/$app_directory
+    app_data_dir=install/$app_directory
+    exe_name=${target}
   else
     exe_dir=install/$app_directory
     app_data_dir=install/$app_directory
+    exe_name="${target}.exe"
   fi
-  sh tools/buildsystem/test.sh ${exe_dir}/${target}
+  echo "Contents of app output dir ${exe_dir}:"
+  ls ${exe_dir}
+  sh tools/buildsystem/test.sh "${exe_dir}/${exe_name}"
   if ! [ $? -eq 0 ]; then
-    exit $?
+    echo "Test failed"
+    exit 2
   fi
-  echo "Testing napkin"
+
   if [ $include_napkin = true ]; then
-      ./${exe_dir}/napkin --no-project-reopen --exit-after-load -p ${app_data_dir}/app.json
-      if ! [ $? -eq 0 ]; then
-        exit $?
-      fi
+    echo "Testing napkin"
+    ./${exe_dir}/napkin --no-project-reopen --exit-after-load -p ${app_data_dir}/app.json
+    if ! [ $? -eq 0 ]; then
+      echo "Napkin test failed"
+      exit 2
+    fi
   fi
 fi
 
@@ -207,7 +224,7 @@ if [ "$(uname)" = "Darwin" ]; then
     echo Codesigning MacOS bundle...
     codesign -s "$code_signature" -f "install/$app_directory" --options runtime
     if ! [ $? -eq 0 ]; then
-      exit $?
+      exit 2
     fi
   fi
 
@@ -219,19 +236,22 @@ if [ "$(uname)" = "Darwin" ]; then
     # Zip app bundle to upload for notarization
     notary_zip="${app_title}.zip"
     zip -q -r "${notary_zip}" "${app_directory}"
+
     # Notarize
     xcrun notarytool submit "${notary_zip}" --keychain-profile "${notary_profile}" --wait
     if ! [ $? -eq 0 ]; then
-      exit $?
+      exit 2
     fi
+
     # Remove original app bundle and unzip notarized bundle
     rm -rf "${app_directory}"
     unzip -q "${notary_zip}"
     rm "${notary_zip}"
+
     # Run stapler
     xcrun stapler staple "${app_directory}"
     if ! [ $? -eq 0 ]; then
-      exit $?
+      exit 2
     fi
 
     cd ..
