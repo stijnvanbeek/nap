@@ -29,19 +29,29 @@ jobs:
       shell: bash
       run: |
         if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
-         sudo apt install -y libx11-dev mesa-vulkan-drivers build-essential libxcb-xinerama0 libxcb-cursor0 libglu1-mesa-dev libxkbcommon-dev xvfb
+          sudo apt update --fix-missing
+          sudo apt install -f
+          sudo apt install -y libx11-dev mesa-vulkan-drivers build-essential libxcb-xinerama0 libxcb-cursor0 libglu1-mesa-dev libxkbcommon-dev xvfb
         fi
-#          sudo apt update --fix-missing
-#          sudo apt install -f
     - name: Check build environment
       shell: bash
       run: sh check_build_environment.sh
-    - name: Build and test helloworld
-      shell: gitbash
+    - name: Build and test linux
+      shell: bash
       run: |
         if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
           xvfb-run sh package_app.sh helloworld -b build -t -d
-        else
+        fi
+    - name: Build and test win
+      shell: gitbash
+      run: |
+        if [ "${{ matrix.os }}" == "windows-latest" ]; then
+          sh package_app.sh helloworld -b build -t -d
+        fi
+    - name: Build and test macos
+      shell: bash
+      run: |
+        if [ "${{ matrix.os }}" == "macos-latest" ]; then
           sh package_app.sh helloworld -b build -t -d
         fi
 
