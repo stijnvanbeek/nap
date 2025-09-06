@@ -190,11 +190,19 @@ if [ $perform_testing = true ]; then
   if [ "$(uname)" = "Darwin" ]; then
     exe_dir=install/$app_directory/contents/macos
     app_data_dir=install/$app_directory/contents/resources
+    exe_name=${target}
+  elif [ "$(uname)" = "Linux" ]; then
+    exe_dir=install/$app_directory
+    app_data_dir=install/$app_directory
+    exe_name=${target}
   else
     exe_dir=install/$app_directory
     app_data_dir=install/$app_directory
+    exe_name="${target}.exe"
   fi
-  sh tools/buildsystem/test.sh ${exe_dir}/${target}
+  echo "Contents of app output dir ${exe_dir}:"
+  ls ${exe_dir}
+  sh tools/buildsystem/test.sh "${exe_dir}/${exe_name}"
   if ! [ $? -eq 0 ]; then
     echo "Test failed"
     exit 2
