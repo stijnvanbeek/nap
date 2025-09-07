@@ -42,7 +42,9 @@ jobs:
     - name: Build win
       shell: bash
       if: matrix.os == 'windows-latest'
-      run: sh package_app.sh helloworld -b build
+      run: |
+        echo %PATH:;=&echo.%
+        sh package_app.sh helloworld -b build
     - name: Test win
       shell: bash
       if: matrix.os == 'windows-latest'
