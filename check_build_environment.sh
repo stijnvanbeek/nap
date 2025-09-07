@@ -4,3 +4,9 @@ nap_root=$( cd "$(dirname -- "$0")" ; pwd -P )
 configure_python $nap_root
 $python $nap_root/tools/buildsystem/check_build_environment/source_user_onboarding.py
 cmake --help
+echo ---- printenv -----
+printenv
+echo ---- set ----
+set
+
+
