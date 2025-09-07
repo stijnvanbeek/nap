@@ -39,10 +39,14 @@ jobs:
       shell: bash
       if: matrix.os == 'ubuntu-latest'
       run: xvfb-run sh package_app.sh helloworld -b build -t -d
-    - name: Build and test win
+    - name: Build win
       shell: bash
       if: matrix.os == 'windows-latest'
-      run: sh package_app.sh helloworld -b build -t -d
+      run: sh package_app.sh helloworld -b build
+    - name: Test win
+      shell: bash
+      if: matrix.os == 'windows-latest'
+      run: ./install/HelloWorld/helloworld
     - name: Build and test macos
       shell: bash
       if: matrix.os == 'macos-latest'
