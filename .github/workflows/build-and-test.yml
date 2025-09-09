@@ -45,7 +45,9 @@ jobs:
       run: |
         sh package_app.sh helloworld -b build
         cd install
+        ls
         cd HelloWorld
+        ls
         ./helloworld
     - name: Build and test macos
       shell: bash
