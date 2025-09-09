@@ -43,12 +43,11 @@ jobs:
       shell: bash
       if: matrix.os == 'windows-latest'
       run: |
-        sh package_app.sh helloworld -b build
-        cd install
-        ls
-        cd HelloWorld
-        ls
-        ./helloworld
+        cmake -S . -B build
+        cmake --build build --target test
+        cd build
+        cd bin
+        ./test
     - name: Build and test macos
       shell: bash
       if: matrix.os == 'macos-latest'

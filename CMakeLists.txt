@@ -52,3 +52,5 @@ if (DEFINED ENV{QT_DIR})
 else ()
     message(WARNING "QT_DIR environment variable not provided, skipping napkin target. Set QT_DIR to Qt location to build Napkin.")
 endif ()
+
+add_subdirectory(apps/test)
