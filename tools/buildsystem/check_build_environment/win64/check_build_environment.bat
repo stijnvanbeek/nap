@@ -22,5 +22,5 @@ if "%~1" == "--source" (
     set NAP_ROOT=%~dp0\..
 )
 set THIRDPARTY_DIR=%NAP_ROOT%\thirdparty
-"python" "%NAP_ROOT%\tools\buildsystem\check_build_environment\win64\check_build_environment_continued.py" "%~1"
+"python3" "%NAP_ROOT%\tools\buildsystem\check_build_environment\win64\check_build_environment_continued.py" "%~1"
 exit /B
