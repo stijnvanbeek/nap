@@ -13,8 +13,8 @@ if %ARCH%==AMD64 (
     exit /B
 )
 
-set PYTHONPATH=""
-set PYTHONHOME=""
+@REM set PYTHONPATH=""
+@REM set PYTHONHOME=""
 
 if "%~1" == "--source" (
     set NAP_ROOT=%~dp0\..\..\..\..
