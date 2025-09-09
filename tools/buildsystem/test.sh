@@ -12,7 +12,7 @@ executable=$1
 echo "Starting ${executable}..."
 ./${executable} $2 $3 $4 &
 if ! [ $? -eq 0 ]; then
-  exit $?
+  exit 2
 fi
 
 # Determine process id
