@@ -32,6 +32,13 @@ jobs:
         sudo apt update --fix-missing
         sudo apt install -f
         sudo apt install -y libx11-dev mesa-vulkan-drivers build-essential libxcb-xinerama0 libxcb-cursor0 libglu1-mesa-dev libxkbcommon-dev xvfb
+    - name: Prepare Vulkan SDK for windows
+      if: matrix.os == 'windows-latest'
+      uses: humbletim/setup-vulkan-sdk@v1.2.1
+      with:
+        vulkan-query-version: 1.4.304.1
+        vulkan-components: Vulkan-Headers, Vulkan-Loader
+        vulkan-use-cache: true
     - name: Check build environment
       shell: bash
       run: sh check_build_environment.sh
@@ -42,10 +49,7 @@ jobs:
     - name: Build and test win
       shell: bash
       if: matrix.os == 'windows-latest'
-      run: |
-        cmake -S . -B build
-        cmake --build build --target test
-        sh tools/buildsystem/test.sh build/bin/test.exe
+      run: sh package_app.sh helloworld -b build -t -d
     - name: Build and test macos
       shell: bash
       if: matrix.os == 'macos-latest'
