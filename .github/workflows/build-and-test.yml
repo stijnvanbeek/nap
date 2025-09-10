@@ -45,9 +45,7 @@ jobs:
       run: |
         cmake -S . -B build
         cmake --build build --target test
-        cd build
-        cd bin
-        ./test
+        ./build/bin/test
     - name: Build and test macos
       shell: bash
       if: matrix.os == 'macos-latest'
