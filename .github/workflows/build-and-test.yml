@@ -25,6 +25,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+
     - name: Install prerequisites
       shell: bash
       if: matrix.os == 'ubuntu-latest'
@@ -32,24 +33,44 @@ jobs:
         sudo apt update --fix-missing
         sudo apt install -f
         sudo apt install -y libx11-dev mesa-vulkan-drivers build-essential libxcb-xinerama0 libxcb-cursor0 libglu1-mesa-dev libxkbcommon-dev xvfb
-    - name: Prepare Vulkan SDK for windows
+
+    - name: Install Vulkan SDK
       if: matrix.os == 'windows-latest'
-      uses: humbletim/setup-vulkan-sdk@v1.2.1
+      uses: jakoch/install-vulkan-sdk-action@v1
       with:
-        vulkan-query-version: 1.4.304.1
-        vulkan-components: Vulkan-Headers, Vulkan-Loader
-        vulkan-use-cache: true
+        # You can set the Vulkan SDK version to download.
+        # Defaults to latest version, if version not set.
+        vulkan_version: 1.3.231.1
+        optional_components: com.lunarg.vulkan.vma
+        install_runtime: true
+        cache: true
+        stripdown: false
+        # You can install a software rasterizer.
+        install_swiftshader: true
+        install_lavapipe: true
+
+#    - name: Prepare Vulkan SDK for windows
+#      if: matrix.os == 'windows-latest'
+#      uses: humbletim/setup-vulkan-sdk@v1.2.1
+#      with:
+#        vulkan-query-version: 1.4.304.1
+#        vulkan-components: Vulkan-Headers, Vulkan-Loader
+#        vulkan-use-cache: true
+
     - name: Check build environment
       shell: bash
       run: sh check_build_environment.sh
+
     - name: Build and test linux
       shell: bash
       if: matrix.os == 'ubuntu-latest'
       run: xvfb-run sh package_app.sh helloworld -b build -t -d
+
     - name: Build and test win
       shell: bash
       if: matrix.os == 'windows-latest'
       run: sh package_app.sh helloworld -b build -t -d
+
     - name: Build and test macos
       shell: bash
       if: matrix.os == 'macos-latest'
