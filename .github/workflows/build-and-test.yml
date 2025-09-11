@@ -45,7 +45,7 @@ jobs:
       run: |
         cd Virtual-Display-Driver
         cd "Community Scripts"
-        ./silent-install.ps1 "B85A2B81E1518EABCC4AFDEE145304CAD9708778C0EBFC177A2DB2847D7FB355"
+        ./silent-install.ps1 "B85A2B81E1518EABCC4AFDEE145304CAD9708778C0EBFC177A2DB2847D7FB355" "Windows Server 2022"
 
     - name: Install Vulkan SDK
       if: matrix.os == 'windows-latest'
