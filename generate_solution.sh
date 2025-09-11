@@ -8,5 +8,5 @@ elif [ "$(uname)" = "Linux" ]; then
   cmake -S . -B build
 else
   echo Generating MSVC solution in directory "msvc"...
-  cmake -S . -B msvc -G"Visual Studio 16 2019"
+  cmake -S . -B msvc -G"Visual Studio 17 2022"
 fi
