@@ -45,7 +45,7 @@ jobs:
       run: |
         cd Virtual-Display-Driver
         cd "Community Scripts"
-        ./silent-install.ps1 "C3816F79DEAC8E26C4A5C5791FE3F1F8104392D077D16941E7CCB6418FB3467A"
+        ./silent-install.ps1 "C8FCE4377D8F0D184E5434F9EF1FE1EF9D0E34196A08CD7E5655555FABA21379"
 
     - name: Install Vulkan SDK
       if: matrix.os == 'windows-latest'
