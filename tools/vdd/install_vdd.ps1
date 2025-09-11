@@ -36,7 +36,7 @@ Expand-Archive -Path $driverZipPath -DestinationPath $driverExtractPath -Force
 # Install the driver using the local devcon
 Write-Host "Installing virtual display driver..." -ForegroundColor Cyan
 Push-Location $driverExtractPath
-& $devconExe install .\MttVDD.inf "Root\MttVDD"
+$devconExe install .\MttVDD.inf "Root\MttVDD"
 Pop-Location
 
 Write-Host "Driver installation completed." -ForegroundColor Green
