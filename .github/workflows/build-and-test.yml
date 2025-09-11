@@ -34,6 +34,19 @@ jobs:
         sudo apt install -f
         sudo apt install -y libx11-dev mesa-vulkan-drivers build-essential libxcb-xinerama0 libxcb-cursor0 libglu1-mesa-dev libxkbcommon-dev xvfb
 
+    - name: Clone Virtual-Display-Driver
+      shell: bash
+      if: matrix.os == 'windows-latest'
+      run: git clone https://github.com/VirtualDrivers/Virtual-Display-Driver
+
+    - name: Install Virtual-Display-Driver
+      shell: powershell
+      if: matrix.os == 'windows-latest'
+      run: |
+        cd Virtual-Display-Driver
+        cd "Community Scripts"
+        ./silent-install.ps1
+
     - name: Install Vulkan SDK
       if: matrix.os == 'windows-latest'
       uses: jakoch/install-vulkan-sdk-action@v1
