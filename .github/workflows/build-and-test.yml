@@ -21,7 +21,7 @@ jobs:
 
     strategy:
       matrix:
-        os: [windows-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest]
 
     steps:
     - uses: actions/checkout@v4
@@ -34,48 +34,26 @@ jobs:
         sudo apt install -f
         sudo apt install -y libx11-dev mesa-vulkan-drivers build-essential libxcb-xinerama0 libxcb-cursor0 libglu1-mesa-dev libxkbcommon-dev xvfb
 
-#    - name: Clone Virtual-Display-Driver
-#      shell: bash
-#      if: matrix.os == 'windows-latest'
-#      run: git clone https://github.com/VirtualDrivers/Virtual-Display-Driver
-
 #    - name: Install Virtual-Display-Driver
 #      shell: pwsh
 #      if: matrix.os == 'windows-latest'
 #      run: |
-#        $PSVersionTable.PSVersion
-#        cd Virtual-Display-Driver
-#        cd "Community Scripts"
-#        ./silent-install.ps1 "B85A2B81E1518EABCC4AFDEE145304CAD9708778C0EBFC177A2DB2847D7FB355" "Windows Server 2022"
-
-    - name: Install Virtual-Display-Driver
-      shell: pwsh
-      if: matrix.os == 'windows-latest'
-      run: |
-        ./tools/vdd/install_vdd.ps1        
-
-    - name: Install Vulkan SDK
-      if: matrix.os == 'windows-latest'
-      uses: jakoch/install-vulkan-sdk-action@v1
-      with:
-        # You can set the Vulkan SDK version to download.
-        # Defaults to latest version, if version not set.
-        vulkan_version: 1.4.304.1
-        optional_components: com.lunarg.vulkan.vma
-        install_runtime: true
-        cache: true
-        stripdown: false
-        # You can install a software rasterizer.
-        install_swiftshader: true
-        install_lavapipe: true
-
-#    - name: Prepare Vulkan SDK for windows
+#        ./tools/vdd/install_vdd.ps1
+#
+#    - name: Install Vulkan SDK
 #      if: matrix.os == 'windows-latest'
-#      uses: humbletim/setup-vulkan-sdk@v1.2.1
+#      uses: jakoch/install-vulkan-sdk-action@v1
 #      with:
-#        vulkan-query-version: 1.4.304.1
-#        vulkan-components: Vulkan-Headers, Vulkan-Loader
-#        vulkan-use-cache: true
+#        # You can set the Vulkan SDK version to download.
+#        # Defaults to latest version, if version not set.
+#        vulkan_version: 1.4.304.1
+#        optional_components: com.lunarg.vulkan.vma
+#        install_runtime: true
+#        cache: true
+#        stripdown: false
+#        # You can install a software rasterizer.
+#        install_swiftshader: true
+#        install_lavapipe: true
 
     - name: Check build environment
       shell: bash
@@ -89,7 +67,7 @@ jobs:
     - name: Build and test win
       shell: bash
       if: matrix.os == 'windows-latest'
-      run: sh package_app.sh helloworld -b build -t -d
+      run: sh package_app.sh helloworld -b build
 
     - name: Build and test macos
       shell: bash
