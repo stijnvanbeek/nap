@@ -103,7 +103,7 @@ namespace nap
 			nap::Logger::info("unknown argument in OSC message: %s", event->getAddress().c_str());
 			arg++;
 		}
-		
+
 		if (mDebugOutput)
 			displayMessage(*event);
 
