@@ -35,7 +35,7 @@ if ! [ $? -eq 0 ]; then
   echo "Failed to close ${executable}"
   exit 2
 fi
-sleep 5
+sleep 10
 
 # Check if app is closed
 echo "Checking if app is closed."
