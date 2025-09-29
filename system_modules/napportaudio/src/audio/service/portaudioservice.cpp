@@ -289,6 +289,8 @@ namespace nap
                 outputParamsPtr = &outputParameters;
             }
 
+			beforeOpenStream(device_settings);
+
             PaError error = Pa_OpenStream(&mStream, inputParamsPtr, outputParamsPtr, getNodeManager().getSampleRate(), device_settings.mBufferSize, paNoFlag, &audioCallback, mAudioService);
             if (error != paNoError)
             {

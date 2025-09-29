@@ -323,6 +323,12 @@ namespace nap
              */
             const std::string& getErrorMessage() const { return mErrorMessage; }
 
+		    /**
+		     * Signal emitted before an audio stream is opened.
+		     * @param settings const ref to DeviceSettings struct containing the settings used to open the stream.
+		     */
+		    Signal<const PortAudioServiceConfiguration::DeviceSettings&> beforeOpenStream;
+
         private:
             /**
              * Does the actual work for the public openStream() so it can conveniently store the message from the errorState.
