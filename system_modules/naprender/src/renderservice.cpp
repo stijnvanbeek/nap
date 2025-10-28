@@ -540,7 +540,7 @@ namespace nap
 		std::vector<const char*> ext_names;
 		ext_names.reserve(extensionNames.size());
 		for (const auto& ext : extensionNames)
-			if (ext != "VK_KHR_portability_enumeration")
+			if (ext != "VK_KHR_portability_enumeration") // Filter this extension as it fails to initialize on Mac OS
 				ext_names.emplace_back(ext.c_str());
 
 		// Get the supported vulkan instance version, only supported by newer (1.1) loaders.

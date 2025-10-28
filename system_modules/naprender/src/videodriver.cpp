@@ -14,7 +14,8 @@ RTTI_BEGIN_ENUM(nap::EVideoDriver)
 	RTTI_ENUM_VALUE(nap::EVideoDriver::Default,		"System Default"),
 	RTTI_ENUM_VALUE(nap::EVideoDriver::Windows,		"Windows"),
 	RTTI_ENUM_VALUE(nap::EVideoDriver::X11,			"X11"),
-	RTTI_ENUM_VALUE(nap::EVideoDriver::Wayland,		"Wayland")
+	RTTI_ENUM_VALUE(nap::EVideoDriver::Wayland,		"Wayland"),
+	RTTI_ENUM_VALUE(nap::EVideoDriver::Cocoa,		"Cocoa")
 RTTI_END_ENUM
 
 namespace  nap

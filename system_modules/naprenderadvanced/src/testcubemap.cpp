@@ -29,7 +29,7 @@ namespace nap
 	{
 		// Find texture asset
 		auto asset_path = module.findAsset(path);
-		if (!error.check(!asset_path.empty(), "Unable to locate: %s", asset_path))
+		if (!error.check(!asset_path.empty(), "Unable to locate: %s", asset_path.c_str()))
 			return nullptr;
 
 		// Create and load the bitmap

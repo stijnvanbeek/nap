@@ -523,6 +523,8 @@ nap::EVideoDriver napkin::getVideoDriver()
 		return nap::EVideoDriver::Wayland;
 	if (name == "windows")
 		return nap::EVideoDriver::Windows;
+	if (name == "cocoa")
+		return nap::EVideoDriver::Cocoa;
 
 	return nap::EVideoDriver::Default;
 }

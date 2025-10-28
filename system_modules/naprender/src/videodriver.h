@@ -22,8 +22,9 @@ namespace nap
 		Default		= 0,	///< Property: 'Default' Most reasonable, first available video back-end.
 		Windows		= 1,	///< Property: 'Windows' windowing system
 		X11			= 2,	///< Property: 'X11' Linux windowing system
-		Wayland		= 3,	///< Property: 'Wayland' Linux windowing system 
-		Unknown		= 4		///< Unsupported video driver [NOT EXPOSED]
+		Wayland		= 3,	///< Property: 'Wayland' Linux windowing system
+		Cocoa		= 4,	///< Property: 'Cocoa' Apple windowing system
+		Unknown		= 5		///< Unsupported video driver [NOT EXPOSED]
 	};
 
 	/**
