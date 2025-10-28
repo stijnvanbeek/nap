@@ -44,7 +44,7 @@ elseif(UNIX)
                 src/nap/linux/directorywatcher.cpp
                 src/nap/linux/module.cpp
                 src/nap/linux/core_env.cpp
-                src/nap/native/modulemanager_ext.cpp
+                src/nap/native/modulecache_ext.cpp
                 src/nap/native/logger_ext.cpp
                 src/nap/native/core_ext.cpp
                 src/nap/native/resourcemanager_ext.cpp
