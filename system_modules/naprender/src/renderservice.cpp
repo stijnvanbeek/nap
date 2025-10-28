@@ -540,7 +540,8 @@ namespace nap
 		std::vector<const char*> ext_names;
 		ext_names.reserve(extensionNames.size());
 		for (const auto& ext : extensionNames)
-			ext_names.emplace_back(ext.c_str());
+			if (ext != "VK_KHR_portability_enumeration")
+				ext_names.emplace_back(ext.c_str());
 
 		// Get the supported vulkan instance version, only supported by newer (1.1) loaders.
 		// We therefore first find out if the function is exposed, if so use it.
