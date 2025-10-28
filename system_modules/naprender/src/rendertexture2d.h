@@ -19,7 +19,7 @@ namespace nap
 	/**
 	 * Empty 2D GPU texture that can be declared as a resource in JSON or created at runtime.
 	 * You can use this texture to store the result of a render pass by a nap::RenderTarget or
-	 * any other type of render operation. The texture is cleared to 'ClearColor the before first use.
+	 * any other type of render operation. The texture is cleared to 'ClearColor before first use.
 	 */
 	class NAPAPI RenderTexture2D : public Texture2D
 	{
@@ -91,7 +91,6 @@ namespace nap
 		EColorSpace			mColorSpace = EColorSpace::Linear;				///< Property: 'ColorSpace' texture color space
 		EDepthFormat		mDepthFormat = EDepthFormat::D16;				///< Property: 'DepthFormat' depth texture format
 		float				mClearValue = 1.0f;								///< Property: 'ClearValue' value selection used for clearing the texture
-		bool				mFill = false;									///< Property: 'Fill' if the texture is initialized to black when usage is static
 		EUsage				mUsage = EUsage::Internal;						///< Property: 'Usage' GPU Texture usage
 	};
 }

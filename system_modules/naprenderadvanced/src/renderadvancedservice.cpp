@@ -5,6 +5,7 @@
 // Local Includes
 #include "renderadvancedservice.h"
 #include "cubemapshader.h"
+#include "equirectangularcubemap.h"
 
 // External Includes
 #include <renderservice.h>
@@ -18,9 +19,6 @@
 #include <material.h>
 #include <renderglobals.h>
 #include <sceneservice.h>
-#include <parametervec.h>
-#include <parametercolor.h>
-#include <cubemapfromfile.h>
 
 RTTI_BEGIN_CLASS(nap::RenderAdvancedServiceConfiguration)
 	RTTI_PROPERTY("ShadowDepthFormat",		&nap::RenderAdvancedServiceConfiguration::mDepthFormat,			nap::rtti::EPropertyMetaData::Default, "Shadow texture depth format")
@@ -93,16 +91,6 @@ namespace nap
 		mRenderService = getCore().getService<RenderService>();
 		assert(mRenderService != nullptr);
 
-		// Ensure the initialized Vulkan API version meets the render advanced service requirement
-		if (mRenderService->getVulkanVersionMajor() <= mRequiredVulkanVersionMajor)
-		{
-			if (mRenderService->getVulkanVersionMajor() < mRequiredVulkanVersionMajor || mRenderService->getVulkanVersionMinor() < mRequiredVulkanVersionMinor)
-			{
-				errorState.fail("%s: Vulkan API Version %d.%d required", this->get_type().get_name().to_string().c_str(), mRequiredVulkanVersionMajor, mRequiredVulkanVersionMinor);
-				return false;
-			}
-		}
-
 		// Get configuration
 		auto* configuration = getConfiguration<RenderAdvancedServiceConfiguration>();
 		if (!errorState.check(configuration != nullptr, "Failed to get nap::RenderAdvancedServiceConfiguration"))
@@ -139,37 +127,20 @@ namespace nap
             nap::Logger::info("Shadow cube format: %s", cube_format_type.value_to_name(configuration->mDepthFormatCube).to_string().c_str());
         }
 
-        // Create and manage a shadow texture dummy for valid shadow samplers
-		mShadowTextureDummy = std::make_unique<DepthRenderTexture2D>(getCore());
-		mShadowTextureDummy->mID = utility::stringFormat("%s_Dummy_%s", RTTI_OF(DepthRenderTexture2D).get_name().to_string().c_str(), math::generateUUID().c_str());
-		mShadowTextureDummy->mWidth = 1;
-		mShadowTextureDummy->mHeight = 1;
-		mShadowTextureDummy->mUsage = Texture2D::EUsage::Internal;
-		mShadowTextureDummy->mDepthFormat = configuration->mDepthFormat;
-		mShadowTextureDummy->mColorSpace = EColorSpace::Linear;
-		mShadowTextureDummy->mClearValue = 1.0f;
-		mShadowTextureDummy->mFill = true;
-		if (!mShadowTextureDummy->init(errorState))
-		{
-			errorState.fail("%s: Failed to create shadow texture dummy", this->get_type().get_name().to_string().c_str());
-			return false;
-		}
-
 		// Sampler2D
 		mSampler2DResource = std::make_unique<Sampler2DArray>(getMaximumLightCount());
 		mSampler2DResource->mID = utility::stringFormat("%s_Dummy_%s", RTTI_OF(Sampler2DArray).get_name().to_string().c_str(), math::generateUUID().c_str());
 		mSampler2DResource->mName = sampler::light::shadowMaps;
 
-		// Copy pointers
+		// Copy empty texture pointers
 		for (auto& tex : mSampler2DResource->mTextures)
-			tex = mShadowTextureDummy.get();
+			tex = &mRenderService->getEmptyDepthTexture2D();
 
 		mSampler2DResource->mBorderColor = EBorderColor::IntOpaqueBlack;
 		mSampler2DResource->mAddressModeHorizontal = EAddressMode::ClampToEdge;
 		mSampler2DResource->mAddressModeVertical = EAddressMode::ClampToEdge;
 		mSampler2DResource->mCompareMode = EDepthCompareMode::LessOrEqual;
 		mSampler2DResource->mEnableCompare = true;
-
 		if (!mSampler2DResource->init(errorState))
 		{
 			errorState.fail("%s: Failed to initialize shadow sampler 2d resource", RTTI_OF(RenderAdvancedService).get_name().to_string().c_str());
@@ -181,9 +152,9 @@ namespace nap
 		mSamplerCubeResource->mID = utility::stringFormat("%s_Dummy_%s", RTTI_OF(SamplerCubeArray).get_name().to_string().c_str(), math::generateUUID().c_str());
 		mSamplerCubeResource->mName = sampler::light::cubeShadowMaps;
 
-		// Copy pointers
+		// Copy empty texture pointers
 		for (auto& tex : mSamplerCubeResource->mTextures)
-			tex = &mRenderService->getEmptyTextureCube();
+			tex = &mRenderService->getEmptyDepthTextureCube();
 
 		mSamplerCubeResource->mBorderColor = EBorderColor::IntOpaqueBlack;
 		mSamplerCubeResource->mAddressModeHorizontal = EAddressMode::ClampToEdge;
@@ -197,9 +168,9 @@ namespace nap
 		}
 
 		// Create nap::NoMesh
-		mNoMesh = std::make_unique<EmptyMesh>(getCore());
-		mNoMesh->mID = utility::stringFormat("%s_NoMesh_%s", RTTI_OF(EmptyMesh).get_name().to_string().c_str(), math::generateUUID().c_str());
-		if (!mNoMesh->init(errorState))
+		mEmptyMesh = std::make_unique<EmptyMesh>(getCore());
+		mEmptyMesh->mID = utility::stringFormat("%s_NoMesh_%s", RTTI_OF(EmptyMesh).get_name().to_string().c_str(), math::generateUUID().c_str());
+		if (!mEmptyMesh->init(errorState))
 		{
 			errorState.fail("%s: Failed to initialize cube sampler resource", RTTI_OF(RenderAdvancedService).get_name().to_string().c_str());
 			return false;
@@ -356,10 +327,8 @@ namespace nap
 		for (auto& material : materials)
 		{
 			// Shader interface for lights
-			auto* light_struct = material->getOrCreateUniform(uniform::lightStruct);
-			assert(light_struct != nullptr);
-			auto* light_count = light_struct->getOrCreateUniform<UniformUIntInstance>(uniform::light::count);
-			assert(light_count != nullptr);
+			auto* light_struct = material->getOrCreateUniform(uniform::lightStruct); assert(light_struct != nullptr);
+			auto* light_count = light_struct->getOrCreateUniform<UniformUIntInstance>(uniform::light::count); assert(light_count != nullptr);
 
             light_count->setValue(mLightComponents.size());
 			auto* light_array = light_struct->getOrCreateUniform<UniformStructArrayInstance>(uniform::light::lights);
@@ -435,16 +404,14 @@ namespace nap
 								light_element.getOrCreateUniform<UniformVec3Instance>(name)->setValue(uvalue);
 								break;
 							}
-							else if (entry.get_type().is_derived_from(RTTI_OF(glm::vec3)))
+							if (entry.get_type().is_derived_from(RTTI_OF(glm::vec3)))
 							{
 								glm::vec3 uvalue = variant.get_value<glm::vec3>();
 								light_element.getOrCreateUniform<UniformVec3Instance>(name)->setValue(uvalue);
 								break;
 							}
-							else
-							{
-								NAP_ASSERT_MSG(false, "Unsupported member data type");
-							}
+							NAP_ASSERT_MSG(false, "Unsupported member data type");
+							break;
 						}
 						default:
 						{
@@ -463,20 +430,24 @@ namespace nap
         // Shadow data
         for (auto& material : materials)
         {
-			// Ensure the shader interface is valid
-			auto* shadow_struct = material->getOrCreateUniform(uniform::shadowStruct); assert(shadow_struct != nullptr);
-            auto* view_matrix_array = shadow_struct->getOrCreateUniform<UniformMat4ArrayInstance>(uniform::shadow::lightViewProjectionMatrix); assert(view_matrix_array != nullptr);
-            auto* near_far_array = shadow_struct->getOrCreateUniform<UniformVec2ArrayInstance>(uniform::shadow::nearFar); assert(near_far_array != nullptr);
-            auto* strength_array = shadow_struct->getOrCreateUniform<UniformFloatArrayInstance>(uniform::shadow::strength); assert(strength_array != nullptr);
-            auto* spread_array = shadow_struct->getOrCreateUniform<UniformFloatArrayInstance>(uniform::shadow::spread); assert(spread_array != nullptr);
-			auto* shadow_flags = shadow_struct->getOrCreateUniform<UniformUIntInstance>(uniform::shadow::flags); assert(shadow_flags != nullptr);
-            auto* light_count = shadow_struct->getOrCreateUniform<UniformUIntInstance>(uniform::shadow::count); assert(light_count != nullptr);
-
+			// If material isn't using shadows, skip
+			auto* shadow_struct = material->getOrCreateUniform(uniform::shadowStruct);
+			if(shadow_struct == nullptr)
+				continue;
+			
 			// Set number of lights
-            light_count->setValue(mLightComponents.size());
+			auto* light_count = shadow_struct->getOrCreateUniform<UniformUIntInstance>(uniform::shadow::count); assert(light_count != nullptr);
+			light_count->setValue(mLightComponents.size());
 
 			// Set shadow flags
+			auto* shadow_flags = shadow_struct->getOrCreateUniform<UniformUIntInstance>(uniform::shadow::flags); assert(shadow_flags != nullptr);
 			shadow_flags->setValue(getShadowFlags(mLightComponents));
+
+			// Get arrays
+			auto* view_matrix_array = shadow_struct->getOrCreateUniform<UniformMat4ArrayInstance>(uniform::shadow::lightViewProjectionMatrix); assert(view_matrix_array != nullptr);
+			auto* near_far_array = shadow_struct->getOrCreateUniform<UniformVec2ArrayInstance>(uniform::shadow::nearFar); assert(near_far_array != nullptr);
+			auto* strength_array = shadow_struct->getOrCreateUniform<UniformFloatArrayInstance>(uniform::shadow::strength); assert(strength_array != nullptr);
+			auto* spread_array = shadow_struct->getOrCreateUniform<UniformFloatArrayInstance>(uniform::shadow::spread); assert(spread_array != nullptr);
 
             uint light_index = 0;
             for (const auto& light : mLightComponents)
@@ -579,9 +550,8 @@ namespace nap
 	{
 		mSampler2DResource.reset();
 		mSamplerCubeResource.reset();
-		mShadowTextureDummy.reset();
 
-		mNoMesh.reset();
+		mEmptyMesh.reset();
 		mCubeMaterialInstanceResource.reset();
 		mCubeMaterialInstance.reset();
 	}
@@ -652,7 +622,6 @@ namespace nap
 				shadow_map->mUsage = Texture2D::EUsage::Internal;
 				shadow_map->mColorSpace = EColorSpace::Linear;
 				shadow_map->mClearValue = 1.0f;
-				shadow_map->mFill = true;
 
 				if (!shadow_map->init(errorState))
 				{
@@ -689,7 +658,6 @@ namespace nap
 				cube_map->mDepthFormat = configuration->mDepthFormatCube;
 				cube_map->mColorSpace = EColorSpace::Linear;
 				cube_map->mClearValue = 1.0f;
-				cube_map->mFill = true;
 
  				if (!cube_map->init(errorState))
 				{
@@ -784,8 +752,8 @@ namespace nap
 	}
 
 
-	void RenderAdvancedService::registerCubeMap(CubeMapFromFile& cubemap)
-	{
+	void RenderAdvancedService::registerEquiRectangularCubeMap(EquiRectangularCubeMap& cubemap)
+{
 		NAP_ASSERT_MSG(mCubeMapTargets.find(&cubemap) == mCubeMapTargets.end(), "Cube map was already registered");		
 
 		// Cube map from file render target
@@ -793,13 +761,14 @@ namespace nap
 		crt->mID = utility::stringFormat("%s_%s", RTTI_OF(CubeRenderTarget).get_name().to_string().c_str(), math::generateUUID().c_str());
 		crt->mClearColor = { 0.0f, 0.0f, 0.0f, 0.0f };
 		crt->mSampleShading = cubemap.mSampleShading;
-		crt->mUpdateLODs = cubemap.mGenerateLODs;
+		crt->mUpdateLODs = cubemap.mGenerateLods;
 		crt->mCubeTexture = &cubemap;
 
 		utility::ErrorState error_state;
 		if (!crt->init(error_state))
 		{
-			NAP_ASSERT_MSG(false, utility::stringFormat("%s\n%s: Failed to initialize cube map from file render target", error_state.toString().c_str(), RTTI_OF(RenderAdvancedService).get_name().to_string().c_str()).c_str());
+			NAP_ASSERT_MSG(false, utility::stringFormat("%s\n%s: Failed to initialize cube map from file render target",
+				error_state.toString().c_str(), RTTI_OF(RenderAdvancedService).get_name().to_string().c_str()).c_str());
 			return;
 		}
 		auto entry = mCubeMapTargets.emplace(&cubemap, std::move(crt));
@@ -811,7 +780,7 @@ namespace nap
 			auto it = mCubeMapTargets.find(cm);
 			assert(it != mCubeMapTargets.end());
 
-			(*it).second->render([rs = &renderService, cm = cm, mesh = mNoMesh.get(), mtl = mCubeMaterialInstance.get()]
+			(*it).second->render([rs = &renderService, cm = cm, mesh = mEmptyMesh.get(), mtl = mCubeMaterialInstance.get()]
 			(CubeRenderTarget& target, const glm::mat4& projection, const glm::mat4& view)
 			{
 				auto* ubo = mtl->getOrCreateUniform(uniform::cubemap::uboStruct);
@@ -842,7 +811,7 @@ namespace nap
 	}
 
 
-	void RenderAdvancedService::removeCubeMap(CubeMapFromFile& cubemap)
+	void RenderAdvancedService::removeEquiRectangularCubeMap(EquiRectangularCubeMap& cubemap)
 	{
 		auto found_it = mCubeMapTargets.find(&cubemap);
 		assert(found_it != mCubeMapTargets.end());

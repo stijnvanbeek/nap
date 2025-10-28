@@ -11,19 +11,20 @@
 *	[Where to Start](#where-to-start)
 	* [System Compatibility](#system-compatibility)
 	* [Binary Packages](#binary-packages)
-	* [Raspberry Pi](#raspberry-pi)
+	* [Raspberry Pi](#raspberry-pi) 
 *	[Compilation](#compilation)
 	*	[Dependencies](#dependencies)
 	*	[Create the Solution](#create-the-solution)
 	*	[Run a Demo](#run-a-demo)
 	*	[Work Against Source](#work-against-source)
 	*	[Package](#build-distributable-nap-package)
+ 	*	[Forks](#forks) 
 *	[Contributing](#contributing)
 *	[License](#license)
 	
 # Description
 
-[NAP](https://nap.tech) is an [open source](https://github.com/napframework), low overhead, real-time control & visualization plaform. Create fast, modular and responsive applications to interact with the world around you. NAP is built to scale up to a large number of input and output devices: many displays, many lights, many speakers, many sensors, many servos.
+[NAP](https://nap-framework.tech) is an [open source](https://github.com/napframework), low overhead, real-time control & visualization plaform. Create fast, modular and responsive applications to interact with the world around you. NAP is built to scale up to a large number of input and output devices: many displays, many lights, many speakers, many sensors, many servos.
 
 ## Features
 
@@ -58,6 +59,8 @@ Visit [nap-labs.tech](https://nap-labs.tech/use-cases) for more examples
 [Habitat](https://www.heleenblanken.com/habitatbyheleenblanken) by Heleen Blanken, Naivi and Stijn van Beek
 ![4DSound System](https://download.nap-labs.tech/shared/4D_1280.jpg)
 [4DSound System](https://4dsound.net/)
+![NAP Framework](https://download.nap-labs.tech/shared/napkin_applets.jpg)
+[NAP Framework](https://nap-framework.tech) editor & applets
 ![NAP Framework](https://download.nap-labs.tech/shared/napkin_interface.jpg)
 [NAP Framework](https://nap-framework.tech) editor & audiovisualfft demo
 
@@ -77,18 +80,18 @@ The default `CMake` generator is Visual Studio 2019 or 2022.
 
 ### Linux
 
-| arch   | os                | version      | compiler    |
-|--------|-------------------|--------------|-------------|
-| x86-64 | Ubuntu            | 22.04, 24.04 | gcc         |
-| arm64  | Raspberry Pi OS   | 12           | gcc         |
+| arch   | os                | version | compiler    |
+|--------|-------------------|---------|-------------|
+| x86-64 | Ubuntu            | 24.04   | gcc         |
+| arm64  | Raspberry Pi OS   | 12      | gcc         |
 
 The default `CMake` generator is `Make`. 
 
 Other Linux distributions *may* work, but they have not been tested and are not officially supported.
 
-#### Display Server
+#### Display Server 
 
-When `Wayland` is configured as the display server, NAP applications will rely on `XWayland` for compatibility. It is recommended to use `X11` instead of Wayland until Wayland is fully supported.
+When `Wayland` is configured as the display server, NAP applications will run in native wayland mode if the compositor supports `wp_fifo_manager_v1`; otherwise the system will revert back to `XWayland` for performance reasons. You can force applications to run in native wayland mode by selecting `wayland` as the `Video Driver` in the `nap::RenderServiceConfiguration`. Napkin is set up to always use `XWayland` for compatibility, but it can be run as a native Wayland application by setting the `QT_QPA_PLATFORM` environment variable to `wayland`.
 
 #### Raspberry Pi
 
@@ -219,6 +222,10 @@ Some other useful flags:
 
 More options for packaging can be queried by adding the flag `--help` when running the script.
 
+## Forks
+
+An [alternative build system](https://github.com/stijnvanbeek/nap): Including support for macOS and a simplified CMAKE interface, developed by [Stijn van Beek](https://github.com/stijnvanbeek). This fork is *not* officially supported by us.
+
 # Contributing
 
 We welcome contributions and potential bug fixes. But before you submit any code for review make sure to read and follow our [C++ styleguide](styleguide/styleguide.md). Also take into consideration that reviewing code takes time: Be as thorough and explicit as possible. 
@@ -228,7 +235,7 @@ Use the github [issues](https://github.com/napframework/nap/issues) page for bug
 New modules are not considered unless useful, vital or important enough to have as part of the core release. If you feel a module is missing we would like to [hear](https://github.com/orgs/napframework/discussions) from you. If a module depends on a third-party library, linkage should be dynamic and not violate the NAP license policy. Static linkage is discouraged unless recommended by the library or when a NAP application, that uses the module, doesn't require the library to link and run. In that case all third-party code is compiled into the module when NAP is packaged. Third-party dependencies must work cross-platform and must be compiled using
 ```
 MSVC, Platform Toolset v142 on Windows 10
-GCC <= 11 on Ubuntu LTS 22.04
+GCC <= 13.3.0 on Ubuntu LTS 24.04
 ```
 
 # License
