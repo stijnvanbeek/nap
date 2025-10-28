@@ -18,6 +18,11 @@ target_include_directories(${PROJECT_NAME} PUBLIC src)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Core)
 
+#codesign_import_library(Qt6::Core)
+#codesign_import_library(Qt6::Gui)
+#codesign_import_library(Qt6::Widgets)
+#codesign_import_library(Qt6::OpenGL)
+
 target_link_import_library(${PROJECT_NAME} Qt6::Core)
 target_link_import_library(${PROJECT_NAME} Qt6::Gui)
 target_link_import_library(${PROJECT_NAME} Qt6::Widgets)

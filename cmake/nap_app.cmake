@@ -135,19 +135,20 @@ add_custom_command(
         ${cache_dir}/build_app.json
         ${BIN_DIR}/${PROJECT_NAME}.json)
 
+# Run FBX converter post-build within bin data dir
+add_dependencies(${PROJECT_NAME} fbxconverter)
+set(source_data_dir ${CMAKE_CURRENT_SOURCE_DIR}/data)
+add_custom_command(TARGET ${PROJECT_NAME}
+        POST_BUILD
+        COMMAND ${BIN_DIR}/fbxconverter -o ${source_data_dir} ${source_data_dir}/*.fbx
+        COMMENT "Exporting FBX in '${source_data_dir}'")
+
 # Copy data directory to app specific bin
 set(bin_data_dir ${app_install_data_dir}/data)
 add_custom_command(
         TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_SOURCE_DIR}/data ${bin_data_dir})
-
-# Run FBX converter post-build within bin data dir
-add_dependencies(${PROJECT_NAME} fbxconverter)
-add_custom_command(TARGET ${PROJECT_NAME}
-        POST_BUILD
-        COMMAND ${BIN_DIR}/fbxconverter -o ${bin_data_dir} ${bin_data_dir}/*.fbx
-        COMMENT "Exporting FBX in '${bin_data_dir}'")
+        ${source_data_dir} ${bin_data_dir})
 
 # Copy core license files
 set(bin_license_dir ${BIN_DIR}/license)
@@ -159,18 +160,31 @@ add_license(rapidjson ${NAP_ROOT}/thirdparty/rapidjson/license.txt)
 add_license(rttr ${NAP_ROOT}/thirdparty/rttr/source/LICENSE.txt)
 add_license(tclap ${NAP_ROOT}/thirdparty/tclap/COPYING)
 
-# Update executable rpath if it hasn't been set already
-# Using a bash script, it checks if the '@executablepath/%{LIB_RPATH}/' already exists in the list displayed by 'otool -l'. If not, it calls the CMAKE_INSTALL_NAME_TOOL to install the name.
 if(APPLE)
+    # Update executable rpath if it hasn't been set already
+    # Using a bash script, it checks if the '@executablepath/%{LIB_RPATH}/' already exists in the list displayed by 'otool -l'. If not, it calls the CMAKE_INSTALL_NAME_TOOL to install the name.
     add_custom_command(TARGET ${PROJECT_NAME}
             POST_BUILD COMMAND
             if ! otool -l $<TARGET_FILE:${PROJECT_NAME}> | grep -q @executable_path/${LIB_RPATH}/.\; then ${CMAKE_INSTALL_NAME_TOOL} -add_rpath "@executable_path/${LIB_RPATH}/." $<TARGET_FILE:${PROJECT_NAME}>\; fi)
+
+    # Codesign the shared library
+    set(signature "-")
+    if (DEFINED ${MACOS_CODE_SIGNATURE})
+        set(signature ${MACOS_CODE_SIGNATURE})
+        # Codesign the executable with signature in environment variable with runtime option
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND codesign --force -s ${MACOS_CODE_SIGNATURE} $<TARGET_FILE:${PROJECT_NAME}> --options runtime)
+    else ()
+        # Codesign the executable with an ad hoc sign
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND codesign --force -s - $<TARGET_FILE:${PROJECT_NAME}>)
+    endif ()
 endif()
 
 # Install to packaged app
 install(FILES $<TARGET_FILE:${PROJECT_NAME}> PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE TYPE BIN OPTIONAL)
-install(FILES ${app_install_data_dir}/app.json TYPE BIN OPTIONAL)
-install(FILES ${app_install_data_dir}/${path_mapping_filename} TYPE BIN OPTIONAL)
+install(FILES ${app_install_data_dir}/app.json TYPE DATA OPTIONAL)
+install(FILES ${app_install_data_dir}/${path_mapping_filename} TYPE DATA OPTIONAL)
 install(DIRECTORY ${bin_data_dir} TYPE DATA OPTIONAL)
 install(DIRECTORY ${bin_license_dir} TYPE DOC OPTIONAL)
 

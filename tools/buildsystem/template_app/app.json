@@ -1,0 +1,13 @@
+{
+    "Type": "nap::ProjectInfo",
+    "mID": "ProjectInfo",
+    "Title": "template",
+    "Version": "1.0.0",
+    "RequiredModules": [
+        "naptemplate",
+        "napapp"
+    ],
+    "Data": "data/objects.json",
+    "ServiceConfig": "",
+    "PathMapping": "cache/path_mapping.json"
+}

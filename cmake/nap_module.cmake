@@ -77,6 +77,10 @@ if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/data)
     install(DIRECTORY ${dest}/data DESTINATION ${CMAKE_INSTALL_DATADIR}/${parent_name}/${PROJECT_NAME} OPTIONAL)
 endif()
 
+# Codesign dynamic library binary
+codesign_target(${PROJECT_NAME})
+
 # Install library and module json
 install(FILES $<TARGET_FILE:${PROJECT_NAME}> TYPE LIB OPTIONAL)
-install(FILES ${LIB_DIR}/${PROJECT_NAME}.json TYPE LIB OPTIONAL)
+install(FILES ${LIB_DIR}/${PROJECT_NAME}.json DESTINATION ${CMAKE_INSTALL_MODULEINFODIR} OPTIONAL)
+#install(FILES ${LIB_DIR}/${PROJECT_NAME}.json TYPE DATA OPTIONAL)

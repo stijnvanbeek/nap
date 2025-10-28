@@ -4,6 +4,8 @@
 
 #include "oscreceivingsocket.h"
 
+#include <nap/Logger.h>
+
 namespace nap
 {
 
@@ -29,13 +31,27 @@ namespace nap
 
 	void OSCReceivingSocket::setListener(osc::OscPacketListener* listener)
 	{
-		mListener = listener; mMultiplexer.AttachSocketListener(this, mListener);
+		mListener = listener;
+		mMultiplexer.AttachSocketListener(this, mListener);
 	}
 
 
 	void OSCReceivingSocket::run()
 	{
-		mMultiplexer.RunUntilSigInt();
+		bool stopped = false;
+		while (!stopped)
+		{
+			try
+			{
+				mMultiplexer.RunUntilSigInt();
+				stopped = true;
+			}
+			catch (osc::Exception& e)
+			{
+				Logger::warn("Exception receiving OSC: %s", e.what());
+				stopped = false;
+			}
+		}
 	}
 
 
