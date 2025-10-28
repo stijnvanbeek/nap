@@ -156,7 +156,14 @@ namespace nap
 			QStringList args;
 			args << "/select," << QDir::toNativeSeparators(filename);
 			QProcess::execute("explorer.exe", args);
-#elif defined(__linux__)
+#elif defined(__APPLE__)
+			QStringList scriptArgs;
+			scriptArgs << QLatin1String("-e")
+					   << QString::fromLatin1("tell application \"Finder\" to reveal POSIX file \"%1\"").arg(filename);
+			QProcess::execute(QLatin1String("/usr/bin/osascript"), scriptArgs);
+			scriptArgs.clear();
+			scriptArgs << QLatin1String("-e") << QLatin1String("tell application \"Finder\" to activate");
+			QProcess::execute("/usr/bin/osascript", scriptArgs);#elif defined(__linux__)
 			// We don't have a reliable way of selecting the file after revealing, just open the file browser
 			QString dirname = QFileInfo(filename).dir().path();
 			QProcess::startDetached("xdg-open " + dirname, {});

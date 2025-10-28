@@ -7,11 +7,7 @@
 # PACKAGE_VERSION_COMPATIBLE if the current version is >= requested version.
 # The variable CVF_VERSION must be set before calling configure_file().
 
-<<<<<<<< HEAD:thirdparty/rttr/macos/universal/cmake/rttr-config-version.cmake
 set(PACKAGE_VERSION "0.9.6")
-========
-set(PACKAGE_VERSION "3.2.22")
->>>>>>>> upstream/main:system_modules/naprender/thirdparty/sdl/linux/arm64/lib/cmake/SDL3/SDL3ConfigVersion.cmake
 
 if (PACKAGE_FIND_VERSION_RANGE)
   # Package version must be in the requested version range
@@ -34,14 +30,6 @@ else()
 endif()
 
 
-<<<<<<<< HEAD:thirdparty/rttr/macos/universal/cmake/rttr-config-version.cmake
-========
-# if the installed project requested no architecture check, don't perform the check
-if("FALSE")
-  return()
-endif()
-
->>>>>>>> upstream/main:system_modules/naprender/thirdparty/sdl/linux/arm64/lib/cmake/SDL3/SDL3ConfigVersion.cmake
 # if the installed or the using project don't have CMAKE_SIZEOF_VOID_P set, ignore it:
 if("${CMAKE_SIZEOF_VOID_P}" STREQUAL "" OR "8" STREQUAL "")
   return()

@@ -271,7 +271,11 @@ namespace nap
             PaStreamParameters* inputParamsPtr = nullptr;
             if (mInputDeviceIndex >= 0)
             {
-                inputParameters.suggestedLatency = Pa_GetDeviceInfo(mInputDeviceIndex)->defaultLowInputLatency;
+#ifdef __APPLE__
+            	inputParameters.suggestedLatency = 0.f;
+#else
+            	inputParameters.suggestedLatency = Pa_GetDeviceInfo(mInputDeviceIndex)->defaultLowInputLatency;
+#endif
                 inputParamsPtr = &inputParameters;
             }
 
