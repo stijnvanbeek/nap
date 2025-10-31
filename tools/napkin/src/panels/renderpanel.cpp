@@ -76,6 +76,19 @@ namespace napkin
 				error.fail("Wayland video driver currently not supported, use 'xcb' instead");
 				break;
 			}
+			case nap::EVideoDriver::Cocoa:
+			{
+				// container->createWinId();
+				// auto id = container->winId(); assert(id != 0);
+
+				// auto valid = SDL_HasProperty(props, SDL_PROP_WINDOW_CREATE_COCOA_WINDOW_POINTER);
+				// auto type = SDL_GetPropertyType(props, SDL_PROP_WINDOW_CREATE_COCOA_WINDOW_POINTER);
+
+				// auto setup = SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_COCOA_WINDOW_POINTER, id);
+				// error.check(setup, "Unable to enable '%s', error: %s", SDL_PROP_WINDOW_CREATE_COCOA_WINDOW_POINTER, SDL_GetError());
+				error.fail("Cocoa video driver currently not supported");
+				break;
+			}
 			default:
 			{
 				error.fail("Unsupported applet video-platform: %s",
