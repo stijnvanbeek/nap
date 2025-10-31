@@ -540,7 +540,7 @@ namespace nap
 		std::vector<const char*> ext_names;
 		ext_names.reserve(extensionNames.size());
 		for (const auto& ext : extensionNames)
-			if (ext != "VK_KHR_portability_enumeration") // Filter this extension as it fails to initialize on Mac OS
+			// if (ext != "VK_KHR_portability_enumeration") // Filter this extension as it fails to initialize on Mac OS
 				ext_names.emplace_back(ext.c_str());
 
 		// Get the supported vulkan instance version, only supported by newer (1.1) loaders.
@@ -588,7 +588,7 @@ namespace nap
 		VkInstanceCreateInfo inst_info = {};
 		inst_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 		inst_info.pNext = NULL;
-		inst_info.flags = 0;
+		inst_info.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 		inst_info.pApplicationInfo = &app_info;
 		inst_info.enabledExtensionCount = static_cast<uint32>(ext_names.size());
 		inst_info.ppEnabledExtensionNames = ext_names.empty() ? nullptr : ext_names.data();
@@ -1788,11 +1788,20 @@ namespace nap
 		if (!error.check(mShInitialized, "Failed to initialize shader compiler"))
 			return false;
 
+		// Metal limits sampler descriptors per shader to 16 by default. Here we explicitly unlock this limitation.
+#if defined(__APPLE__)
+		setenv("MVK_CONFIG_USE_METAL_ARGUMENT_BUFFERS", "1", 1);
+#endif // __APPLE__
+
 		// Get available debug instance extensions, notify when not all could be found
 		std::vector<std::string> required_instance_extensions;
 		bool is_debug_utils_found = false;
 		if (!error.check(getDebugInstanceExtensions(is_debug_utils_found, required_instance_extensions, error), "Failed to find available debug extension while debug is enabled"))
 			return false;
+
+#if defined(__APPLE__)
+		required_instance_extensions.emplace_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+#endif // __APPLE__
 
 		// Get available vulkan layer extensions, notify when not all could be found
 		std::vector<std::string> found_layers;
