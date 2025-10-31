@@ -12,8 +12,8 @@ set_target_properties(SPIRV-Tools-lint PROPERTIES
   IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libSPIRV-Tools-lint.a"
   )
 
-list(APPEND _IMPORT_CHECK_TARGETS SPIRV-Tools-lint )
-list(APPEND _IMPORT_CHECK_FILES_FOR_SPIRV-Tools-lint "${_IMPORT_PREFIX}/lib/libSPIRV-Tools-lint.a" )
+list(APPEND _cmake_import_check_targets SPIRV-Tools-lint )
+list(APPEND _cmake_import_check_files_for_SPIRV-Tools-lint "${_IMPORT_PREFIX}/lib/libSPIRV-Tools-lint.a" )
 
 # Commands beyond this point should not need to know the version.
 set(CMAKE_IMPORT_FILE_VERSION)
