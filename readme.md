@@ -3,27 +3,41 @@
   <img width=384 src="https://download.nap-labs.tech/identity/svg/logos/nap_logo_blue.svg">
 </p>
 
-This is a fork of the mother NAP repository that features a more straightforward cmake only buildsystem to work from source. Apart from linux x64_86 and arm64 and windows it also supports MacOS Silicon builds.
+# About this fork
 
-Usage after a fresh clone:
+This is a fork of the mother NAP repository that features a more straightforward `cmake` only buildsystem to work from source. Apart from linux x64_86 and arm64 and windows it also supports MacOS Silicon builds.
+
+## Usage after a fresh clone:
 
 Generate a Visual Studio solution on Windows or an XCode project on MacOS:
+
 `sh generate_solution.sh`
 
 Alternatively open the directory as a project on an IDE that supports cmake. (Like CLion)
 
 Package a distributable app:
+
 `sh package_app.sh [app target]`
 
 Create a new app in the apps directory from a template:
+
 `sh create_app.sh [app name]`
 
 Create a new user module from a template in the modules directory:
+
 `sh create_module.sh [module name]`
 
 Newly created or cloned user modules and apps will automatically be detected by the cmake script and added as a target. This also applies to demo apps shipped with modules.
-Happy napping!
 
+## Example:
+
+`clone https://github.com/stijnvanbeek/napaudioadvanced modules`
+
+`sh package_app.sh fmsyth -t`
+
+Clones the napaudioadvanced module and builds and tests its fmsynth demo. Happy napping!
+
+<br>
 
 *	[Description](#description)
 	*	[Features](#features)
