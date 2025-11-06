@@ -448,13 +448,13 @@ namespace nap
 	//////////////////////////////////////////////////////////////////////////
 
 
-	RenderWindow::RenderWindow(Core& core) :
+	RenderWindow::RenderWindow(Core& core) : mCore(core),
 		mRenderService(core.getService<RenderService>())
 	{ }
 
 
 	RenderWindow::RenderWindow(Core& core, SDL_Window* windowHandle) :
-		mRenderService(core.getService<RenderService>()), mExternalHandle(windowHandle)
+		mCore(core), mRenderService(core.getService<RenderService>()), mExternalHandle(windowHandle)
 	{ }
 
 
@@ -499,8 +499,16 @@ namespace nap
 		// An external handle is provided by an external environment, when the window is embedded.
 		// Standalone nap applications have no handle, applets generally do.
 		assert(mSDLWindow == nullptr);
-		mSDLWindow = mExternalHandle != nullptr ? mExternalHandle :
-			createSDLWindow(*this, errorState);
+		if (mExternalHandle != nullptr)
+			mSDLWindow = mExternalHandle;
+		else
+		{
+			// Defer creation of the SDL window to the main thread if necessary.
+			mCore.runOnMainThread([&]()
+			{
+				mSDLWindow = createSDLWindow(*this, errorState);
+			});
+		}
 
 		// Ensure window is valid
 		if (mSDLWindow == nullptr)
@@ -570,14 +578,20 @@ namespace nap
 
 	void RenderWindow::show()
 	{
-		SDL::showWindow(mSDLWindow, true);
-		SDL::raiseWindow(mSDLWindow);
+		mCore.runOnMainThread([&]()
+		{
+			SDL::showWindow(mSDLWindow, true);
+			SDL::raiseWindow(mSDLWindow);
+		});
 	}
 
 
 	void RenderWindow::hide()
 	{
-		SDL::showWindow(mSDLWindow, false);
+		mCore.runOnMainThread([&]()
+		{
+			SDL::showWindow(mSDLWindow, false);
+		});
 	}
 
 

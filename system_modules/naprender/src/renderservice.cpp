@@ -1366,11 +1366,14 @@ namespace nap
 		if (!window.isEmbedded())
 		{
 			// Set default window icon
-			auto* window_icon = getOrCreateDefaultWindowIcon(getModule());
-			if (window_icon != nullptr && !SDL_SetWindowIcon(window.getNativeWindow(), window_icon))
+			if (getCore().getProjectInfo() != nullptr)
 			{
-				Logger::error("Unable to set '%s' icon: %s",
-					window.mID.c_str(), SDL::getSDLError().c_str());
+				auto* window_icon = getOrCreateDefaultWindowIcon(getModule());
+				if (window_icon != nullptr && !SDL_SetWindowIcon(window.getNativeWindow(), window_icon))
+				{
+					Logger::error("Unable to set '%s' icon: %s",
+						window.mID.c_str(), SDL::getSDLError().c_str());
+				}
 			}
 
 			// Enable text input
@@ -1959,10 +1962,13 @@ namespace nap
 		DummySurface dummy_surface(mInstance);
 		if (!mHeadless)
 		{
-			// Create surface based on new or existing window
-			auto available = render_config->mWindowHandle != nullptr ?
-				dummy_surface.init(reinterpret_cast<SDL_Window*>(render_config->mWindowHandle), errorState) :
-				dummy_surface.init(errorState);
+			bool available = false;
+			getCore().runOnMainThread([&](){
+				// Create surface based on new or existing window
+				available = render_config->mWindowHandle != nullptr ?
+					dummy_surface.init(reinterpret_cast<SDL_Window*>(render_config->mWindowHandle), errorState) :
+					dummy_surface.init(errorState);
+			});
 
 			// Make sure it's available
 			if (!available)
@@ -2065,12 +2071,16 @@ namespace nap
 			frame.mQueueSubmitOps = 0;
 		}
 
-		// Try to load .ini file and extract saved settings, allowed to fail
-		nap::utility::ErrorState ini_error;
-		if (!loadIni(getIniFilePath(), ini_error))
+		if (getCore().getProjectInfo() != nullptr)
 		{
-			ini_error.fail("Unable to load: %s", getIniFilePath().c_str());
-			nap::Logger::warn(errorState.toString());
+			// Try to load .ini file and extract saved settings, allowed to fail
+			nap::utility::ErrorState ini_error;
+			if (!loadIni(getIniFilePath(), ini_error))
+			{
+				ini_error.fail("Unable to load: %s", getIniFilePath().c_str());
+				nap::Logger::warn(errorState.toString());
+			}
+
 		}
 
 		mInitialized = true;
@@ -2373,6 +2383,9 @@ namespace nap
 	{
 	    if(isInitialized()) 
 		    waitDeviceIdle();
+
+		if (getCore().getProjectInfo() == nullptr)
+			return;
 
 		utility::ErrorState write_error;
 		if (mEnableCaching && !writeIni(getIniFilePath(), write_error))

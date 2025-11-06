@@ -20,7 +20,7 @@
 #include <map>
 
 namespace nap
-{	
+{
 	class Core;
 	class Scene;
 	class Device;
@@ -31,17 +31,17 @@ namespace nap
 
 	/**
 	 * The resource manager is responsible for loading a JSON file that contains all the resources that are necessary for an application to run.
-	 * 
-	 * When loading a JSON file all the objects declared inside that file are created and initialized by the resource manager. 
-	 * These objects are called 'resources'. Every loaded resource is owned by the resource manager. 
+	 *
+	 * When loading a JSON file all the objects declared inside that file are created and initialized by the resource manager.
+	 * These objects are called 'resources'. Every loaded resource is owned by the resource manager.
 	 * This means that the lifetime of a resource is fully managed by the resource manager and not by the client.
 	 * The resource manager also updates the content in real-time when a change to the loaded JSON file is detected.
-	 * 
-	 * Every resource has a unique identifier, as declared by the 'mID' property. The name of the object is required to be unique.
-	 * De-serialization will fail when a duplicate object ID is discovered. 
 	 *
-	 * The most important task of a resource is to tell the resource manager if initialization succeeded. 
-	 * If initialization of a resource fails the resource manager will halt execution, return an error message and 
+	 * Every resource has a unique identifier, as declared by the 'mID' property. The name of the object is required to be unique.
+	 * De-serialization will fail when a duplicate object ID is discovered.
+	 *
+	 * The most important task of a resource is to tell the resource manager if initialization succeeded.
+	 * If initialization of a resource fails the resource manager will halt execution, return an error message and
 	 * as a result stop further execution of a program.
 	 *
 	 * loadFile() is automatically called by the nap::AppRunner on startup, using the data file linked to by the nap::ProjectInfo
@@ -69,18 +69,18 @@ namespace nap
 		* Loads a json file containing objects. When the objects are loaded, a comparison is performed against the objects that are already loaded. Only
 		* the new objects and the objects that are different from the existing objects are loaded into the manager. The set of objects that is new
 		* or changed then receives an init() call in the correct dependency order: if an object has a pointer to another object, the pointee is initted
-		* first. In case an already existing object that wasn't in the file points to something that is changed, that object is recreated by 
+		* first. In case an already existing object that wasn't in the file points to something that is changed, that object is recreated by
 		* cloning it and then calling init() on it. That also happens in the correct dependency order.
 		*
 		* Because there may be other objects pointing to objects that were read from json (which is only allowed through the ObjectPtr class), the updating
-		* mechanism patches all those pointers before calling init(). 
+		* mechanism patches all those pointers before calling init().
 		*
 		* In case one of the init() calls fail, the previous state is completely restored by patching the pointers back and destroying objects that were read.
 		* The client does not need to worry about handling such cases.
 		* In case all init() calls succeed, any old objects are destructed (the cloned and the previously existing objects).
 		*
-		* Before objects are destructed, onDestroy is called. onDestroy is called in the reverse initialization order. This way, it is still safe to use any 
-		* pointers to perform cleanup of internal data. 
+		* Before objects are destructed, onDestroy is called. onDestroy is called in the reverse initialization order. This way, it is still safe to use any
+		* pointers to perform cleanup of internal data.
 		*
 		* The file should be located in the 'data' folder (current working directory) of your application.
 		*
@@ -90,6 +90,8 @@ namespace nap
 		* @return if the file loaded successfully.
 		*/
 		bool loadFile(const std::string& filename, const std::string& externalChangedFile, utility::ErrorState& errorState);
+
+		bool loadJSON(const std::string& json, const std::string& externalChangedFile, std::vector<rtti::FileLink>& fileLinks, utility::ErrorState& errorState);
 
 		/**
 		 * Find an object by object ID. Returns null if not found.
@@ -186,6 +188,7 @@ namespace nap
 		* Lower level platform dependent function used by loadFile that simply loads the file from disk and deserializes.
 		*/
 		bool loadFileAndDeserialize(const std::string& filename, rtti::DeserializeResult& readResult, utility::ErrorState& errorState);
+		bool deserialize(const std::string& json, rtti::DeserializeResult& readResult, utility::ErrorState& errorState);
 
 		void determineObjectsToInit(const RTTIObjectGraph& objectGraph, const ObjectByIDMap& objectsToUpdate, const std::string& externalChangedFile, std::vector<std::string>& objectsToInit);
 		void buildObjectGraph(const ObjectByIDMap& objectsToUpdate, RTTIObjectGraph& objectGraph);

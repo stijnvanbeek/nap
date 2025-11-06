@@ -261,7 +261,8 @@ namespace nap
 		ImGui::GetStyle() = style;
 
 		// Attempt to load .ini settings
-		ImGui::LoadIniSettingsFromDisk(iniFile.c_str());
+		if (!iniFile.empty())
+			ImGui::LoadIniSettingsFromDisk(iniFile.c_str());
 
 		// Pop context
 		ImGui::SetCurrentContext(cur_context);
@@ -588,12 +589,16 @@ namespace nap
 		assert(mColorPalette != nullptr);
 
 		// Load all the default icons, bail if any of them fails to load
-		const auto& default_icons = icon::getDefaults();
-		for (const auto& icon_name : default_icons)
+		if (getCore().getProjectInfo() != nullptr)
 		{
-			if (!loadIcon(icon_name, getModule(), error))
-				return false;
+			const auto& default_icons = icon::getDefaults();
+			for (const auto& icon_name : default_icons)
+			{
+				if (!loadIcon(icon_name, getModule(), error))
+					return false;
+			}
 		}
+
 		return true;
 	}
 
@@ -630,6 +635,9 @@ namespace nap
 
 	void IMGuiService::preShutdown()
 	{
+		if (getCore().getProjectInfo() == nullptr)
+			return;
+
 		// Ensure ini directory exists
 		std::string dir = getCore().getProjectInfo()->getIniDir();
 		if (!utility::ensureDirExists(dir))

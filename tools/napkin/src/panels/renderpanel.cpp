@@ -78,7 +78,6 @@ namespace napkin
 			}
 			case nap::EVideoDriver::Cocoa:
 			{
-				// container->createWinId();
 				// auto id = container->winId(); assert(id != 0);
 
 				// auto valid = SDL_HasProperty(props, SDL_PROP_WINDOW_CREATE_COCOA_WINDOW_POINTER);

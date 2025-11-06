@@ -21,6 +21,12 @@ namespace nap
     }
 
 
+	bool ResourceManager::deserialize(const std::string& json, rtti::DeserializeResult& readResult, utility::ErrorState& errorState)
+	{
+		return deserializeJSON(json, EPropertyValidationMode::DisallowMissingProperties, rtti::EPointerPropertyMode::NoRawPointers, getFactory(), readResult, errorState);
+	}
+
+
     void ResourceManager::checkForFileChanges()
     {
         std::vector<std::string> modified_files;
@@ -73,5 +79,5 @@ namespace nap
                 }
             }
         }
-    }    
+    }
 }

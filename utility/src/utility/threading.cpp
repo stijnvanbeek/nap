@@ -15,9 +15,36 @@ namespace nap
     {
         mDequeuedTasks.resize(maxQueueItems);
     }
-    
-    
-    
+
+
+    bool TaskQueue::enqueue(Task task, bool waitUntilDone)
+    {
+        if (waitUntilDone)
+        {
+            std::condition_variable condition;
+            std::mutex mutex;
+            bool notified = false;
+            auto taskPtr = &task;
+            bool result = mQueue.enqueue([&, taskPtr](){
+                std::unique_lock<std::mutex> lock(mutex);
+                (*taskPtr)();
+                notified = true;
+                condition.notify_one();
+            });
+            if (!result)
+                return false;
+            std::unique_lock<std::mutex> lock(mutex);
+            condition.wait(lock, [&](){ return notified; });
+            notified = false;
+            return true;
+        }
+        else
+        {
+            return mQueue.enqueue(task);
+        }
+    }
+
+
     void TaskQueue::processBlocking()
     {
         TaskQueue::Task dequeuedTask;

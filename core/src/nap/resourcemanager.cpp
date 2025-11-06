@@ -44,7 +44,7 @@ namespace nap
 	private:
 		virtual Object* findTarget(const std::string& targetID) override
 		{
-			// Objects in objectsToUpdate have preference over the manager's objects. 
+			// Objects in objectsToUpdate have preference over the manager's objects.
 			auto object_to_update = mObjectsToUpdate->find(targetID);
 			if (object_to_update == mObjectsToUpdate->end())
 				return mResourceManager->findObject(targetID).get();
@@ -204,15 +204,15 @@ namespace nap
 		bool result = objectGraph.build(all_objects, [](rtti::Object* object) { return RTTIObjectGraphItem::create(object); }, errorState);
 		assert(result);
 	}
-	
+
 
 	/**
-	 * From all objects that are effectively changed or added, traverses the object graph to find the minimum set of objects that requires an init. 
+	 * From all objects that are effectively changed or added, traverses the object graph to find the minimum set of objects that requires an init.
 	 * The list of objects is sorted on object graph depth so that the init() order is correct.
 	 */
 	void ResourceManager::determineObjectsToInit(const RTTIObjectGraph& objectGraph, const ObjectByIDMap& objectsToUpdate, const std::string& externalChangedFile, std::vector<std::string>& objectsToInit)
 	{
-		// Mark all the objects to update as 'dirty', we need to init() those and 
+		// Mark all the objects to update as 'dirty', we need to init() those and
 		// all the objects that point to them (recursively)
 		std::unordered_map<std::string, rtti::Object*> dirty_nodes;
 		for (auto& kvp : objectsToUpdate)
@@ -232,7 +232,7 @@ namespace nap
 		RTTIObjectGraph object_graph;
 		buildObjectGraph({}, object_graph);
 
-		// Stop and destroy objects in reversed init order. 
+		// Stop and destroy objects in reversed init order.
 		const std::vector<RTTIObjectGraph::Node*> nodes = object_graph.getSortedNodes();
 		for (int i = nodes.size() - 1; i >= 0; --i)
 		{
@@ -298,19 +298,41 @@ namespace nap
 		// ExternalChangedFile should only be used if it's different from the file being reloaded
 		assert(utility::toComparableFilename(filename) != utility::toComparableFilename(externalChangedFile));
 
+		std::string buffer;
+		if (!utility::readFileToString(filename, buffer, errorState))
+		{
+			errorState.fail("Failed to load file: %s", filename.c_str());
+			return false;
+		}
+
+		std::vector<rtti::FileLink> file_links;
+		if (!loadJSON(buffer, externalChangedFile, file_links, errorState))
+		{
+			errorState.fail("Failed to deserialize file: %s", filename.c_str());
+			return false;
+		}
+
+		for (const FileLink& file_link : file_links)
+			addFileLink(filename, file_link.mTargetFile);
+
+		mFilesToWatch.insert(utility::toComparableFilename(filename));
+
+		return true;
+	}
+
+
+	bool ResourceManager::loadJSON(const std::string &json, const std::string& externalChangedFile, std::vector<rtti::FileLink>& fileLinks, utility::ErrorState &errorState)
+	{
 		// Notify listeners
 		mPreResourcesLoadedSignal.trigger();
 
 		// Read objects from disk
 		DeserializeResult read_result;
-		if (!loadFileAndDeserialize(filename, read_result, errorState))
-		{
-			errorState.fail("Failed to load and deserialize %s", filename.c_str());
+		if (!deserialize(json, read_result, errorState))
 			return false;
-		}
 
 		// We instantiate a helper that will perform three things when an error occurs during loading:
-		// - Perform a rollback of any pointer patching that we have done. We only ever need to rollback the pointer patching, 
+		// - Perform a rollback of any pointer patching that we have done. We only ever need to rollback the pointer patching,
 		//   because the resource manager remains untouched until the very end where we know that all init() calls have succeeded.
 		// - Perform a rollback of start/stopped devices in case an error occurs.
 		// - Destroy any new objects that were loaded from file in the correct order. Note that only the objects that need to be pushed
@@ -343,7 +365,7 @@ namespace nap
 		}
 
 		// Resolve all unresolved pointers. The set of objects to resolve against are the objects in the ResourceManager, with the new/dirty
-		// objects acting as an overlay on the existing objects. In other words, when resolving, objects read from the json file have 
+		// objects acting as an overlay on the existing objects. In other words, when resolving, objects read from the json file have
 		// preference over objects in the resource manager as these are the ones that will eventually be (re)placed in the manager.
 		OverlayLinkResolver resolver(*this, objects_to_update);
 		if (!resolver.resolveLinks(read_result.mUnresolvedPointers, errorState))
@@ -363,7 +385,7 @@ namespace nap
 		determineObjectsToInit(object_graph, objects_to_update, externalChangedFile, objects_to_init);
 
 		// The objects that require an init may contain objects that were not present in the file (because they are
-		// pointing to objects that will be reconstructed and initted). In that case we reconstruct those objects 
+		// pointing to objects that will be reconstructed and initted). In that case we reconstruct those objects
 		// as well by cloning them and pushing them into the objects_to_update list.
 		for (const std::string& object_to_init : objects_to_init)
 		{
@@ -373,8 +395,8 @@ namespace nap
 				assert(object);
 
 				std::unique_ptr<Object> cloned_object = rtti::cloneObject(*object, getFactory());
-				
-				// Replace original object in object graph with the cloned version. This fixes problems when real-time editing components. 
+
+				// Replace original object in object graph with the cloned version. This fixes problems when real-time editing components.
 				RTTIObjectGraph::Node* originalObjectNode = object_graph.findNode(object->mID);
 				assert(originalObjectNode && originalObjectNode->mItem.mType == RTTIObjectGraphItem::EType::Object);
 
@@ -383,7 +405,7 @@ namespace nap
 			}
 		}
 
-		// Objects to update contains all objects that will be updated.  We need to go through them and stop any existing devices, 
+		// Objects to update contains all objects that will be updated.  We need to go through them and stop any existing devices,
 		// so that we can start the updated versions of the devices, without the old & new device conflicting with eachother.
 		for (auto& kvp : objects_to_update)
 		{
@@ -413,7 +435,7 @@ namespace nap
 
 			ObjectByIDMap::const_iterator pos = objects_to_update.find(id);
 			assert(pos != objects_to_update.end());
-			
+
 			object = pos->second.get();
 			if (!errorState.check(object->init(errorState), "Couldn't initialize object '%s'", id.c_str()))
 				return false;
@@ -422,7 +444,7 @@ namespace nap
 			rollback_helper.addInitializedObject(*object);
 
 			// If the object is a device, we also need to start it
-			if (object->get_type().is_derived_from<Device>())				
+			if (object->get_type().is_derived_from<Device>())
 			{
 				Device* device = (Device*)object;
 				if (!errorState.check(device->start(errorState), "Couldn't start device '%s'", id.c_str()))
@@ -446,11 +468,8 @@ namespace nap
 		for (auto& kvp : objects_to_update)
 			mObjects[kvp.first] = std::move(kvp.second);
 
-		for (const FileLink& file_link : read_result.mFileLinks)
-			addFileLink(filename, file_link.mTargetFile);
+		fileLinks = read_result.mFileLinks;
 
-		mFilesToWatch.insert(utility::toComparableFilename(filename));
-		
 		// Everything was successful, don't rollback any changes that were made
 		rollback_helper.clear();
 
@@ -468,7 +487,7 @@ namespace nap
 		bool can_get_mod_time = utility::getFileModificationTime(modifiedFile, mod_time);
 		if (!can_get_mod_time)
 			return EFileModified::Error;
-		
+
 		std::string comparableFilename = utility::toComparableFilename(modifiedFile);
 
 		// Check if filetime is in the cache
@@ -490,7 +509,7 @@ namespace nap
 		}
 		return EFileModified::No;
 	}
-	
+
 
 	nap::rtti::Factory& ResourceManager::getFactory()
 	{
@@ -525,7 +544,7 @@ namespace nap
 	{
 		std::string source_file = utility::toComparableFilename(sourceFile);
 		std::string target_file = utility::toComparableFilename(targetFile);
-		
+
 		FileLinkMap::iterator existing = mFileLinkMap.find(targetFile);
 		if (existing == mFileLinkMap.end())
 		{
@@ -571,7 +590,7 @@ namespace nap
 
 		object->mID = reso_unique_path;
 		addObject(reso_unique_path, std::unique_ptr<Object>(object));
-		
+
 		return rtti::ObjectPtr<Object>(object);
 	}
 

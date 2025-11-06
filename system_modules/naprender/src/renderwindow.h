@@ -346,6 +346,7 @@ namespace nap
 		bool					mRestoreSize		= true;								///< Property: 'RestoreSize' if window size is restored from previous session	
 
 	private:
+		Core&							mCore;
 		RenderService*					mRenderService	= nullptr;
 		SDL_Window*						mSDLWindow		= nullptr;						
 		VkSampleCountFlagBits			mRasterizationSamples = VK_SAMPLE_COUNT_1_BIT;

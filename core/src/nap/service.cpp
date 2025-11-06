@@ -66,7 +66,9 @@ namespace nap
 		std::string file_name = utility::stringFormat("%s_%s",
 			utility::toLower(utility::stripNamespace(getTypeName())).c_str(),
 			utility::toLower(appendix).c_str());
-		return getCore().getProjectInfo()->getIniFilePath(file_name);
+		if (getCore().getProjectInfo() != nullptr)
+			return getCore().getProjectInfo()->getIniFilePath(file_name);
+		else return "";
 	}
 
 

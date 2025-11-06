@@ -836,8 +836,8 @@ void ImGui_ImplVulkan_DestroyDeviceObjects()
 	g_RenderBuffers.clear();
     
 	ImGui_ImplVulkan_DestroyFontUploadObjects();
-	if (g_VertModule)			{ vkDestroyShaderModule(v->Device, g_VertModule, v->Allocator); }
-	if (g_FragModule)			{ vkDestroyShaderModule(v->Device, g_FragModule, v->Allocator); }
+	if (g_VertModule)			{ vkDestroyShaderModule(v->Device, g_VertModule, v->Allocator); g_VertModule = VK_NULL_HANDLE; }
+	if (g_FragModule)			{ vkDestroyShaderModule(v->Device, g_FragModule, v->Allocator); g_FragModule = VK_NULL_HANDLE; }
     if (g_FontView)             { vkDestroyImageView(v->Device, g_FontView, v->Allocator); g_FontView = VK_NULL_HANDLE; }
     if (g_FontImage)            { vkDestroyImage(v->Device, g_FontImage, v->Allocator); g_FontImage = VK_NULL_HANDLE; }
     if (g_FontMemory)           { vkFreeMemory(v->Device, g_FontMemory, v->Allocator); g_FontMemory = VK_NULL_HANDLE; }
