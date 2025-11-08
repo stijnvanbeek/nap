@@ -1363,25 +1363,28 @@ namespace nap
 
 	void RenderService::addWindow(RenderWindow& window)
 	{
-		if (!window.isEmbedded())
+		getCore().runOnMainThread([&]()
 		{
-			// Set default window icon
-			if (getCore().getProjectInfo() != nullptr)
+			if (!window.isEmbedded())
 			{
-				auto* window_icon = getOrCreateDefaultWindowIcon(getModule());
-				if (window_icon != nullptr && !SDL_SetWindowIcon(window.getNativeWindow(), window_icon))
+				// Set default window icon
+				if (getCore().getProjectInfo() != nullptr)
 				{
-					Logger::error("Unable to set '%s' icon: %s",
-						window.mID.c_str(), SDL::getSDLError().c_str());
+					auto* window_icon = getOrCreateDefaultWindowIcon(getModule());
+					if (window_icon != nullptr && !SDL_SetWindowIcon(window.getNativeWindow(), window_icon))
+					{
+						Logger::error("Unable to set '%s' icon: %s",
+							window.mID.c_str(), SDL::getSDLError().c_str());
+					}
 				}
+
+				// Enable text input
+				SDL::enableTextInput(window.getNativeWindow());
+
+				// Attempt to restore cached settings
+				restoreWindow(window);
 			}
-
-			// Enable text input
-			SDL::enableTextInput(window.getNativeWindow());
-
-			// Attempt to restore cached settings
-			restoreWindow(window);
-		}
+		});
 
 		// Add and notify listeners
 		mWindows.emplace_back(&window);
@@ -1767,17 +1770,20 @@ namespace nap
 	{
 		// Attempt to initialize SDL video subsystem if not yet available
 		// TODO: Try to find a more clean, optimized way of handling this.
-		if (!SDL::videoInitialized())
+		getCore().runOnMainThread([&]()
 		{
-			auto* config = getConfiguration<RenderServiceConfiguration>();
-			mSDLInitialized = SDL::initVideo(config->mVideoDriver, errorState);
-			if (!errorState.check(mSDLInitialized, "Failed to init video subsystem"))
-				return false;
-		}
+			if (!SDL::videoInitialized())
+			{
+				auto* config = getConfiguration<RenderServiceConfiguration>();
+				mSDLInitialized = SDL::initVideo(config->mVideoDriver, errorState);
+				if (!errorState.check(mSDLInitialized, "Failed to init video subsystem"))
+					return false;
+			}
 
-		// Store selected video back-end
-		mVideoDriver = fromString(SDL::getCurrentVideoDriver());
-		Logger::info("Video backend: %s", toString(mVideoDriver).c_str());
+			// Store selected video back-end
+			mVideoDriver = fromString(SDL::getCurrentVideoDriver());
+			Logger::info("Video backend: %s", toString(mVideoDriver).c_str());
+		});
 
 		// Initialize engine
 		return initEngine(errorState);
@@ -1891,12 +1897,15 @@ namespace nap
 #endif // __APPLE__
 
 		// Add displays
-		for (const auto& display : SDL::getDisplays())
+		getCore().runOnMainThread([&]()
 		{
-			if (!errorState.check(display.isValid(), "Display: %d, unable to extract required information"))
-				return false;
-			nap::Logger::info(display.toString());
-		}
+			for (const auto& display : SDL::getDisplays())
+			{
+				if (!errorState.check(display.isValid(), "Display: %d, unable to extract required information"))
+					return false;
+				nap::Logger::info(display.toString());
+			}
+		});
 
 		// Initialize shader compilation
 		mShInitialized = ShInitialize() != 0;
