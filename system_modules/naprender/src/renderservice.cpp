@@ -2512,7 +2512,10 @@ namespace nap
 
 		if (mSDLInitialized)
 		{
-			SDL::shutdownVideo();
+			getCore().runOnMainThread([&]()
+			{
+				SDL::shutdownVideo();
+			});
 			mSDLInitialized = false;
 		}
 

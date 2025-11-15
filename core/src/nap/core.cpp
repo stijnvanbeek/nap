@@ -62,6 +62,8 @@ namespace nap
 
 	Core::~Core()
 	{
+		mResourceManager.reset(nullptr);
+
 		// After that remove all services
 		mServices.clear();
 

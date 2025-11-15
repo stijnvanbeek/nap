@@ -483,7 +483,10 @@ namespace nap
 		}
 
 		// Destroy SDL Window
-		SDL_DestroyWindow(mSDLWindow);
+		mCore.runOnMainThread([&]()
+		{
+			SDL_DestroyWindow(mSDLWindow);
+		});
 		mSDLWindow = nullptr;
 	}
 
@@ -532,7 +535,12 @@ namespace nap
 
 		// Create render surface for window
 		VkPhysicalDevice pyshical_device = mRenderService->getPhysicalDevice();
-		if (!createSurface(mSDLWindow, mRenderService->getVulkanInstance(), mSurface, errorState))
+		bool surfaceCreated = false;
+		mCore.runOnMainThread([&]()
+		{
+			surfaceCreated = createSurface(mSDLWindow, mRenderService->getVulkanInstance(), mSurface, errorState);
+		});
+		if (!surfaceCreated)
 			return false;
 
 		// Get compatible Vulkan presentation mode
@@ -1100,8 +1108,14 @@ namespace nap
 
 	int RenderWindow::getDisplayIndex() const
 	{
-		return mSDLWindow != nullptr ?
-			SDL::getDisplayIndex(mSDLWindow) : -1;
+		if (mSDLWindow == nullptr)
+			return -1;
+		int result;
+		mCore.runOnMainThread([&]()
+		{
+			result = SDL::getDisplayIndex(mSDLWindow);
+		});
+		return result;
 	}
 
 

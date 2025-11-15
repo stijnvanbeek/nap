@@ -431,11 +431,13 @@ namespace nap
 		// Find window associated with event
 		const auto& input_event = static_cast<const WindowInputEvent&>(event);
 		RenderWindow* window = mRenderService->findWindow(input_event.mWindow);
-		assert(window != nullptr);
+		if (window == nullptr)
+			return nullptr;
 
 		// Get context for window
 		auto context = mContexts.find(window);
-		assert(context != mContexts.end());
+		if (context == mContexts.end())
+			return nullptr;
 
 		// Activate ImGUI Context
 		ImGui::SetCurrentContext(context->second->mContext);
