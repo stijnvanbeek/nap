@@ -588,7 +588,11 @@ namespace nap
 		VkInstanceCreateInfo inst_info = {};
 		inst_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 		inst_info.pNext = NULL;
+#ifdef __APPLE__
 		inst_info.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+#else
+		inst_info.flags = 0;
+#endif
 		inst_info.pApplicationInfo = &app_info;
 		inst_info.enabledExtensionCount = static_cast<uint32>(ext_names.size());
 		inst_info.ppEnabledExtensionNames = ext_names.empty() ? nullptr : ext_names.data();
