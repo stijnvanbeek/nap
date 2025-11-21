@@ -1,0 +1,21 @@
+include(${NAP_ROOT}/cmake/nap_utilities.cmake)
+
+project(libvorbis)
+
+function(define_lib name)
+    set(platform_dir ${CMAKE_CURRENT_SOURCE_DIR}/${NAP_THIRDPARTY_PLATFORM_DIR}/${ARCH})
+    set(include_dir ${platform_dir}/include)
+    set(lib_dir ${platform_dir}/lib)
+    if (WIN32)
+        set(implib ${lib_dir}/${name}.lib)
+        set(dll ${lib_dir}/${name}.dll)
+    else ()
+        set(implib ${lib_dir}/lib${name}${implib_suffix})
+        set(dll ${lib_dir}/lib${name}${dll_suffix})
+    endif ()
+    add_import_library(lib${name} ${implib} ${dll} ${include_dir})
+endfunction()
+
+define_lib(vorbis)
+define_lib(vorbisenc)
+define_lib(vorbisfile)
