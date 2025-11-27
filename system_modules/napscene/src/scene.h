@@ -24,10 +24,8 @@ namespace nap
 	/**
 	 * Represent a root entity in a scene, along with its instance properties.
 	 */
-	class NAPAPI RootEntity final
+	struct NAPAPI RootEntity
 	{
-		RTTI_ENABLE()
-	public:
 		rtti::ObjectPtr<Entity>							mEntity;				///< Root entity to spawn
 		std::vector<ComponentInstanceProperties>		mInstanceProperties;	///< The instance properties for this entity (and all of its children)
 	};
