@@ -519,8 +519,12 @@ namespace nap
 	static bool createSurface(SDL_Window* window, VkInstance instance, VkSurfaceKHR& outSurface, utility::ErrorState& errorState)
 	{
 		// TODO: Use system allocator
-		return errorState.check(SDL_Vulkan_CreateSurface(window, instance, NULL, &outSurface),
-			"Unable to create Vulkan compatible surface using SDL");
+		if (!SDL_Vulkan_CreateSurface(window, instance, NULL, &outSurface))
+		{
+			const char* sdlErr = SDL_GetError();
+			return errorState.check(false, "Unable to create Vulkan compatible surface using SDL: %s", sdlErr ? sdlErr : "unknown error");
+		}
+		return true;
 	}
 
 

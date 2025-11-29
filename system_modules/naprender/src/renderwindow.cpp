@@ -89,8 +89,14 @@ namespace nap
 	{
 		// Use SDL to create the surface
 		// TODO: Pass our own allocator instead of using system default
-		return errorState.check(SDL_Vulkan_CreateSurface(window, instance, NULL, &outSurface),
-			"Unable to create Vulkan compatible surface using SDL");
+		bool result = SDL_Vulkan_CreateSurface(window, instance, NULL, &outSurface);
+		if (!result)
+		{
+			std::string msg = SDL_GetError();
+			errorState.fail("Unable to create Vulkan compatible surface using SDL: %s", msg.c_str());
+			return false;
+		}
+		return true;
 	}
 
 
