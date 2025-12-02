@@ -78,6 +78,7 @@ namespace napkin
 			}
 			case nap::EVideoDriver::Cocoa:
 			{
+<<<<<<< Updated upstream
 				// container->createWinId();
 				// auto id = container->winId(); assert(id != 0);
 
@@ -87,6 +88,11 @@ namespace napkin
 				// auto setup = SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_COCOA_WINDOW_POINTER, id);
 				// error.check(setup, "Unable to enable '%s', error: %s", SDL_PROP_WINDOW_CREATE_COCOA_WINDOW_POINTER, SDL_GetError());
 				error.fail("Cocoa video driver currently not supported");
+=======
+				auto id = container->winId(); assert(id != 0);
+				auto setup = SDL_SetPointerProperty(props, SDL_PROP_WINDOW_CREATE_COCOA_VIEW_POINTER, (void*)id);
+				error.check(setup, "Unable to enable '%s', error: %s", SDL_PROP_WINDOW_CREATE_COCOA_VIEW_POINTER, SDL_GetError());
+>>>>>>> Stashed changes
 				break;
 			}
 			default:
