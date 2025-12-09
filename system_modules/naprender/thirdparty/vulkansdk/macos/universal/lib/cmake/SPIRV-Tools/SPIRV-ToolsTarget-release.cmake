@@ -12,18 +12,18 @@ set_target_properties(SPIRV-Tools-static PROPERTIES
   IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libSPIRV-Tools.a"
   )
 
-list(APPEND _IMPORT_CHECK_TARGETS SPIRV-Tools-static )
-list(APPEND _IMPORT_CHECK_FILES_FOR_SPIRV-Tools-static "${_IMPORT_PREFIX}/lib/libSPIRV-Tools.a" )
+list(APPEND _cmake_import_check_targets SPIRV-Tools-static )
+list(APPEND _cmake_import_check_files_for_SPIRV-Tools-static "${_IMPORT_PREFIX}/lib/libSPIRV-Tools.a" )
 
 # Import target "SPIRV-Tools-shared" for configuration "Release"
 set_property(TARGET SPIRV-Tools-shared APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
 set_target_properties(SPIRV-Tools-shared PROPERTIES
   IMPORTED_LOCATION_RELEASE "${_IMPORT_PREFIX}/lib/libSPIRV-Tools-shared.dylib"
-  IMPORTED_SONAME_RELEASE "libSPIRV-Tools-shared.dylib"
+  IMPORTED_SONAME_RELEASE "@rpath/libSPIRV-Tools-shared.dylib"
   )
 
-list(APPEND _IMPORT_CHECK_TARGETS SPIRV-Tools-shared )
-list(APPEND _IMPORT_CHECK_FILES_FOR_SPIRV-Tools-shared "${_IMPORT_PREFIX}/lib/libSPIRV-Tools-shared.dylib" )
+list(APPEND _cmake_import_check_targets SPIRV-Tools-shared )
+list(APPEND _cmake_import_check_files_for_SPIRV-Tools-shared "${_IMPORT_PREFIX}/lib/libSPIRV-Tools-shared.dylib" )
 
 # Commands beyond this point should not need to know the version.
 set(CMAKE_IMPORT_FILE_VERSION)
