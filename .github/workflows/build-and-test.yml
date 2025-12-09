@@ -8,12 +8,6 @@ on:
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
-    inputs:
-      target_app:
-        description: 'The target application to build and test'
-        type: string
-        required: false
-        default: helloworld
 
 env:
   BUILD_TYPE: Release
@@ -44,16 +38,16 @@ jobs:
     - name: Build and test linux
       shell: bash
       if: matrix.os == 'ubuntu-latest'
-      run: xvfb-run sh package_app.sh "${{ github.event.inputs.target_app }}" -b build -t -d
+      run: xvfb-run sh package_app.sh helloworld -b build -t -d
 
     - name: Build and test win
       shell: bash
       if: matrix.os == 'windows-latest'
-      run: sh package_app.sh "${{ github.event.inputs.target_app }}" -b build
+      run: sh package_app.sh helloworld -b build
 
     - name: Build and test macos
       shell: bash
       if: matrix.os == 'macos-latest'
-      run: sh package_app.sh "${{ github.event.inputs.target_app }}" -b build -t -d
+      run: sh package_app.sh helloworld -b build -t -d
 
 
