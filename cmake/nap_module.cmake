@@ -21,7 +21,7 @@ file(GLOB HEADERS src/*.h src/*.hpp)
 # Compile target as shared lib
 add_library(${PROJECT_NAME} SHARED ${SOURCES} ${HEADERS})
 
-set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
+#set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
 
 # Remove lib prefix on Unix libraries
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
@@ -83,4 +83,3 @@ codesign_target(${PROJECT_NAME})
 # Install library and module json
 install(FILES $<TARGET_FILE:${PROJECT_NAME}> TYPE LIB OPTIONAL)
 install(FILES ${LIB_DIR}/${PROJECT_NAME}.json DESTINATION ${CMAKE_INSTALL_MODULEINFODIR} OPTIONAL)
-#install(FILES ${LIB_DIR}/${PROJECT_NAME}.json TYPE DATA OPTIONAL)
