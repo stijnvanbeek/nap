@@ -23,7 +23,8 @@ macro(setup)
 
     # Rpath for searching dynamic libraries
     file(RELATIVE_PATH LIB_RPATH ${BIN_DIR} ${LIB_DIR})
-    set(CMAKE_BUILD_RPATH_USE_ORIGIN TRUE)
+#    set(CMAKE_BUILD_RPATH_USE_ORIGIN FALSE)
+    set(CMAKE_SKIP_BUILD_RPATH  TRUE)
 
     # Set the app installation directories
     if (NOT DEFINED APP_INSTALL_NAME)
