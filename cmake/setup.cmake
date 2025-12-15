@@ -24,7 +24,7 @@ macro(setup)
     # Rpath for searching dynamic libraries
     file(RELATIVE_PATH LIB_RPATH ${BIN_DIR} ${LIB_DIR})
     if (APPLE)
-        set(CMAKE_SKIP_BUILD_RPATH TRUE)
+#        set(CMAKE_SKIP_BUILD_RPATH TRUE)
     else ()
         set(CMAKE_BUILD_RPATH_USE_ORIGIN TRUE)
     endif ()
