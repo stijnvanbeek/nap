@@ -47,7 +47,8 @@
 	template <typename... Args>																									\
 	static void NAME(const char* msg, Args&&... args)																			\
 	{																															\
-		instance().log(LogMessage(NAME##Level(), utility::stringFormat(msg, std::forward<Args>(args)...)));						\
+		std::string msg_str = utility::stringFormat(msg, std::forward<Args>(args)...);											\
+		instance().log(LogMessage(NAME##Level(), msg_str));																		\
 	}																															\
 																																\
 	template <typename... Args>																									\
