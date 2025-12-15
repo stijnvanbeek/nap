@@ -9,6 +9,7 @@
 #include "renderutils.h"
 #include "imagedata.h"
 #include "snapshot.h"
+#include "texturelink.h"
 
 // External Includes
 #include <vulkan/vulkan_core.h>
@@ -103,6 +104,11 @@ namespace nap
 		 * @return if sample based shading is enabled when rendering to the target.
 		 */
 		virtual bool getSampleShadingEnabled() const override;
+
+		/**
+		 * @return layout of the texture when render pass ends
+		 */
+		virtual VkImageLayout getFinalLayout() const override					{ return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; }
 		
 		/**
 		 * @param cellIndex change the index of the cell to setup for rendering
@@ -115,7 +121,7 @@ namespace nap
 		Snapshot*					mSnapshot = nullptr;
 
 		std::vector<VkFramebuffer>	mFramebuffers;
-		glm::u32vec2				mSize = { 0, 0 };
+		glm::uvec2					mSize = { 0, 0 };
 
 		bool						mSampleShading = true;
 		RGBAColorFloat				mClearColor = { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -125,6 +131,7 @@ namespace nap
 		VkRenderPass				mRenderPass = VK_NULL_HANDLE;
 		ImageData					mDepthImage;
 		ImageData					mColorImage;
+		Texture2DTargetLink			mTextureLink;
 
 		uint32_t					mCellIndex = 0;
 	};

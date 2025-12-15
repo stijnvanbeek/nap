@@ -272,20 +272,17 @@ namespace nap
             if (mInputDeviceIndex >= 0)
             {
 #ifdef __APPLE__
-                inputParameters.suggestedLatency = 0.f;
+            	inputParameters.suggestedLatency = 0.f;
 #else
-                inputParameters.suggestedLatency = Pa_GetDeviceInfo(mInputDeviceIndex)->defaultLowInputLatency;
+            	inputParameters.suggestedLatency = Pa_GetDeviceInfo(mInputDeviceIndex)->defaultLowInputLatency;
 #endif
                 inputParamsPtr = &inputParameters;
             }
-            PaStreamParameters* outputParamsPtr = nullptr;
+
+			PaStreamParameters* outputParamsPtr = nullptr;
             if (mOutputDeviceIndex >= 0)
             {
-#ifdef __APPLE__
-                outputParameters.suggestedLatency = 0.f;
-#else
                 outputParameters.suggestedLatency = Pa_GetDeviceInfo(mOutputDeviceIndex)->defaultLowOutputLatency;
-#endif
                 outputParamsPtr = &outputParameters;
             }
 
@@ -584,8 +581,5 @@ namespace nap
 		{
 			return Pa_IsStreamActive(mStream) == 1;
 		}
-		
-		
 	}
-	
 }
