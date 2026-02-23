@@ -56,6 +56,7 @@ elseif(APPLE)
             )
     # Resolve symlink
     get_filename_component(VULKAN_LIB ${VULKAN_LIB} REALPATH)
+    set(VULKAN_LIB ${VULKANSDK_LIBS_DIR}/libMoltenVK.a)
 
     find_library(MOLTENVK_LIB
             NO_DEFAULT_PATH
@@ -71,10 +72,9 @@ elseif(APPLE)
     find_library(QUARTZ_LIB QuartzCore)
     find_library(IOKIT_LIB IOKit)
     find_library(IOSURFACE_LIB IOSurface)
-
     if(VULKAN_LIB AND METAL_LIB AND FOUNDATION_LIB
         AND QUARTZ_LIB AND IOKIT_LIB AND IOSURFACE_LIB)
-        set(VULKANSDK_LIBS ${VULKAN_LIB} ${METAL_LIB} ${FOUNDATION_LIB} ${QUARTZ_LIB} ${IOKIT_LIB} ${IOSURFACE_LIB})
+        set(VULKANSDK_LIBS ${VULKAN_LIB} ${METAL_LIB} ${FOUNDATION_LIB} ${QUARTZ_LIB} ${IOKIT_LIB} ${IOSURFACE_LIB} "-framework CoreGraphics" "-framework AppKit")
     endif()
 
 elseif(UNIX)
