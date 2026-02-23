@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.19)
-set(CMAKE_OSX_ARCHITECTURES arm64;x86_64)
+set(CMAKE_OSX_ARCHITECTURES arm64)
 project(NAP)
 
 set(NAP_ROOT ${CMAKE_CURRENT_LIST_DIR})
@@ -7,6 +7,10 @@ include(${NAP_ROOT}/cmake/setup.cmake)
 include(${NAP_ROOT}/cmake/nap_utilities.cmake)
 
 setup()
+
+if (DEFINED ENV{BUILD_STATIC})
+    add_subdirectory(static)
+endif()
 
 add_subdirectory(utility)
 add_subdirectory(rtti)

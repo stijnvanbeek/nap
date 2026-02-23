@@ -2,54 +2,42 @@ project(napcore)
 
 file(GLOB SOURCES src/nap/*.cpp src/nap/*.h)
 
-## Add whether we're a NAP release or not
-#configure_file(src/nap/packaginginfo.h.in packaginginfo.h @ONLY)
-#list(APPEND SOURCES ${CMAKE_CURRENT_BINARY_DIR}/packaginginfo.h)
-#
-## Populate version info
-#include(${NAP_ROOT}/cmake/version.cmake)
-#configure_file(src/nap/version.h.in version.h @ONLY)
-#
-#list(APPEND SOURCES ${CMAKE_CURRENT_BINARY_DIR}/version.h)
-
 if(APPLE)
-    add_library(${PROJECT_NAME} SHARED 
-                ${SOURCES}
-                src/nap/osx/directorywatcher.cpp
-                src/nap/osx/module.cpp
-                src/nap/osx/core_env.cpp
-                src/nap/native/modulecache_ext.cpp
-                src/nap/native/logger_ext.cpp
-                src/nap/native/core_ext.cpp
-                src/nap/native/resourcemanager_ext.cpp
-                )
+    list(APPEND SOURCES
+        src/nap/osx/directorywatcher.cpp
+        src/nap/osx/module.cpp
+        src/nap/osx/core_env.cpp
+        src/nap/native/modulecache_ext.cpp
+        src/nap/native/logger_ext.cpp
+        src/nap/native/core_ext.cpp
+        src/nap/native/resourcemanager_ext.cpp
+    )
 elseif(MSVC)
-    add_library(${PROJECT_NAME} SHARED 
-                ${SOURCES}
-                src/nap/win32/directorywatcher.cpp
-                src/nap/win32/module.cpp
-                src/nap/win32/core_env.cpp
-                src/nap/native/modulecache_ext.cpp
-                src/nap/native/logger_ext.cpp
-                src/nap/native/core_ext.cpp
-                src/nap/native/resourcemanager_ext.cpp
-                )
+    list(APPEND SOURCES
+        src/nap/win32/directorywatcher.cpp
+        src/nap/win32/module.cpp
+        src/nap/win32/core_env.cpp
+        src/nap/native/modulecache_ext.cpp
+        src/nap/native/logger_ext.cpp
+        src/nap/native/core_ext.cpp
+        src/nap/native/resourcemanager_ext.cpp
+    )
 elseif(UNIX)
     file(GLOB FILEWATCHER_SOURCES
                 src/nap/linux/FileWatcher/*.cpp
                 src/nap/linux/FileWatcher/*.h)
-    add_library(${PROJECT_NAME} SHARED
-                ${SOURCES}
-                ${FILEWATCHER_SOURCES}
-                src/nap/linux/directorywatcher.cpp
-                src/nap/linux/module.cpp
-                src/nap/linux/core_env.cpp
-                src/nap/native/modulecache_ext.cpp
-                src/nap/native/logger_ext.cpp
-                src/nap/native/core_ext.cpp
-                src/nap/native/resourcemanager_ext.cpp
-                )
+    list(APPEND SOURCES
+        ${FILEWATCHER_SOURCES}
+        src/nap/linux/directorywatcher.cpp
+        src/nap/linux/module.cpp
+        src/nap/linux/core_env.cpp
+        src/nap/native/modulecache_ext.cpp
+        src/nap/native/logger_ext.cpp
+        src/nap/native/core_ext.cpp
+        src/nap/native/resourcemanager_ext.cpp
+    )
 endif()
+add_library(${PROJECT_NAME} SHARED ${SOURCES})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
 
@@ -82,6 +70,13 @@ elseif(UNIX)
     target_link_libraries(${PROJECT_NAME} dl pthread)
 endif ()
 
-codesign_target(${PROJECT_NAME})
+if (DEFINED ENV{BUILD_STATIC})
+    target_sources(napstatic PUBLIC ${SOURCES})
+    target_include_directories(napstatic PUBLIC src)
+    if (UNIX AND NOT APPLE)
+        target_include_directories(napstatic src/nap/linux/FileWatcher)
+    endif()
+endif ()
 
+codesign_target(${PROJECT_NAME})
 install(FILES $<TARGET_FILE:${PROJECT_NAME}> TYPE LIB OPTIONAL)

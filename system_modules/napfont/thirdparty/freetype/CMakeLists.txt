@@ -11,5 +11,6 @@ else ()
 endif ()
 set(implib ${lib_dir}/${implib_prefix}${PROJECT_NAME}${implib_suffix})
 set(dll ${lib_dir}/${dll_prefix}${PROJECT_NAME}${dll_suffix})
-
-add_import_library(${PROJECT_NAME} ${implib} ${dll} ${include_dir})
+set(static_lib ${lib_dir}/libfreetype.a)
+#add_import_library(${PROJECT_NAME} ${implib} ${dll} ${include_dir})
+add_static_import_library(${PROJECT_NAME} ${static_lib} ${include_dir})

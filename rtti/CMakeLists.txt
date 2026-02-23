@@ -11,6 +11,10 @@ find_package(rapidjson REQUIRED)
 add_definitions(-DRAPIDJSON_HAS_STDSTRING=1)
 
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
+if (DEFINED ENV{BUILD_STATIC})
+    target_sources(napstatic PUBLIC ${SOURCES})
+    target_include_directories(napstatic PUBLIC src)
+endif ()
 set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Core)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
@@ -26,21 +30,6 @@ endif()
 target_compile_definitions(${PROJECT_NAME} PRIVATE MODULE_NAME=${PROJECT_NAME} NAP_SHARED_LIBRARY)
 target_include_directories(${PROJECT_NAME} PUBLIC src)
 target_include_directories(${PROJECT_NAME} PUBLIC ${RAPIDJSON_INCLUDE_DIRS})
-
-if (NAP_ENABLE_PYTHON)
-    # Find the Python interpreter in thirdparty
-    configure_python()
-
-    # Pybind uses the interpreter to locate the python libraries and includes, next to pybind includes
-    set(pybind11_parent_dir ${NAP_ROOT}/system_modules/nappython/thirdparty/pybind11)
-    set(pybind11_DIR ${pybind11_parent_dir}/install/share/cmake/pybind11)
-    find_package(pybind11 REQUIRED)
-
-    # Add pybind includes and libraries
-    target_include_directories(${PROJECT_NAME} PUBLIC ${pybind11_INCLUDE_DIRS})
-    target_link_libraries(${PROJECT_NAME} pybind11::embed)
-    target_link_directories(${PROJECT_NAME} PUBLIC ${PYTHON_LIB_DIR})
-endif()
 
 target_link_libraries(${PROJECT_NAME} naputility RTTR::Core)
 if(APPLE)

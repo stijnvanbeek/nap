@@ -84,7 +84,7 @@ namespace nap
 		uint32							mVulkanVersionMajor = 1;									///< Property: 'VulkanMajor The major required vulkan API instance version.
 //TODO: Remove this ifdef once Vulkan version is upgraded to 1.4 on other platforms as well
 #ifdef __APPLE__
-		uint32							mVulkanVersionMinor = 4;									///< Property: 'VulkanMinor' The minor required vulkan API instance version.
+		uint32							mVulkanVersionMinor = 2;									///< Property: 'VulkanMinor' The minor required vulkan API instance version.
 #else
 		uint32							mVulkanVersionMinor = 2;									///< Property: 'VulkanMinor' The minor required vulkan API instance version.
 #endif
