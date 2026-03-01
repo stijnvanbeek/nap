@@ -43,20 +43,24 @@ file(MAKE_DIRECTORY ${cache_dir})
 set(app_json_path ${CMAKE_CURRENT_SOURCE_DIR}/app.json)
 file(READ ${app_json_path} app_json)
 
-# Read required modules from the app json file
-string(JSON required_modules_json GET ${app_json} RequiredModules)
-string(JSON required_module_count LENGTH ${app_json} RequiredModules)
-set(module_index 0)
-while(NOT ${module_index} EQUAL ${required_module_count})
-    string(JSON module GET ${required_modules_json} ${module_index})
-    list(APPEND required_modules ${module})
-    math(EXPR module_index "${module_index}+1")
-endwhile()
+if (BUILD_STATIC)
+    target_link_libraries(${PROJECT_NAME} napstatic)
+else ()
+    # Read required modules from the app json file
+    string(JSON required_modules_json GET ${app_json} RequiredModules)
+    string(JSON required_module_count LENGTH ${app_json} RequiredModules)
+    set(module_index 0)
+    while(NOT ${module_index} EQUAL ${required_module_count})
+        string(JSON module GET ${required_modules_json} ${module_index})
+        list(APPEND required_modules ${module})
+        math(EXPR module_index "${module_index}+1")
+    endwhile()
 
-if (NOT required_modules)
-    set(required_modules napcore)
+    if (NOT required_modules)
+        set(required_modules napcore)
+    endif()
+    target_link_libraries(${PROJECT_NAME} ${required_modules})
 endif()
-target_link_libraries(${PROJECT_NAME} ${required_modules})
 
 if(NAP_ENABLE_PYTHON)
     target_link_libraries(${PROJECT_NAME} ${PYTHON_LIBRARIES})
@@ -135,9 +139,10 @@ add_custom_command(
         ${cache_dir}/build_app.json
         ${BIN_DIR}/${PROJECT_NAME}.json)
 
+set(source_data_dir ${CMAKE_CURRENT_SOURCE_DIR}/data)
+
 # Run FBX converter post-build within bin data dir
 add_dependencies(${PROJECT_NAME} fbxconverter)
-set(source_data_dir ${CMAKE_CURRENT_SOURCE_DIR}/data)
 add_custom_command(TARGET ${PROJECT_NAME}
         POST_BUILD
         COMMAND ${BIN_DIR}/fbxconverter -o ${source_data_dir} ${source_data_dir}/*.fbx
@@ -167,7 +172,7 @@ if(APPLE)
             POST_BUILD COMMAND
             if ! otool -l $<TARGET_FILE:${PROJECT_NAME}> | grep -q @executable_path/${LIB_RPATH}/.\; then ${CMAKE_INSTALL_NAME_TOOL} -add_rpath "@executable_path/${LIB_RPATH}/." $<TARGET_FILE:${PROJECT_NAME}>\; fi)
 
-    # Codesign the shared library
+    # Codesign the executable
     set(signature "-")
     if (DEFINED ${MACOS_CODE_SIGNATURE})
         set(signature ${MACOS_CODE_SIGNATURE})

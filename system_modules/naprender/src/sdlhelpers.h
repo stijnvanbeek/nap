@@ -13,8 +13,8 @@
 #include <glm/glm.hpp>
 #include <utility/dllexport.h>
 #include <utility/errorstate.h>
-#include <SDL_hints.h>
-#include <SDL_surface.h>
+#include <SDL3/SDL_hints.h>
+#include <SDL3/SDL_surface.h>
 
 // SDL Forward declares
 struct SDL_Window;

@@ -13,10 +13,10 @@
 #include <inputservice.h>
 #include <nap/core.h>
 #include <color.h>
-#include <SDL_clipboard.h>
-#include <SDL_properties.h>
-#include <SDL_mouse.h>
-#include <SDL_keyboard.h>
+#include <SDL3/SDL_clipboard.h>
+#include <SDL3/SDL_properties.h>
+#include <SDL3/SDL_mouse.h>
+#include <SDL3/SDL_keyboard.h>
 #include <nap/logger.h>
 #include <materialcommon.h>
 #include <sdlhelpers.h>

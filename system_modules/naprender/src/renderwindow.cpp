@@ -10,8 +10,8 @@
 #include <renderservice.h>
 #include <nap/core.h>
 #include <nap/logger.h>
-#include <SDL_vulkan.h>
-#include <SDL_hints.h>
+#include <SDL3/SDL_vulkan.h>
+#include <SDL3/SDL_hints.h>
 #include <mathutils.h>
 
 RTTI_BEGIN_ENUM(nap::RenderWindow::EPresentationMode)

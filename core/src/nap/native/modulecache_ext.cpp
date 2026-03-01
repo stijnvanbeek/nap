@@ -130,51 +130,51 @@ namespace nap
 		std::string load_error;
 		auto library_name = utility::appendFileExtension(moduleName, getModuleExtension());
 		void* module_handle = loadModule(*module_info, library_name, module_info->mFilename, load_error);
-		if (!module_handle)
-		{
-			err.fail("Failed to load module '%s' (resolved from %s): %s",
-                moduleName.c_str(), utility::getAbsolutePath(module_json).c_str(), load_error.c_str());
-			return nullptr;
-		}
+		// if (!module_handle)
+		// {
+		// 	err.fail("Failed to load module '%s' (resolved from %s): %s",
+  //               moduleName.c_str(), utility::getAbsolutePath(module_json).c_str(), load_error.c_str());
+		// 	return nullptr;
+		// }
 
-		// Find descriptor. If the descriptor wasn't found in the dll,
-		// assume it's not actually a nap module and unload it again.
-		auto descriptor = (ModuleDescriptor*)findSymbolInModule(module_handle, nap::getModuleDescriptorSymbolName(moduleName).c_str());
-		if (!descriptor)
-			return nullptr;
-
-		// Verify module version
-		if (descriptor->mAPIVersion != nap::moduleAPIVersion)
-		{
-			err.fail("Module %s version mismatch (found %d, expected %d)",
-				moduleName.c_str(), descriptor->mAPIVersion, nap::moduleAPIVersion);
-			return nullptr;
-		}
-
-		// Try to load service if one is defined
-		rtti::TypeInfo service = rtti::TypeInfo::empty();
-		if (descriptor->mService)
-		{
-			rtti::TypeInfo stype = rtti::TypeInfo::get_by_name(rttr::string_view(descriptor->mService));
-			if (!stype.is_derived_from(RTTI_OF(Service)))
-			{
-				err.fail("Module '%s' service descriptor '%s' is not a service",
-					moduleName.c_str(), descriptor->mService);
-				return nullptr;
-			}
-			service = stype;
-		}
+		// // Find descriptor. If the descriptor wasn't found in the dll,
+		// // assume it's not actually a nap module and unload it again.
+		// auto descriptor = (ModuleDescriptor*)findSymbolInModule(module_handle, nap::getModuleDescriptorSymbolName(moduleName).c_str());
+		// if (!descriptor)
+		// 	return nullptr;
+		//
+		// // Verify module version
+		// if (descriptor->mAPIVersion != nap::moduleAPIVersion)
+		// {
+		// 	err.fail("Module %s version mismatch (found %d, expected %d)",
+		// 		moduleName.c_str(), descriptor->mAPIVersion, nap::moduleAPIVersion);
+		// 	return nullptr;
+		// }
+		//
+		// // Try to load service if one is defined
+		// rtti::TypeInfo service = rtti::TypeInfo::empty();
+		// if (descriptor->mService)
+		// {
+		// 	rtti::TypeInfo stype = rtti::TypeInfo::get_by_name(rttr::string_view(descriptor->mService));
+		// 	if (!stype.is_derived_from(RTTI_OF(Service)))
+		// 	{
+		// 		err.fail("Module '%s' service descriptor '%s' is not a service",
+		// 			moduleName.c_str(), descriptor->mService);
+		// 		return nullptr;
+		// 	}
+		// 	service = stype;
+		// }
 
 		// Load successful, store loaded module
 		auto module = std::make_unique<Module>();
 		module->mName = moduleName;
-		module->mDescriptor = descriptor;
+		// module->mDescriptor = descriptor;
 		module->mInfo = std::move(module_info);
 		module->mHandle = module_handle;
-		module->mService = service;
+		// module->mService = service;
 		module->mDependencies = module_deps;
 
-		nap::Logger::debug("Module loaded: %s", module->mDescriptor->mID);
+		nap::Logger::debug("Module loaded: %s", moduleName.c_str());
 		auto& it = mModules.emplace_back(std::move(module));
 		return it.get();
 	}

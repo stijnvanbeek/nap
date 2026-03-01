@@ -7,9 +7,9 @@
 
 // External Includes
 #include <mathutils.h>
-#include <SDL_joystick.h>
-#include <SDL_gamepad.h>
-#include <SDL_keycode.h>
+#include <SDL3/SDL_joystick.h>
+#include <SDL3/SDL_gamepad.h>
+#include <SDL3/SDL_keycode.h>
 
 namespace nap
 {

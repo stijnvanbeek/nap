@@ -1073,6 +1073,8 @@ namespace nap
 		 */
 		virtual void update(double deltaTime) override;
 
+		std::string getModuleName() const override { return "naprender"; }
+
 	private:
 		/**
 		 * Initializes empty textures filled with zero, and error textures filled with a red error color.

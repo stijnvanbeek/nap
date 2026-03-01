@@ -28,7 +28,7 @@
 #include <nap/logger.h>
 #include <sceneservice.h>
 #include <scene.h>
-#include <SDL_vulkan.h>
+#include <SDL3/SDL_vulkan.h>
 #include <glslang/Public/ShaderLang.h>
 #include <nap/assert.h>
 #include <mathutils.h>

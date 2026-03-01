@@ -123,7 +123,7 @@ namespace nap
 		// Apply any platform specific environment setup
 		setupPlatformSpecificEnvironment();
 
-		// Load modules
+		// // Load modules
 		if (!mModuleManager->loadModules(*mProjectInfo, error))
 			return false;
 
@@ -138,7 +138,10 @@ namespace nap
 		// After creation we're able to access all special object creation functions.
 		// A default service configuration resource is created for all services that require one and
 		// isn't already created during *loadServiceConfigurations()*
-		if (!createServices(*mProjectInfo, error))
+		// if (!createServices(*mProjectInfo, error))
+		// 	return false;
+
+		if (!createServicesFromRTTR(error))
 			return false;
 
 		mInitialized = true;
@@ -229,7 +232,7 @@ namespace nap
 
 	bool nap::Core::createServices(const nap::ProjectInfo& projectInfo, nap::utility::ErrorState& errorState)
 	{
-// Gather all service configuration types
+		// Gather all service configuration types
 		std::vector<rtti::TypeInfo> service_configuration_types;
 		rtti::getDerivedTypesRecursive(RTTI_OF(ServiceConfiguration), service_configuration_types);
 

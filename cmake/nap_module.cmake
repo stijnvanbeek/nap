@@ -47,7 +47,16 @@ endwhile()
 if (NOT required_modules)
     set(required_modules napcore)
 endif()
-target_link_libraries(${PROJECT_NAME} ${required_modules})
+
+if (BUILD_STATIC)
+    # Filter module descriptor cpp file from the sources and add them to napstatic
+    set(STATIC_SOURCES ${SOURCES})
+    list(FILTER STATIC_SOURCES EXCLUDE REGEX ".*${PROJECT_NAME}.cpp")
+    target_sources(napstatic PUBLIC ${STATIC_SOURCES} ${HEADERS})
+    target_include_directories(napstatic PUBLIC src)
+else()
+    target_link_libraries(${PROJECT_NAME} ${required_modules})
+endif ()
 
 # Bring in any additional module logic
 set(MODULE_EXTRA_CMAKE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/module_extra.cmake)
@@ -59,21 +68,29 @@ if (EXISTS ${MODULE_EXTRA_CMAKE_PATH})
     include(${MODULE_EXTRA_CMAKE_PATH})
 endif()
 
-# Copy module.json to bin and install
-add_custom_command(
-        TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy
-        ${CMAKE_CURRENT_SOURCE_DIR}/module.json
-        ${LIB_DIR}/${PROJECT_NAME}.json)
+# Copy module.json to bin
+if (BUILD_STATIC)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/module.json ${LIB_DIR}/${PROJECT_NAME}.json COPYONLY)
+else ()
+    add_custom_command(
+            TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/module.json
+            ${LIB_DIR}/${PROJECT_NAME}.json)
+endif ()
 
 # Copy module data folder and install
 get_filename_component(parent_dir ${CMAKE_CURRENT_SOURCE_DIR} DIRECTORY)
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/data)
     set(dest ${BIN_DIR}/${parent_name}/${PROJECT_NAME})
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_SOURCE_DIR}/data
-        ${dest}/data)
+    if (BUILD_STATIC)
+        file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/data DESTINATION ${dest})
+    else ()
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_CURRENT_SOURCE_DIR}/data
+            ${dest}/data)
+    endif ()
     install(DIRECTORY ${dest}/data DESTINATION ${CMAKE_INSTALL_DATADIR}/${parent_name}/${PROJECT_NAME} OPTIONAL)
 endif()
 

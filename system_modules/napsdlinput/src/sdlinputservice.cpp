@@ -6,9 +6,9 @@
 #include "sdlinputservice.h"
 
 // External includes
-#include <SDL_gamepad.h>
+#include <SDL3/SDL_gamepad.h>
 #include <inputservice.h>
-#include <SDL.h>
+#include <SDL3/SDL.h>
 #include <nap/logger.h>
 #include <nap/core.h>
 #include <memory.h>

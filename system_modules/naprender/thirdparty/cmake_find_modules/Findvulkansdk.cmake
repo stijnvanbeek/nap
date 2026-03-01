@@ -56,7 +56,6 @@ elseif(APPLE)
             )
     # Resolve symlink
     get_filename_component(VULKAN_LIB ${VULKAN_LIB} REALPATH)
-    set(VULKAN_LIB ${VULKANSDK_LIBS_DIR}/libMoltenVK.a)
 
     find_library(MOLTENVK_LIB
             NO_DEFAULT_PATH
@@ -66,6 +65,9 @@ elseif(APPLE)
     # Resolve symlink
     get_filename_component(MOLTENVK_LIB ${MOLTENVK_LIB} REALPATH)
 
+    # Set path to molten VK static lib (that can replace Vulkan dynamic lib)
+    set(MOLTENVK_STATIC_LIB ${VULKANSDK_LIBS_DIR}/libMoltenVK.a)
+
     # Additional library dependencies on apple
     find_library(METAL_LIB Metal)
     find_library(FOUNDATION_LIB Foundation)
@@ -74,7 +76,11 @@ elseif(APPLE)
     find_library(IOSURFACE_LIB IOSurface)
     if(VULKAN_LIB AND METAL_LIB AND FOUNDATION_LIB
         AND QUARTZ_LIB AND IOKIT_LIB AND IOSURFACE_LIB)
-        set(VULKANSDK_LIBS ${VULKAN_LIB} ${METAL_LIB} ${FOUNDATION_LIB} ${QUARTZ_LIB} ${IOKIT_LIB} ${IOSURFACE_LIB} "-framework CoreGraphics" "-framework AppKit")
+        if (BUILD_STATIC)
+            set(VULKANSDK_LIBS ${MOLTENVK_STATIC_LIB} ${METAL_LIB} ${FOUNDATION_LIB} ${QUARTZ_LIB} ${IOKIT_LIB} ${IOSURFACE_LIB} "-framework CoreGraphics" "-framework AppKit")
+        else ()
+            set(VULKANSDK_LIBS ${VULKAN_LIB} ${METAL_LIB} ${FOUNDATION_LIB} ${QUARTZ_LIB} ${IOKIT_LIB} ${IOSURFACE_LIB})
+        endif ()
     endif()
 
 elseif(UNIX)

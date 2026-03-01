@@ -31,7 +31,8 @@ function(target_link_import_library target library)
         install(FILES ${LIB_DIR}/${library_file_name} TYPE LIB OPTIONAL)
     else ()
         # Static libs are linked with absolute path
-        target_link_libraries(${target} ${library_path})
+        target_link_libraries(${target} ${library})
+#        target_link_libraries(${target} PUBLIC ${library_path})
     endif()
 endfunction()
 
@@ -206,11 +207,17 @@ endfunction()
 
 
 function(add_license name license_path)
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E make_directory ${BIN_DIR}/license/${name})
-    get_filename_component(license_filename ${license_path} NAME)
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${license_path}
-            ${BIN_DIR}/license/${name}/${license_filename})
+    if(BUILD_STATIC)
+        # For static builds copy the license on project generation.
+        file(COPY ${license_path} DESTINATION ${BIN_DIR}/license/${name})
+    else ()
+        # For dynamic builds only copy the license after the module is included and built.
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E make_directory ${BIN_DIR}/license/${name})
+        get_filename_component(license_filename ${license_path} NAME)
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${license_path}
+                ${BIN_DIR}/license/${name}/${license_filename})
+    endif ()
 endfunction()
 
 
@@ -227,12 +234,6 @@ function(codesign_target target)
                 COMMAND codesign --force -s ${signature} $<TARGET_FILE:${target}>)
     endif ()
 endfunction()
-
-
-## Codesign imported dynamic library
-#function(codesign_import_library library)
-#    codesign($<TARGET_FILE:${library}>)
-#endfunction()
 
 
 # Codesign imported dynamic library

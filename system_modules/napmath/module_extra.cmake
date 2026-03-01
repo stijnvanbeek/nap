@@ -12,5 +12,10 @@ if(WIN32)
     target_compile_definitions(${PROJECT_NAME} PUBLIC NOMINMAX)
 endif()
 
+if (BUILD_STATIC)
+    target_include_directories(napstatic PUBLIC ${GLM_INCLUDE_DIRS})
+    target_compile_definitions(napstatic PUBLIC GLM_FORCE_CTOR_INIT)
+endif ()
+
 # Copy glm license
 add_license(glm ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glm/copying.txt)

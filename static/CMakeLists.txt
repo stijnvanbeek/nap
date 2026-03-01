@@ -14,7 +14,7 @@ target_link_libraries(${PROJECT_NAME} naputility RTTR::Core_Lib)
 target_include_directories(${PROJECT_NAME} PUBLIC ${RAPIDJSON_INCLUDE_DIRS})
 
 if(APPLE)
-    target_link_libraries(${PROJECT_NAME} "-framework CoreServices")
+    target_compile_definitions(napstatic PUBLIC VK_USE_PLATFORM_METAL_EXT=1)
 elseif(UNIX)
     target_link_libraries(${PROJECT_NAME} dl pthread)
 endif ()
@@ -22,4 +22,6 @@ endif ()
 if(MSVC)
     target_compile_definitions(${PROJECT_NAME} PUBLIC NOMINMAX)
 endif()
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE _USE_MATH_DEFINES)
 

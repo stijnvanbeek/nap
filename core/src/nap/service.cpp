@@ -74,7 +74,9 @@ namespace nap
 
 	const Module& Service::getModule() const
 	{
-		auto module = getCore().getModuleManager().findModule(this->get_type());
+		auto name = getModuleName();
+		assert(!name.empty());
+		auto module = getCore().getModuleManager().findModule(name);
 		assert(module != nullptr);
 		return *module;
 	}

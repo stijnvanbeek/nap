@@ -216,6 +216,8 @@ namespace nap
 		std::string getIniFilePath(const std::string& appendix) const;
 
 	private:
+		virtual std::string getModuleName() const { return ""; }
+
 		// this variable will be set by the core when the service is added
 		Core*									mCore = nullptr;
 		ServiceConfiguration*					mConfiguration = nullptr;

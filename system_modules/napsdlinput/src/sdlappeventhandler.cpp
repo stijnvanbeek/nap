@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 // External Includes
-#include <SDL_hints.h>
+#include <SDL3/SDL_hints.h>
 #include <nap/logger.h>
 
 // Local Includes

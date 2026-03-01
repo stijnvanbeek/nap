@@ -8,7 +8,7 @@
 
 // External includes
 #include <sdlinputservice.h>
-#include <SDL_hints.h>
+#include <SDL3/SDL_hints.h>
 
 RTTI_BEGIN_CLASS_NO_DEFAULT_CONSTRUCTOR(nap::GUIAppEventHandler)
 	RTTI_CONSTRUCTOR(nap::App&)

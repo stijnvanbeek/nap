@@ -8,8 +8,8 @@
 
 // External Includes
 #include <assert.h>
-#include <SDL.h>
-#include <SDL_vulkan.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_vulkan.h>
 #include <mathutils.h>
 #include <rtti/typeinfo.h>
 #include <utility/fileutils.h>
