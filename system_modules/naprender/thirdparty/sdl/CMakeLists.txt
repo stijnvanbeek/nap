@@ -35,6 +35,7 @@ if (BUILD_STATIC)
     )
 else ()
     add_import_library(${PROJECT_NAME} ${implib} ${dll} ${include_dir})
-    target_include_directories(${PROJECT_NAME} INTERFACE ${include_dir}/SDL3) # Makes sure sdl headers can be included within the SDL3 subfolder as well
 endif ()
+
+#target_include_directories(${PROJECT_NAME} INTERFACE ${include_dir}/SDL3) # Makes sure sdl headers can be included within the SDL3 subfolder as well
 
