@@ -20,7 +20,7 @@ if (BUILD_STATIC)
     set(static_lib ${bin_dir}/${static_lib_prefix}${PROJECT_NAME}${static_lib_suffix})
     add_static_import_library(${PROJECT_NAME} ${static_lib} ${include_dir})
     target_link_libraries(${PROJECT_NAME} INTERFACE
-            "-framework Cocoa"                 # Common SDL deps
+            "-framework Cocoa"                # Common SDL deps
             "-framework IOKit"
             "-framework AVFoundation"         # Camera
             "-framework CoreMedia"

@@ -216,6 +216,10 @@ namespace nap
 		std::string getIniFilePath(const std::string& appendix) const;
 
 	private:
+		/**
+		 * Implement this method in derived classes in order to use the getModule() method.
+		 * @return The name of the cmake target and directory that defines the module.
+		 */
 		virtual std::string getModuleName() const { return ""; }
 
 		// this variable will be set by the core when the service is added
