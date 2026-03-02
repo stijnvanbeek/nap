@@ -24,7 +24,11 @@ if(${ARCH} STREQUAL "armhf")
 endif()
 
 # The NAP modules Napkin needs
-set(NAP_MODULES_DEPENDENCIES napcore napscene napcolor napmath naprender napinput napfont napcameracontrol naprenderadvanced napimgui napapi)
+if(BUILD_STATIC)
+    set(NAP_MODULES_DEPENDENCIES napstatic)
+else ()
+    set(NAP_MODULES_DEPENDENCIES napcore napscene napcolor napmath naprender napinput napfont napcameracontrol naprenderadvanced napimgui napapi)
+endif ()
 
 # Add python if enabled
 if(NAP_ENABLE_PYTHON)
