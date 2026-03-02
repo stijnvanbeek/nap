@@ -21,17 +21,16 @@ function(target_link_import_library target library)
         target_include_directories(${target} PUBLIC ${include_dir})
     endif ()
 
+    target_link_libraries(${target} ${library})
     if (${library_type} STREQUAL SHARED_LIBRARY)
-        target_link_libraries(${target} ${library})
-        add_custom_command(
-                TARGET ${target} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${library_path}
-                ${LIB_DIR})
+#        target_link_libraries(${target} ${library})
+#        add_custom_command(
+#                TARGET ${target} POST_BUILD
+#                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${library_path} ${LIB_DIR})
+
         install(FILES ${LIB_DIR}/${library_file_name} TYPE LIB OPTIONAL)
-    else ()
-        # Static libs are linked with absolute path
-        target_link_libraries(${target} ${library})
+#    else ()
+#        # Static libs are linked with absolute path
 #        target_link_libraries(${target} PUBLIC ${library_path})
     endif()
 endfunction()
@@ -63,45 +62,45 @@ function(add_import_library target_name implib dll include_dir)
         return()
     endif()
 
+    get_filename_component(dll_filename ${dll} NAME)
+    set(dest_dll ${LIB_DIR}/${dll_filename})
+    if (NOT EXISTS ${dest_dll})
+        # Copy DLL file to LIB_DIR
+        file(COPY ${dll} DESTINATION ${LIB_DIR})
+        if (UNIX)
+            if (APPLE)
+                execute_process(COMMAND install_name_tool -id
+                        @rpath/${dll_filename}
+                        ${dest_dll}
+                        RESULT_VARIABLE EXIT_CODE)
+                if(NOT ${EXIT_CODE} EQUAL 0)
+                    message(FATAL_ERROR "Failed to set RPATH on ${dll_filename} using install_name_tool -id.")
+                endif()
+
+                if (DEFINED ENV{MACOS_CODE_SIGNATURE})
+                    # Codesign the executable with signature in environment variable
+                    execute_process(COMMAND codesign --force -s $ENV{MACOS_CODE_SIGNATURE} ${dest_dll})
+                else ()
+                    # Perform ad hoc signing
+                    execute_process(COMMAND codesign --force -s - ${dest_dll})
+                endif ()
+            else ()
+                # Set so name or rpath for linux
+                execute_process(COMMAND patchelf --set-soname
+                        ${dll_filename}
+                        ${dest_dll}
+                        RESULT_VARIABLE EXIT_CODE)
+                if(NOT ${EXIT_CODE} EQUAL 0)
+                    message(FATAL_ERROR "Failed to set RPATH on ${dll_filename} using patchelf. Is patchelf installed?")
+                endif()
+            endif()
+        endif ()
+    endif()
+
     add_library(${target_name} SHARED IMPORTED GLOBAL)
-    set_property(TARGET ${target_name} PROPERTY IMPORTED_LOCATION ${dll})
+    set_property(TARGET ${target_name} PROPERTY IMPORTED_LOCATION ${dest_dll})
     set_property(TARGET ${target_name} PROPERTY IMPORTED_IMPLIB ${implib})
     set_property(TARGET ${target_name} PROPERTY INCLUDE_DIRECTORIES ${include_dir})
-
-    if (UNIX)
-        get_filename_component(library_name ${dll} NAME)
-        if (APPLE)
-# The library id needs to be set once on every dylib to @rpath/[library filename]:
-# install_name_tool -id @rpath/[library filename] [path to library]
-# The line below automates this, however when generating multiple configurations at the same time the processes clash.
-# Hence it is advised to instead call install_name_tool manually on every newly added external shared library.
-#            execute_process(COMMAND install_name_tool -id
-#                    @rpath/${library_name}
-#                    ${dll}
-#                    RESULT_VARIABLE EXIT_CODE)
-#            if(NOT ${EXIT_CODE} EQUAL 0)
-#                message(FATAL_ERROR "Failed to set RPATH on ${library_name} using install_name_tool -id.")
-#            endif()
-
-            if (DEFINED ENV{MACOS_CODE_SIGNATURE})
-                # Codesign the executable with signature in environment variable
-                execute_process(COMMAND codesign --force -s $ENV{MACOS_CODE_SIGNATURE} ${dll})
-            else ()
-                # Perform ad hoc signing
-                execute_process(COMMAND codesign --force -s - ${dll})
-            endif ()
-
-        else ()
-            # Set so name or rpath for linux
-            execute_process(COMMAND patchelf --set-soname
-                    ${library_name}
-                    ${dll}
-                    RESULT_VARIABLE EXIT_CODE)
-            if(NOT ${EXIT_CODE} EQUAL 0)
-                message(FATAL_ERROR "Failed to set RPATH on ${library_name} using patchelf. Is patchelf installed?")
-            endif()
-        endif()
-    endif()
 endfunction()
 
 
