@@ -13,7 +13,7 @@
 #include <sdlhelpers.h>
 #include <nap/logger.h>
 #include <mathutils.h>
-#include <SDL_events.h>
+#include <SDL3/SDL_events.h>
 
 #include "appcontext.h"
 

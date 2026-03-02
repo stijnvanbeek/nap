@@ -12,8 +12,8 @@
 #include <QSurfaceFormat>
 #include <QResizeEvent>
 #include <rtti/factory.h>
-#include <SDL_render.h>
-#include <SDL_hints.h>
+#include <SDL3/SDL_render.h>
+#include <SDL3/SDL_hints.h>
 #include <sdlhelpers.h>
 #include <QThread>
 

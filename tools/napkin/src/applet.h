@@ -11,7 +11,7 @@
 #include <app.h>
 #include <renderwindow.h>
 #include <rtti/objectptr.h>
-#include <SDL_render.h>
+#include <SDL3/SDL_render.h>
 #include <renderservice.h>
 
 namespace napkin
