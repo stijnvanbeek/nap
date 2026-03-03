@@ -42,19 +42,15 @@ endif ()
 
 # Codesign the shared libraries
 get_target_property(rttr_library_path RTTR::Core IMPORTED_LOCATION_RELEASE)
-message("rttr lib: ${rttr_library_path}")
-codesign(${rttr_library_path})
+file(COPY ${rttr_library_path} DESTINATION ${LIB_DIR})
+get_filename_component(rttr_filename ${rttr_library_path} NAME)
+set(rttr_bin_path ${LIB_DIR}/${rttr_filename})
+
+codesign(${rttr_bin_path})
 codesign_target(${PROJECT_NAME})
 
-# Copy RTTR::Core libraries to bin
-add_custom_command(
-        TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy
-        $<TARGET_FILE:RTTR::Core>
-        ${LIB_DIR})
-
 # Package RTTR::Core libraries
-install(FILES $<TARGET_FILE:RTTR::Core> TYPE LIB OPTIONAL)
+install(FILES ${rttr_bin_path} TYPE LIB OPTIONAL)
 
 # Package naprtti library
 install(FILES $<TARGET_FILE:${PROJECT_NAME}> TYPE LIB OPTIONAL)
