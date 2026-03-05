@@ -1,5 +1,5 @@
 # Set this flag in order to link libsndfile and mpg123 and build support for reading audio files
-set(NAP_AUDIOFILE_SUPPORT ON)
+option(NAP_AUDIOFILE_SUPPORT "Link to libsndfile and mpg123 to support audio file handling." ON)
 
 # Add sources to target
 if (NAP_AUDIOFILE_SUPPORT)

@@ -1,6 +1,6 @@
 # Turn this option off in case you want to build napmidi without rtmidi.
 # rtmidi is needed for accessing hardware midi devices.
-set(NAP_ENABLE_RTMIDI ON)
+option(NAP_ENABLE_RTMIDI "Link to rtmidi to handle midi device IO." ON)
 
 if (NAP_ENABLE_RTMIDI)
     # Include sources and headers for midi port support that use rtmidi
