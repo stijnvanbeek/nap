@@ -3,7 +3,7 @@ set(CMAKE_OSX_ARCHITECTURES arm64;x86_64)
 
 project(NAP)
 
-option(BUILD_STATIC "Link all libraries statically" OFF)
+option(BUILD_STATIC "Link all modules statically" OFF)
 
 set(NAP_ROOT ${CMAKE_CURRENT_LIST_DIR})
 include(${NAP_ROOT}/cmake/setup.cmake)
@@ -12,6 +12,7 @@ include(${NAP_ROOT}/cmake/nap_utilities.cmake)
 setup()
 
 if (BUILD_STATIC)
+    message("Building NAP statically")
     add_subdirectory(static)
 endif()
 
@@ -30,21 +31,23 @@ add_subdirectory(system_modules/napimgui)
 add_subdirectory(system_modules/napparameter)
 add_subdirectory(system_modules/napparametergui)
 add_subdirectory(system_modules/napcameracontrol)
-add_subdirectory(system_modules/naprenderadvanced)
 add_subdirectory(system_modules/napapi)
-#add_subdirectory(system_modules/napaudio)
+add_subdirectory(system_modules/napaudio)
+add_subdirectory(system_modules/napmidi)
 #add_subdirectory(system_modules/napportaudio)
-#add_subdirectory(system_modules/napmidi)
 #add_subdirectory(system_modules/naposc)
 #add_subdirectory(system_modules/napudp)
 #add_subdirectory(system_modules/napasio)
 #add_subdirectory(system_modules/napcalendar)
 #add_subdirectory(system_modules/napsequence)
 #add_subdirectory(system_modules/napsequencegui)
+#add_subdirectory(system_modules/naprenderadvanced)
 
 set(NAP_BUILD_CONTEXT source) # This is here just to guarantee backwards compatibility with 0.6 style NAP modules
 #add_subdirectory_modules(modules)
 #add_subdirectory_apps(apps)
+add_subdirectory(modules/napaudioadvanced)
+add_subdirectory(modules/napcontrol)
 
 add_subdirectory(demos/helloworld)
 #add_subdirectory(demos/audioplayback)
