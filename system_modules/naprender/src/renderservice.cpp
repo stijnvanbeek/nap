@@ -544,7 +544,7 @@ namespace nap
 		std::vector<const char*> ext_names;
 		ext_names.reserve(extensionNames.size());
 		for (const auto& ext : extensionNames)
-			if (ext != "VK_KHR_portability_enumeration") // Filter this extension as it fails to initialize on Mac OS
+			// if (ext != "VK_KHR_portability_enumeration") // Filter this extension as it fails to initialize on Mac OS
 				ext_names.emplace_back(ext.c_str());
 
 		// Get the supported vulkan instance version, only supported by newer (1.1) loaders.
@@ -593,6 +593,7 @@ namespace nap
 		inst_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 		inst_info.pNext = NULL;
 #ifdef __APPLE__
+		// inst_info.flags = 0;
 		inst_info.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 #else
 		inst_info.flags = 0;

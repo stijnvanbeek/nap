@@ -23,17 +23,16 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${INCLUDES})
 
 # Set compile definitions
 target_compile_definitions(${PROJECT_NAME} PRIVATE _USE_MATH_DEFINES)
-find_library(METAL_LIB Metal)
-find_library(FOUNDATION_LIB Foundation)
-find_library(QUARTZ_LIB QuartzCore)
-find_library(IOKIT_LIB IOKit)
-find_library(IOSURFACE_LIB IOSurface)
-set(moltenvk_dependencies ${METAL_LIB} ${FOUNDATION_LIB} ${QUARTZ_LIB} ${IOKIT_LIB} ${IOSURFACE_LIB} "-framework CoreGraphics" "-framework AppKit")
-message("MoltenVK dependencies: ${moltenvk_dependencies}")
 
 if(APPLE)
-    target_compile_definitions(${PROJECT_NAME} PUBLIC VK_USE_PLATFORM_METAL_EXT=1)
+    find_library(METAL_LIB Metal)
+    find_library(FOUNDATION_LIB Foundation)
+    find_library(QUARTZ_LIB QuartzCore)
+    find_library(IOKIT_LIB IOKit)
+    find_library(IOSURFACE_LIB IOSurface)
+    set(moltenvk_dependencies ${METAL_LIB} ${FOUNDATION_LIB} ${QUARTZ_LIB} ${IOKIT_LIB} ${IOSURFACE_LIB} "-framework CoreGraphics" "-framework AppKit")
     target_link_libraries(${PROJECT_NAME} ${moltenvk_dependencies})
+    target_compile_definitions(${PROJECT_NAME} PUBLIC VK_USE_PLATFORM_METAL_EXT=1)
 endif()
 
 if(UNIX AND NOT APPLE AND ${ARCH} STREQUAL "armhf")
@@ -58,6 +57,26 @@ if (BUILD_STATIC)
     # Add naprender includes to napstatic
     target_include_directories(napstatic PUBLIC ${INCLUDES})
 endif ()
+
+if (APPLE)
+    get_target_property(MOLTENVK_LIB moltenvk IMPORTED_LOCATION)
+    codesign(${MOLTENVK_LIB})
+    add_custom_command(
+            TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy
+            ${MOLTENVK_LIB}
+            ${LIB_DIR})
+    install(FILES ${MOLTENVK_LIB} TYPE LIB OPTIONAL)
+
+    # Copy MoltenVK_icd.json to bin and install
+    add_custom_command(
+            TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy
+            ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/vulkansdk/macos/universal/share/vulkan/icd.d/MoltenVK_icd.json
+            ${LIB_DIR}/MoltenVK_icd.json)
+    install(FILES ${LIB_DIR}/MoltenVK_icd.json DESTINATION ${CMAKE_INSTALL_MODULEINFODIR} OPTIONAL)
+    #install(FILES ${LIB_DIR}/MoltenVK_icd.json TYPE DATA OPTIONAL)
+endif()
 
 # Copy thirdparty licenses
 add_license(assimp ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/assimp/source/LICENSE)
