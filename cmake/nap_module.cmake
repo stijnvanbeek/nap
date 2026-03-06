@@ -52,7 +52,7 @@ if (BUILD_STATIC)
     # Filter module descriptor cpp file from the sources and add them to napstatic
     set(STATIC_SOURCES ${SOURCES})
     list(FILTER STATIC_SOURCES EXCLUDE REGEX ".*${PROJECT_NAME}.cpp")
-    target_sources(napstatic PUBLIC ${STATIC_SOURCES} ${HEADERS})
+    target_sources(napstatic PRIVATE ${STATIC_SOURCES} ${HEADERS})
     target_include_directories(napstatic PUBLIC src)
 else()
     target_link_libraries(${PROJECT_NAME} ${required_modules})

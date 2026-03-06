@@ -1,3 +1,5 @@
-//
-// Created by Stijn on 22/02/2026.
-//
+#pragma once
+
+#include "utility/module.h"
+
+NAP_MODULE("napstatic", "0.1.0")

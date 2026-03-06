@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.19)
+
 # Use this function to link import libraries from module_extra.cmake and other included cmake files
 # target: The target to link the library to
 # library: An import target that links to a DLL
@@ -148,6 +150,10 @@ function(add_source_dir NAME DIR)
 
     # Add sources to target
     target_sources(${PROJECT_NAME} PRIVATE ${SOURCES})
+
+    if (BUILD_STATIC)
+        target_sources(napstatic PRIVATE ${SOURCES})
+    endif ()
 endfunction()
 
 
@@ -228,7 +234,6 @@ function(codesign_target target)
             set(signature $ENV{MACOS_CODE_SIGNATURE}) # If defined, use environment variable as signature
         endif ()
         # Codesign the target post build
-        message("Codesigning ${target} with signature ${signature}")
         add_custom_command(TARGET ${target} POST_BUILD
                 COMMAND codesign --force -s ${signature} $<TARGET_FILE:${target}>)
     endif ()

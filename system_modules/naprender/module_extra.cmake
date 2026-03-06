@@ -50,7 +50,10 @@ if (BUILD_STATIC)
     target_link_libraries(napstatic debug ${SPIRVCROSS_LIBS_DEBUG} optimized ${SPIRVCROSS_LIBS_RELEASE})
     target_link_libraries(napstatic debug "${GLSLANG_LIBS_DEBUG}" optimized "${GLSLANG_LIBS_RELEASE}")
 
-    target_link_libraries(napstatic ${moltenvk_dependencies})
+    if(APPLE)
+        target_compile_definitions(napstatic PUBLIC VK_USE_PLATFORM_METAL_EXT=1)
+        target_link_libraries(napstatic ${moltenvk_dependencies})
+    endif()
 
     # Add naprender includes to napstatic
     target_include_directories(napstatic PUBLIC ${INCLUDES})
