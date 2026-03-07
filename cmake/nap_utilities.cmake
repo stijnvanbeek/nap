@@ -69,6 +69,7 @@ function(add_import_library target_name implib dll include_dir)
     if (NOT EXISTS ${dest_dll})
         # Copy DLL file to LIB_DIR
         file(COPY ${dll} DESTINATION ${LIB_DIR})
+        # Set rpath
         if (UNIX)
             if (APPLE)
                 execute_process(COMMAND install_name_tool -id
@@ -78,14 +79,6 @@ function(add_import_library target_name implib dll include_dir)
                 if(NOT ${EXIT_CODE} EQUAL 0)
                     message(FATAL_ERROR "Failed to set RPATH on ${dll_filename} using install_name_tool -id.")
                 endif()
-
-                if (DEFINED ENV{MACOS_CODE_SIGNATURE})
-                    # Codesign the executable with signature in environment variable
-                    execute_process(COMMAND codesign --force -s $ENV{MACOS_CODE_SIGNATURE} ${dest_dll})
-                else ()
-                    # Perform ad hoc signing
-                    execute_process(COMMAND codesign --force -s - ${dest_dll})
-                endif ()
             else ()
                 # Set so name or rpath for linux
                 execute_process(COMMAND patchelf --set-soname
@@ -97,6 +90,8 @@ function(add_import_library target_name implib dll include_dir)
                 endif()
             endif()
         endif ()
+        # Codesign
+        codesign(${dest_dll})
     endif()
 
     add_library(${target_name} SHARED IMPORTED GLOBAL)
@@ -248,7 +243,6 @@ function(codesign path)
             set(signature $ENV{MACOS_CODE_SIGNATURE}) # If defined, use environment variable as signature
         endif ()
         # Codesign the file
-        message("Codesigning ${path} with signature ${signature}")
         execute_process(COMMAND codesign --force -s ${signature} ${path})
     endif ()
 endfunction()
