@@ -84,7 +84,7 @@ namespace nap
 		uint32							mVulkanVersionMajor = 1;									///< Property: 'VulkanMajor The major required vulkan API instance version.
 //TODO: Remove this ifdef once Vulkan version is upgraded to 1.4 on other platforms as well
 #ifdef __APPLE__
-		uint32							mVulkanVersionMinor = 2;									///< Property: 'VulkanMinor' The minor required vulkan API instance version.
+		uint32							mVulkanVersionMinor = 4;									///< Property: 'VulkanMinor' The minor required vulkan API instance version.
 #else
 		uint32							mVulkanVersionMinor = 2;									///< Property: 'VulkanMinor' The minor required vulkan API instance version.
 #endif
@@ -1073,8 +1073,6 @@ namespace nap
 		 */
 		virtual void update(double deltaTime) override;
 
-		std::string getModuleName() const override { return "naprender"; }
-
 	private:
 		/**
 		 * Initializes empty textures filled with zero, and error textures filled with a red error color.
@@ -1218,6 +1216,8 @@ namespace nap
 		 * @param chain the chain to remove. Asserts if not found.
 		 */
 		void removeChain(const RenderChain& chain);
+
+		std::string getModuleName() const override { return "naprender"; }
 
 	private:
 		struct UniqueMaterial;
