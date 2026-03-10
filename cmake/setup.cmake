@@ -102,15 +102,6 @@ macro(setup)
 
     # Static linking
     add_library(napstatic INTERFACE)
-    define_property(TARGET PROPERTY static_sources)
-    define_property(TARGET PROPERTY static_includes)
-    define_property(TARGET PROPERTY static_linked_libs)
-    define_property(TARGET PROPERTY static_linked_targets)
-#    set(STATIC_INCLUDES "" PARENT_SCOPE)
-#    set(STATIC_SOURCES "" PARENT_SCOPE)
-#    set(STATIC_LINKED_LIBS "" PARENT_SCOPE)
-#    set(STATIC_LINKED_TARGETS "" PARENT_SCOPE)
-#    set(STATIC_COMPILE_DEFS "" PARENT_SCOPE)
 endmacro()
 
 

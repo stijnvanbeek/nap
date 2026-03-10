@@ -4,7 +4,7 @@ add_subdirectory(thirdparty/freetype)
 target_link_import_library(${PROJECT_NAME} freetype)
 
 if (BUILD_STATIC)
-    add_static_linked_lib(freetype)
+    target_link_libraries(napstatic INTERFACE freetype)
 endif()
 
 add_license(freetype ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/freetype/source/README)
