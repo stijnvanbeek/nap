@@ -1,5 +1,5 @@
 macro(setup)
-    bootstrap_environment()
+    setup_build_tools()
 
     # Set global directories
     set(THIRDPARTY_DIR ${NAP_ROOT}/thirdparty)
@@ -32,8 +32,9 @@ macro(setup)
             set(APP_INSTALL_NAME "MyApp.app")
         else()
             set(APP_INSTALL_NAME "MyApp")
-        endif()
-    endif()
+        endif ()
+    endif ()
+    message("Output bundle name: ${APP_INSTALL_NAME}")
     if (WIN32)
         # Install all artifacts in app root on windows
         set(CMAKE_INSTALL_BINDIR ${APP_INSTALL_NAME})
@@ -101,7 +102,7 @@ macro(setup)
 endmacro()
 
 
-macro(bootstrap_environment)
+macro(setup_build_tools)
     # Enforce GCC on Linux for now (when doing packaging build at least)
     if(UNIX AND NOT APPLE)
         if(NOT NAP_BUILD_CONTEXT MATCHES "source" OR DEFINED NAP_PACKAGED_BUILD)

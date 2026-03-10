@@ -69,7 +69,7 @@ function(add_import_library target_name implib dll include_dir)
     if (NOT EXISTS ${dest_dll})
         # Copy DLL file to LIB_DIR
         file(COPY ${dll} DESTINATION ${LIB_DIR})
-        # Set rpath
+        # Set install name for library
         if (UNIX)
             if (APPLE)
                 execute_process(COMMAND install_name_tool -id
@@ -244,5 +244,17 @@ function(codesign path)
         endif ()
         # Codesign the file
         execute_process(COMMAND codesign --force -s ${signature} ${path})
+    endif ()
+endfunction()
+
+
+# Sets the rpath for a target's output executable or loading library
+function(set_target_rpath target rpath)
+    if (APPLE)
+        # Update executable rpath if it hasn't been set already
+        # Using a bash script, it checks if the '@executablepath/%{LIB_RPATH}/' already exists in the list displayed by 'otool -l'. If not, it calls the CMAKE_INSTALL_NAME_TOOL to install the name.
+        add_custom_command(TARGET ${target}
+                POST_BUILD COMMAND
+                if ! otool -l $<TARGET_FILE:${target} | grep -q ${rpath}/.\; then ${CMAKE_INSTALL_NAME_TOOL} -add_rpath "${rpath}/." $<TARGET_FILE:${target}>\; fi)
     endif ()
 endfunction()

@@ -12,8 +12,10 @@ if (WIN32)
 
 elseif (APPLE)
 
-    set(dll ${platform_dir}/lib/libvulkan.dylib)
-    add_import_library(${PROJECT_NAME} ${dll} ${dll} ${include_dir})
+#    set(dll ${platform_dir}/lib/libvulkan.dylib)
+#    add_import_library(${PROJECT_NAME} ${dll} ${dll} ${include_dir})
+    set(moltenvk_lib ${platform_dir}/lib/libMoltenVK.dylib)
+    add_import_library(${PROJECT_NAME} ${moltenvk_lib} ${moltenvk_lib} ${include_dir})
 
     # Link macos frameworks
     find_library(METAL_LIB Metal)
@@ -24,16 +26,16 @@ elseif (APPLE)
     target_link_libraries(${PROJECT_NAME} INTERFACE ${METAL_LIB} ${FOUNDATION_LIB} ${QUARTZ_LIB} ${IOKIT_LIB} ${IOSURFACE_LIB})
 
     # Copy MoltenVk to bin and codesign
-    set(moltenvk_lib ${platform_dir}/lib/libMoltenVK.dylib)
-    file(COPY ${moltenvk_lib} DESTINATION ${LIB_DIR})
-    get_filename_component(MoltenVK_filename ${moltenvk_lib} NAME)
-    set(MoltenVK_Dest ${LIB_DIR}/${MoltenVK_filename})
-    codesign(${MoltenVK_Dest})
-    install(FILES ${MoltenVK_Dest} TYPE LIB OPTIONAL)
+#    set(moltenvk_lib ${platform_dir}/lib/libMoltenVK.dylib)
+#    file(COPY ${moltenvk_lib} DESTINATION ${LIB_DIR})
+#    get_filename_component(MoltenVK_filename ${moltenvk_lib} NAME)
+#    set(MoltenVK_Dest ${LIB_DIR}/${MoltenVK_filename})
+#    codesign(${MoltenVK_Dest})
+#    install(FILES ${MoltenVK_Dest} TYPE LIB OPTIONAL)
 
-    # Copy ICD json used to find MoltenVK library at runtime by the loader.
-    file(COPY ${platform_dir}/share/vulkan/icd.d/MoltenVK_icd.json DESTINATION ${LIB_DIR})
-    install(FILES ${LIB_DIR}/MoltenVK_icd.json DESTINATION ${CMAKE_INSTALL_MODULEINFODIR} OPTIONAL)
+#    # Copy ICD json used to find MoltenVK library at runtime by the loader.
+#    file(COPY ${platform_dir}/share/vulkan/icd.d/MoltenVK_icd.json DESTINATION ${LIB_DIR})
+#    install(FILES ${LIB_DIR}/MoltenVK_icd.json DESTINATION ${CMAKE_INSTALL_MODULEINFODIR} OPTIONAL)
 
 else ()
 
