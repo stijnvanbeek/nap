@@ -18,12 +18,19 @@ function(target_link_import_library target library)
 
     get_target_property(include_dir ${library} INCLUDE_DIRECTORIES)
     get_target_property(library_type ${library} TYPE)
+    get_target_property(target_type ${target} TYPE)
 
-    if (EXISTS ${include_dir})
-        target_include_directories(${target} PUBLIC ${include_dir})
+    if (${target_type} STREQUAL INTERFACE_LIBRARY)
+        if (EXISTS ${include_dir})
+            target_include_directories(${target} INTERFACE ${include_dir})
+        endif ()
+        target_link_libraries(${target} INTERFACE ${library})
+    else ()
+        if (EXISTS ${include_dir})
+            target_include_directories(${target} PUBLIC ${include_dir})
+        endif ()
+        target_link_libraries(${target} ${library})
     endif ()
-
-    target_link_libraries(${target} ${library})
     if (${library_type} STREQUAL SHARED_LIBRARY)
         install(FILES ${LIB_DIR}/${library_file_name} TYPE LIB OPTIONAL)
     endif()
@@ -137,10 +144,7 @@ function(add_source_dir NAME DIR)
 
     # Add sources to target
     target_sources(${PROJECT_NAME} PRIVATE ${SOURCES})
-
-    if (BUILD_STATIC)
-        target_sources(napstatic INTERFACE ${SOURCES})
-    endif ()
+    target_sources(${static_target} INTERFACE ${SOURCES})
 endfunction()
 
 
@@ -199,17 +203,12 @@ endfunction()
 
 
 function(add_license name license_path)
-    if(BUILD_STATIC)
-        # For static builds copy the license on project generation.
-        file(COPY ${license_path} DESTINATION ${BIN_DIR}/license/${name})
-    else ()
-        # For dynamic builds only copy the license after the module is included and built.
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E make_directory ${BIN_DIR}/license/${name})
-        get_filename_component(license_filename ${license_path} NAME)
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${license_path}
-                ${BIN_DIR}/license/${name}/${license_filename})
-    endif ()
+    # For dynamic builds only copy the license after the module is included and built.
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E make_directory ${BIN_DIR}/license/${name})
+    get_filename_component(license_filename ${license_path} NAME)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${license_path}
+            ${BIN_DIR}/license/${name}/${license_filename})
 endfunction()
 
 
@@ -251,53 +250,3 @@ function(set_target_rpath target rpath)
     endif ()
 endfunction()
 
-
-function(link_import_library_static library)
-    if (NOT TARGET ${library})
-        message(FATAL_ERROR "Library dependency ${library} not found for building ${target}")
-    endif()
-    get_target_property(library_path ${library} IMPORTED_LOCATION)
-    get_target_property(library_path_debug ${library} IMPORTED_LOCATION_DEBUG)
-    if (DEFINED CMAKE_BUILD_TYPE)
-        if (${CMAKE_BUILD_TYPE} STREQUAL "Debug" AND EXISTS ${library_path_debug})
-            set(library_path ${library_path_debug})
-        endif()
-    endif()
-    get_filename_component(library_file_name ${library_path} NAME)
-
-    get_target_property(include_dir ${library} INCLUDE_DIRECTORIES)
-    get_target_property(library_type ${library} TYPE)
-
-    if (EXISTS ${include_dir})
-        target_include_directories(napstatic INTERFACE ${include_dir})
-    endif ()
-
-    target_link_libraries(napstatic INTERFACE ${library})
-    if (${library_type} STREQUAL SHARED_LIBRARY)
-        install(FILES ${LIB_DIR}/${library_file_name} TYPE LIB OPTIONAL)
-    endif()
-endfunction()
-
-
-function(target_link_nap_static target)
-    add_definitions(-DRAPIDJSON_HAS_STDSTRING=1)
-
-    # Preprocessor
-    target_compile_definitions(${target} PUBLIC NAP_SHARED_LIBRARY)
-    target_compile_definitions(${target} PUBLIC MODULE_NAME=${PROJECT_NAME})
-
-    if(APPLE)
-        target_compile_definitions(${target} PUBLIC VK_USE_PLATFORM_METAL_EXT=1)
-    elseif(UNIX)
-        target_link_libraries(${target} dl pthread)
-    endif ()
-
-    if(MSVC)
-        target_compile_definitions(${target} PUBLIC NOMINMAX)
-    endif()
-
-    target_compile_definitions(${target} PUBLIC _USE_MATH_DEFINES)
-    target_compile_definitions(${target} PUBLIC GLM_FORCE_CTOR_INIT)
-
-    target_link_libraries(${target} PRIVATE napstatic)
-endfunction()

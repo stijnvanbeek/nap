@@ -101,7 +101,7 @@ macro(setup)
     set(EXECUTABLE_OUTPUT_PATH ${BIN_DIR})
 
     # Static linking
-    add_library(napstatic INTERFACE)
+    set(static_suffix _static)
 endmacro()
 
 

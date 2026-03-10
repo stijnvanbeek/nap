@@ -37,8 +37,14 @@ elseif(UNIX)
         src/nap/native/resourcemanager_ext.cpp
     )
 endif()
-message("napcore project ${PROJECT_NAME}")
+
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
+set(static_target ${PROJECT_NAME}${static_suffix})
+add_library(${static_target} INTERFACE)
+
+set(STATIC_SOURCES ${SOURCES})
+list(FILTER STATIC_SOURCES EXCLUDE REGEX ".*${PROJECT_NAME}.cpp")
+target_sources(${static_target} INTERFACE ${STATIC_SOURCES})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
 
@@ -56,29 +62,26 @@ endif()
 target_compile_definitions(${PROJECT_NAME} PRIVATE MODULE_NAME=${PROJECT_NAME})
 if(MSVC)
     target_compile_definitions(${PROJECT_NAME} PUBLIC NOMINMAX)
+    target_compile_definitions(${static_target} INTERFACE NOMINMAX)
 endif()
 
-target_include_directories(${PROJECT_NAME} PUBLIC src ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(${PROJECT_NAME} PUBLIC src)
+target_include_directories(${static_target} INTERFACE src)
 target_link_libraries(${PROJECT_NAME} naprtti)
+target_link_libraries(${static_target} INTERFACE naprtti${static_suffix})
+
 
 if (UNIX AND NOT APPLE)
     include_directories(${PROJECT_NAME} src/nap/linux/FileWatcher)
+    target_include_directories(${static_target} INTERFACE src/nap/linux/FileWatcher)
 endif()
 
 if(APPLE)
     target_link_libraries(${PROJECT_NAME} "-framework CoreServices")
+    target_link_libraries(${static_target} INTERFACE "-framework CoreServices")
 elseif(UNIX)
     target_link_libraries(${PROJECT_NAME} dl pthread)
-endif ()
-
-if (BUILD_STATIC)
-    set(STATIC_SOURCES ${SOURCES})
-    list(FILTER STATIC_SOURCES EXCLUDE REGEX ".*${PROJECT_NAME}.cpp")
-    target_sources(napstatic INTERFACE ${STATIC_SOURCES})
-    target_include_directories(napstatic INTERFACE src)
-    if (UNIX AND NOT APPLE)
-        target_include_directories(napstatic INTERFACE src/nap/linux/FileWatcher)
-    endif()
+    target_link_libraries(${static_target} INTERFACE dl pthread)
 endif ()
 
 codesign_target(${PROJECT_NAME})

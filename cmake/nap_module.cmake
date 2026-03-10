@@ -21,6 +21,16 @@ file(GLOB HEADERS src/*.h src/*.hpp)
 # Compile target as shared lib
 add_library(${PROJECT_NAME} SHARED ${SOURCES} ${HEADERS})
 
+set(static_target ${PROJECT_NAME}${static_suffix})
+add_library(${static_target} INTERFACE)
+
+# Add sources to static interface
+set(STATIC_SOURCES ${SOURCES})
+list(FILTER STATIC_SOURCES EXCLUDE REGEX ".*${PROJECT_NAME}.cpp")
+list(APPEND STATIC_SOURCES ${HEADERS})
+target_sources(${static_target} INTERFACE ${STATIC_SOURCES})
+target_include_directories(${static_target} INTERFACE src)
+
 #set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
 
 # Remove lib prefix on Unix libraries
@@ -28,6 +38,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
 
 # Add include dirs
 target_include_directories(${PROJECT_NAME} PUBLIC src)
+target_include_directories(${static_target} INTERFACE src)
 
 # Preprocessor
 target_compile_definitions(${PROJECT_NAME} PRIVATE NAP_SHARED_LIBRARY)
@@ -41,14 +52,19 @@ set(module_index 0)
 while(NOT ${module_index} EQUAL ${required_module_count})
     string(JSON module GET ${required_modules_json} ${module_index})
     list(APPEND required_modules ${module})
+    list(APPEND required_modules_static "${module}${static_suffix}")
     math(EXPR module_index "${module_index}+1")
 endwhile()
 
 if (NOT required_modules)
     set(required_modules napcore)
 endif()
+if (NOT required_modules_static)
+    set(required_modules_static napcore${static_suffix})
+endif()
 
 target_link_libraries(${PROJECT_NAME} ${required_modules})
+target_link_libraries(${static_target} INTERFACE ${required_modules_static})
 
 # Bring in any additional module logic
 set(MODULE_EXTRA_CMAKE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/module_extra.cmake)
@@ -90,13 +106,4 @@ codesign_target(${PROJECT_NAME})
 # Install library and module json
 install(FILES $<TARGET_FILE:${PROJECT_NAME}> TYPE LIB OPTIONAL)
 install(FILES ${LIB_DIR}/${PROJECT_NAME}.json DESTINATION ${CMAKE_INSTALL_MODULEINFODIR} OPTIONAL)
-
-# Add to napstatic
-set(STATIC_SOURCES ${SOURCES})
-list(FILTER STATIC_SOURCES EXCLUDE REGEX ".*${PROJECT_NAME}.cpp")
-list(APPEND STATIC_SOURCES ${HEADERS})
-if (STATIC_SOURCES)
-    target_sources(napstatic INTERFACE ${STATIC_SOURCES})
-endif ()
-target_include_directories(napstatic INTERFACE src)
 

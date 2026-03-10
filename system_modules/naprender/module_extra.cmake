@@ -24,23 +24,25 @@ target_link_libraries(${PROJECT_NAME} debug "${GLSLANG_LIBS_DEBUG}" optimized "$
 # Add includes
 target_include_directories(${PROJECT_NAME} PUBLIC ${SPIRVCROSS_INCLUDE_DIR} ${GLSLANG_INCLUDE_DIR})
 
-if(BUILD_STATIC)
-    link_import_library_static(assimp)
-    link_import_library_static(SDL3)
-    link_import_library_static(FreeImage)
-    link_import_library_static(vulkan)
-    target_link_libraries(napstatic INTERFACE debug ${SPIRVCROSS_LIBS_DEBUG} optimized ${SPIRVCROSS_LIBS_RELEASE})
-    target_link_libraries(napstatic INTERFACE debug ${GLSLANG_LIBS_DEBUG} optimized ${GLSLANG_LIBS_RELEASE})
-    target_include_directories(napstatic INTERFACE ${SPIRVCROSS_INCLUDE_DIR} ${GLSLANG_INCLUDE_DIR})
-    if(UNIX AND NOT APPLE AND ${ARCH} STREQUAL "armhf")
-        target_link_libraries(napstatic INTERFACE atomic)
-    endif()
+target_link_import_library(${static_target} assimp)
+target_link_import_library(${static_target} SDL3)
+target_link_import_library(${static_target} FreeImage)
+target_link_import_library(${static_target} vulkan)
+target_link_libraries(${static_target} INTERFACE debug ${SPIRVCROSS_LIBS_DEBUG} optimized ${SPIRVCROSS_LIBS_RELEASE})
+target_link_libraries(${static_target} INTERFACE debug ${GLSLANG_LIBS_DEBUG} optimized ${GLSLANG_LIBS_RELEASE})
+target_include_directories(${static_target} INTERFACE ${SPIRVCROSS_INCLUDE_DIR} ${GLSLANG_INCLUDE_DIR})
+if(UNIX AND NOT APPLE AND ${ARCH} STREQUAL "armhf")
+    target_link_libraries(${static_target} INTERFACE atomic)
 endif()
 
 # Set compile definitions
-target_compile_definitions(${PROJECT_NAME} PRIVATE _USE_MATH_DEFINES)
+target_compile_definitions(${static_target} INTERFACE _USE_MATH_DEFINES)
 if(APPLE)
-    target_compile_definitions(${PROJECT_NAME} PUBLIC VK_USE_PLATFORM_METAL_EXT=1)
+    target_compile_definitions(${static_target} INTERFACE VK_USE_PLATFORM_METAL_EXT=1)
+endif()
+target_compile_definitions(${static_target} INTERFACE _USE_MATH_DEFINES)
+if(APPLE)
+    target_compile_definitions(${static_target} INTERFACE VK_USE_PLATFORM_METAL_EXT=1)
 endif()
 
 # Copy thirdparty licenses
