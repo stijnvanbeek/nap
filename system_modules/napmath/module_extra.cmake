@@ -13,8 +13,7 @@ if(WIN32)
 endif()
 
 if (BUILD_STATIC)
-    target_include_directories(napstatic PUBLIC ${GLM_INCLUDE_DIRS})
-    target_compile_definitions(napstatic PUBLIC GLM_FORCE_CTOR_INIT)
+    target_include_directories(napstatic INTERFACE ${GLM_INCLUDE_DIRS})
 endif ()
 
 # Copy glm license

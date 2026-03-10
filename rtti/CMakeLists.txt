@@ -11,14 +11,7 @@ find_package(rapidjson REQUIRED)
 add_definitions(-DRAPIDJSON_HAS_STDSTRING=1)
 
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
-if (BUILD_STATIC)
-    set(STATIC_SOURCES ${SOURCES})
-    list(FILTER STATIC_SOURCES EXCLUDE REGEX ".*${PROJECT_NAME}.cpp")
-    target_sources(napstatic PRIVATE ${STATIC_SOURCES})
-    target_include_directories(napstatic PUBLIC src)
-endif ()
 set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Core)
-
 set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
 
 # Remove lib prefix on Unix libraries
@@ -48,6 +41,20 @@ set(rttr_bin_path ${LIB_DIR}/${rttr_filename})
 
 codesign(${rttr_bin_path})
 codesign_target(${PROJECT_NAME})
+
+if (BUILD_STATIC)
+    set(STATIC_SOURCES ${SOURCES})
+    list(FILTER STATIC_SOURCES EXCLUDE REGEX ".*${PROJECT_NAME}.cpp")
+    target_sources(napstatic INTERFACE ${STATIC_SOURCES})
+    target_include_directories(napstatic INTERFACE ${CMAKE_CURRENT_LIST_DIR}/src)
+
+    # Find RTTR::Core through its provided cmake files using the package finder
+    find_package(RTTR CONFIG REQUIRED Core_Lib)
+
+    target_link_libraries(napstatic INTERFACE naputility)
+    target_link_libraries(napstatic INTERFACE RTTR::Core_Lib)
+    target_include_directories(napstatic INTERFACE ${RAPIDJSON_INCLUDE_DIRS})
+endif ()
 
 # Package RTTR::Core libraries
 install(FILES ${rttr_bin_path} TYPE LIB OPTIONAL)

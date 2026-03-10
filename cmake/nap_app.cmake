@@ -30,7 +30,7 @@ add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${SHADERS})
 
 # Pull in the app module if it exists
 if (TARGET nap${PROJECT_NAME})
-    target_link_libraries(${PROJECT_NAME} nap${PROJECT_NAME})
+    target_link_libraries(${PROJECT_NAME} PRIVATE nap${PROJECT_NAME})
 endif()
 
 set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
@@ -43,28 +43,20 @@ file(MAKE_DIRECTORY ${cache_dir})
 set(app_json_path ${CMAKE_CURRENT_SOURCE_DIR}/app.json)
 file(READ ${app_json_path} app_json)
 
-if (BUILD_STATIC)
-    target_link_libraries(${PROJECT_NAME} napstatic)
-else ()
-    # Read required modules from the app json file
-    string(JSON required_modules_json GET ${app_json} RequiredModules)
-    string(JSON required_module_count LENGTH ${app_json} RequiredModules)
-    set(module_index 0)
-    while(NOT ${module_index} EQUAL ${required_module_count})
-        string(JSON module GET ${required_modules_json} ${module_index})
-        list(APPEND required_modules ${module})
-        math(EXPR module_index "${module_index}+1")
-    endwhile()
+# Read required modules from the app json file
+string(JSON required_modules_json GET ${app_json} RequiredModules)
+string(JSON required_module_count LENGTH ${app_json} RequiredModules)
+set(module_index 0)
+while(NOT ${module_index} EQUAL ${required_module_count})
+    string(JSON module GET ${required_modules_json} ${module_index})
+    list(APPEND required_modules ${module})
+    math(EXPR module_index "${module_index}+1")
+endwhile()
 
-    if (NOT required_modules)
-        set(required_modules napcore)
-    endif()
-    target_link_libraries(${PROJECT_NAME} ${required_modules})
+if (NOT required_modules)
+    set(required_modules napcore)
 endif()
-
-if(NAP_ENABLE_PYTHON)
-    target_link_libraries(${PROJECT_NAME} ${PYTHON_LIBRARIES})
-endif()
+target_link_libraries(${PROJECT_NAME} PRIVATE ${required_modules})
 
 # Include any extra app CMake logic
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/app_extra.cmake)

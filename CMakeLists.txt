@@ -13,7 +13,6 @@ setup()
 
 if (BUILD_STATIC)
     message("Building NAP statically")
-    add_subdirectory(static)
 endif()
 
 add_subdirectory(utility)

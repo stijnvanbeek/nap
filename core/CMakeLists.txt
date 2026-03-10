@@ -4,13 +4,13 @@ file(GLOB SOURCES src/nap/*.cpp src/nap/*.h)
 
 if(APPLE)
     list(APPEND SOURCES
-        src/nap/osx/directorywatcher.cpp
-        src/nap/osx/module.cpp
-        src/nap/osx/core_env.cpp
-        src/nap/native/modulecache_ext.cpp
-        src/nap/native/logger_ext.cpp
-        src/nap/native/core_ext.cpp
-        src/nap/native/resourcemanager_ext.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/nap/osx/directorywatcher.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/nap/osx/module.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/nap/osx/core_env.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/nap/native/modulecache_ext.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/nap/native/logger_ext.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/nap/native/core_ext.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/nap/native/resourcemanager_ext.cpp
     )
 elseif(MSVC)
     list(APPEND SOURCES
@@ -74,10 +74,10 @@ endif ()
 if (BUILD_STATIC)
     set(STATIC_SOURCES ${SOURCES})
     list(FILTER STATIC_SOURCES EXCLUDE REGEX ".*${PROJECT_NAME}.cpp")
-    target_sources(napstatic PRIVATE ${STATIC_SOURCES})
-    target_include_directories(napstatic PUBLIC src)
+    target_sources(napstatic INTERFACE ${STATIC_SOURCES})
+    target_include_directories(napstatic INTERFACE src)
     if (UNIX AND NOT APPLE)
-        target_include_directories(napstatic src/nap/linux/FileWatcher)
+        target_include_directories(napstatic INTERFACE src/nap/linux/FileWatcher)
     endif()
 endif ()
 

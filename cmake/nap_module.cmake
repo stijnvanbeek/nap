@@ -48,15 +48,7 @@ if (NOT required_modules)
     set(required_modules napcore)
 endif()
 
-if (BUILD_STATIC)
-    # Filter module descriptor cpp file from the sources and add them to napstatic
-    set(STATIC_SOURCES ${SOURCES})
-    list(FILTER STATIC_SOURCES EXCLUDE REGEX ".*${PROJECT_NAME}.cpp")
-    target_sources(napstatic PRIVATE ${STATIC_SOURCES} ${HEADERS})
-    target_include_directories(napstatic PUBLIC src)
-else()
-    target_link_libraries(${PROJECT_NAME} ${required_modules})
-endif ()
+target_link_libraries(${PROJECT_NAME} ${required_modules})
 
 # Bring in any additional module logic
 set(MODULE_EXTRA_CMAKE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/module_extra.cmake)
@@ -69,15 +61,13 @@ if (EXISTS ${MODULE_EXTRA_CMAKE_PATH})
 endif()
 
 # Copy module.json to bin
-if (BUILD_STATIC)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/module.json ${LIB_DIR}/${PROJECT_NAME}.json COPYONLY)
-else ()
-    add_custom_command(
-            TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy
-            ${CMAKE_CURRENT_SOURCE_DIR}/module.json
-            ${LIB_DIR}/${PROJECT_NAME}.json)
-endif ()
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/module.json ${LIB_DIR}/${PROJECT_NAME}.json COPYONLY)
+
+#add_custom_command(
+#        TARGET ${PROJECT_NAME} POST_BUILD
+#        COMMAND ${CMAKE_COMMAND} -E copy
+#        ${CMAKE_CURRENT_SOURCE_DIR}/module.json
+#        ${LIB_DIR}/${PROJECT_NAME}.json)
 
 # Copy module data folder and install
 get_filename_component(parent_dir ${CMAKE_CURRENT_SOURCE_DIR} DIRECTORY)
@@ -100,3 +90,13 @@ codesign_target(${PROJECT_NAME})
 # Install library and module json
 install(FILES $<TARGET_FILE:${PROJECT_NAME}> TYPE LIB OPTIONAL)
 install(FILES ${LIB_DIR}/${PROJECT_NAME}.json DESTINATION ${CMAKE_INSTALL_MODULEINFODIR} OPTIONAL)
+
+# Add to napstatic
+set(STATIC_SOURCES ${SOURCES})
+list(FILTER STATIC_SOURCES EXCLUDE REGEX ".*${PROJECT_NAME}.cpp")
+list(APPEND STATIC_SOURCES ${HEADERS})
+if (STATIC_SOURCES)
+    target_sources(napstatic INTERFACE ${STATIC_SOURCES})
+endif ()
+target_include_directories(napstatic INTERFACE src)
+

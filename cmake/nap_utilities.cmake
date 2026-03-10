@@ -25,15 +25,7 @@ function(target_link_import_library target library)
 
     target_link_libraries(${target} ${library})
     if (${library_type} STREQUAL SHARED_LIBRARY)
-#        target_link_libraries(${target} ${library})
-#        add_custom_command(
-#                TARGET ${target} POST_BUILD
-#                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${library_path} ${LIB_DIR})
-
         install(FILES ${LIB_DIR}/${library_file_name} TYPE LIB OPTIONAL)
-#    else ()
-#        # Static libs are linked with absolute path
-#        target_link_libraries(${target} PUBLIC ${library_path})
     endif()
 endfunction()
 
@@ -147,7 +139,7 @@ function(add_source_dir NAME DIR)
     target_sources(${PROJECT_NAME} PRIVATE ${SOURCES})
 
     if (BUILD_STATIC)
-        target_sources(napstatic PRIVATE ${SOURCES})
+        target_sources(napstatic INTERFACE ${SOURCES})
     endif ()
 endfunction()
 
@@ -257,4 +249,75 @@ function(set_target_rpath target rpath)
                 POST_BUILD COMMAND
                 if ! otool -l $<TARGET_FILE:${target} | grep -q ${rpath}/.\; then ${CMAKE_INSTALL_NAME_TOOL} -add_rpath "${rpath}/." $<TARGET_FILE:${target}>\; fi)
     endif ()
+endfunction()
+
+
+function(add_static_linked_target library)
+    if (NOT TARGET ${library})
+        message(FATAL_ERROR "Library dependency ${library} not found for building ${target}")
+    endif()
+    get_target_property(library_path ${library} IMPORTED_LOCATION)
+    get_target_property(library_path_debug ${library} IMPORTED_LOCATION_DEBUG)
+    if (DEFINED CMAKE_BUILD_TYPE)
+        if (${CMAKE_BUILD_TYPE} STREQUAL "Debug" AND EXISTS ${library_path_debug})
+            set(library_path ${library_path_debug})
+        endif()
+    endif()
+    get_filename_component(library_file_name ${library_path} NAME)
+
+    get_target_property(include_dir ${library} INCLUDE_DIRECTORIES)
+    get_target_property(library_type ${library} TYPE)
+
+    if (EXISTS ${include_dir})
+        target_include_directories(napstatic INTERFACE ${include_dir})
+    endif ()
+
+    target_link_libraries(napstatic INTERFACE ${library})
+    if (${library_type} STREQUAL SHARED_LIBRARY)
+        install(FILES ${LIB_DIR}/${library_file_name} TYPE LIB OPTIONAL)
+    endif()
+
+#    get_property(value TARGET napstatic PROPERTY static_linked_targets)
+#    list(APPEND value ${target})
+#    set_property(TARGET napstatic PROPERTY static_linked_targets ${value})
+endfunction()
+
+
+function(add_static_linked_lib lib)
+    target_link_libraries(napstatic INTERFACE ${lib})
+#    get_property(value TARGET napstatic PROPERTY static_linked_libs)
+#    list(APPEND value ${lib})
+#    set_property(TARGET napstatic PROPERTY static_linked_libs ${value})
+endfunction()
+
+
+function(target_link_nap_static target)
+    add_definitions(-DRAPIDJSON_HAS_STDSTRING=1)
+
+    # Preprocessor
+    target_compile_definitions(${target} PUBLIC NAP_SHARED_LIBRARY)
+    target_compile_definitions(${target} PUBLIC MODULE_NAME=${PROJECT_NAME})
+
+    if(APPLE)
+        target_compile_definitions(${target} PUBLIC VK_USE_PLATFORM_METAL_EXT=1)
+    elseif(UNIX)
+        target_link_libraries(${target} dl pthread)
+    endif ()
+
+    if(MSVC)
+        target_compile_definitions(${target} PUBLIC NOMINMAX)
+    endif()
+
+    target_compile_definitions(${target} PUBLIC _USE_MATH_DEFINES)
+    target_compile_definitions(${target} PUBLIC GLM_FORCE_CTOR_INIT)
+
+#    get_property(static_sources TARGET napstatic PROPERTY static_sources)
+#    target_sources(${target} PRIVATE ${static_sources})
+#    get_property(static_includes TARGET napstatic PROPERTY static_includes)
+#    target_include_directories(${target} PUBLIC ${static_includes})
+#    get_property(static_linked_targets TARGET napstatic PROPERTY static_linked_targets)
+
+#    get_property(static_linked_libraries TARGET napstatic PROPERTY static_linked_libraries)
+    target_link_libraries(${target} PRIVATE napstatic)
+#    target_compile_definitions(${target} ${STATIC_COMPILE_DEFS})
 endfunction()
