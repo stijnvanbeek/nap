@@ -107,6 +107,9 @@ macro(setup)
     # Set default ad hoc code signature
     if (NOT DEFINED CODE_SIGNATURE)
         set(CODE_SIGNATURE "-")
+        message("Codesigning with ad hoc signature")
+    else ()
+        message("Codesigning with signature: ${CODE_SIGNATURE}")
     endif ()
 endmacro()
 
