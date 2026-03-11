@@ -76,27 +76,20 @@ if (EXISTS ${MODULE_EXTRA_CMAKE_PATH})
     include(${MODULE_EXTRA_CMAKE_PATH})
 endif()
 
-# Copy module.json to bin
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/module.json ${LIB_DIR}/${PROJECT_NAME}.json COPYONLY)
-
-#add_custom_command(
-#        TARGET ${PROJECT_NAME} POST_BUILD
-#        COMMAND ${CMAKE_COMMAND} -E copy
-#        ${CMAKE_CURRENT_SOURCE_DIR}/module.json
-#        ${LIB_DIR}/${PROJECT_NAME}.json)
+add_custom_command(
+        TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+        ${CMAKE_CURRENT_SOURCE_DIR}/module.json
+        ${LIB_DIR}/${PROJECT_NAME}.json)
 
 # Copy module data folder and install
 get_filename_component(parent_dir ${CMAKE_CURRENT_SOURCE_DIR} DIRECTORY)
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/data)
     set(dest ${BIN_DIR}/${parent_name}/${PROJECT_NAME})
-    if (BUILD_STATIC)
-        file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/data DESTINATION ${dest})
-    else ()
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${CMAKE_CURRENT_SOURCE_DIR}/data
-            ${dest}/data)
-    endif ()
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/data
+        ${dest}/data)
     install(DIRECTORY ${dest}/data DESTINATION ${CMAKE_INSTALL_DATADIR}/${parent_name}/${PROJECT_NAME} OPTIONAL)
 endif()
 

@@ -165,12 +165,10 @@ if(APPLE)
             if ! otool -l $<TARGET_FILE:${PROJECT_NAME}> | grep -q @executable_path/${LIB_RPATH}/.\; then ${CMAKE_INSTALL_NAME_TOOL} -add_rpath "@executable_path/${LIB_RPATH}/." $<TARGET_FILE:${PROJECT_NAME}>\; fi)
 
     # Codesign the executable
-    set(signature "-")
-    if (DEFINED ${MACOS_CODE_SIGNATURE})
-        set(signature ${MACOS_CODE_SIGNATURE})
+    if (NOT ${CODE_SIGNATURE} STREQUAL "-")
         # Codesign the executable with signature in environment variable with runtime option
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND codesign --force -s ${MACOS_CODE_SIGNATURE} $<TARGET_FILE:${PROJECT_NAME}> --options runtime)
+                COMMAND codesign --force -s ${CODE_SIGNATURE} $<TARGET_FILE:${PROJECT_NAME}> --options runtime)
     else ()
         # Codesign the executable with an ad hoc sign
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD

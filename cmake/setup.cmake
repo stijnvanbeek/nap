@@ -3,6 +3,7 @@ macro(setup)
 
     # Set global directories
     set(THIRDPARTY_DIR ${NAP_ROOT}/thirdparty)
+    set(SCRIPT_DIR ${NAP_ROOT}/cmake/scripts)
 
     # Set the build output directories
     if(WIN32)
@@ -102,6 +103,11 @@ macro(setup)
 
     # Static linking
     set(static_suffix _static)
+
+    # Set default ad hoc code signature
+    if (NOT DEFINED CODE_SIGNATURE)
+        set(CODE_SIGNATURE "-")
+    endif ()
 endmacro()
 
 

@@ -3,17 +3,11 @@ set(CMAKE_OSX_ARCHITECTURES arm64;x86_64)
 
 project(NAP)
 
-option(BUILD_STATIC "Link all modules statically" OFF)
-
 set(NAP_ROOT ${CMAKE_CURRENT_LIST_DIR})
 include(${NAP_ROOT}/cmake/setup.cmake)
 include(${NAP_ROOT}/cmake/nap_utilities.cmake)
 
 setup()
-
-if (BUILD_STATIC)
-    message("Building NAP statically")
-endif()
 
 add_subdirectory(utility)
 add_subdirectory(rtti)

@@ -14,26 +14,28 @@ target_link_import_library(${PROJECT_NAME} SDL3)
 target_link_import_library(${PROJECT_NAME} FreeImage)
 target_link_import_library(${PROJECT_NAME} vulkan)
 
+target_link_libraries(${PROJECT_NAME} debug ${SPIRVCROSS_LIBS_DEBUG} optimized ${SPIRVCROSS_LIBS_RELEASE})
+target_link_libraries(${PROJECT_NAME} debug "${GLSLANG_LIBS_DEBUG}" optimized "${GLSLANG_LIBS_RELEASE}")
+
 if(UNIX AND NOT APPLE AND ${ARCH} STREQUAL "armhf")
     target_link_libraries(${PROJECT_NAME} atomic)
 endif()
 
-target_link_libraries(${PROJECT_NAME} debug ${SPIRVCROSS_LIBS_DEBUG} optimized ${SPIRVCROSS_LIBS_RELEASE})
-target_link_libraries(${PROJECT_NAME} debug "${GLSLANG_LIBS_DEBUG}" optimized "${GLSLANG_LIBS_RELEASE}")
+target_link_import_library(${static_target} assimp${static_suffix})
+target_link_import_library(${static_target} SDL3${static_suffix})
+target_link_import_library(${static_target} FreeImage${static_suffix})
+target_link_import_library(${static_target} vulkan) # Also link shared vulkan lib for static
 
-# Add includes
-target_include_directories(${PROJECT_NAME} PUBLIC ${SPIRVCROSS_INCLUDE_DIR} ${GLSLANG_INCLUDE_DIR})
-
-target_link_import_library(${static_target} assimp)
-target_link_import_library(${static_target} SDL3)
-target_link_import_library(${static_target} FreeImage)
-target_link_import_library(${static_target} vulkan)
 target_link_libraries(${static_target} INTERFACE debug ${SPIRVCROSS_LIBS_DEBUG} optimized ${SPIRVCROSS_LIBS_RELEASE})
 target_link_libraries(${static_target} INTERFACE debug ${GLSLANG_LIBS_DEBUG} optimized ${GLSLANG_LIBS_RELEASE})
 target_include_directories(${static_target} INTERFACE ${SPIRVCROSS_INCLUDE_DIR} ${GLSLANG_INCLUDE_DIR})
+
 if(UNIX AND NOT APPLE AND ${ARCH} STREQUAL "armhf")
     target_link_libraries(${static_target} INTERFACE atomic)
 endif()
+
+# Add include directories
+target_include_directories(${PROJECT_NAME} PUBLIC ${SPIRVCROSS_INCLUDE_DIR} ${GLSLANG_INCLUDE_DIR})
 
 # Set compile definitions
 target_compile_definitions(${static_target} INTERFACE _USE_MATH_DEFINES)

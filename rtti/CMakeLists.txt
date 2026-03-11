@@ -53,10 +53,8 @@ get_target_property(rttr_library_path RTTR::Core IMPORTED_LOCATION_RELEASE)
 get_filename_component(rttr_filename ${rttr_library_path} NAME)
 set(rttr_bin_path ${LIB_DIR}/${rttr_filename})
 
-add_custom_command(TARGET ${PROJECT_NAME} PRE_LINK
-    COMMAND -E copy ${rttr_library_path} ${LIB_DIR}
-    COMMAND ${CMAKE_COMMAND} -P codesign.cmake -D path=${rttr_bin_path}
-)
+# Copy to bin, update install name and codesign before building the target
+copy_import_library_to_bin(${PROJECT_NAME} ${rttr_library_path})
 
 codesign_target(${PROJECT_NAME})
 
