@@ -4,6 +4,9 @@ set(CMAKE_OSX_ARCHITECTURES arm64;x86_64)
 project(NAP)
 
 set(NAP_ROOT ${CMAKE_CURRENT_LIST_DIR})
+
+add_subdirectory(napvst)
+
 include(${NAP_ROOT}/cmake/setup.cmake)
 include(${NAP_ROOT}/cmake/nap_utilities.cmake)
 
@@ -34,7 +37,7 @@ add_subdirectory(system_modules/napmidi)
 #add_subdirectory(system_modules/napcalendar)
 #add_subdirectory(system_modules/napsequence)
 #add_subdirectory(system_modules/napsequencegui)
-#add_subdirectory(system_modules/naprenderadvanced)
+add_subdirectory(system_modules/naprenderadvanced)
 
 set(NAP_BUILD_CONTEXT source) # This is here just to guarantee backwards compatibility with 0.6 style NAP modules
 #add_subdirectory_modules(modules)
