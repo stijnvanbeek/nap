@@ -5,7 +5,7 @@ project(NAP)
 
 set(NAP_ROOT ${CMAKE_CURRENT_LIST_DIR})
 
-add_subdirectory(napvst)
+add_subdirectory(vstplugins/fmsynthplugin)
 
 include(${NAP_ROOT}/cmake/setup.cmake)
 include(${NAP_ROOT}/cmake/nap_utilities.cmake)

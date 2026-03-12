@@ -2,12 +2,13 @@
 # NAPQT Static Library
 ########################################################################
 
-function(codesign_qt_module qt_module)
-    get_target_property(library_path ${qt_module} IMPORTED_LOCATION)
-    codesign(${library_path})
-endfunction()
 
 project(napqt)
+
+function(codesign_qt_module qt_module)
+    get_target_property(library_path ${qt_module} IMPORTED_LOCATION)
+    codesign_target_dependency(${PROJECT_NAME} ${library_path})
+endfunction()
 
 include(${NAP_ROOT}/cmake/qtconfig.cmake)
 include(${NAP_ROOT}/cmake/nap_utilities.cmake)
@@ -23,10 +24,10 @@ target_include_directories(${PROJECT_NAME} PUBLIC src)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Core)
 
-codesign_qt_module(Qt6::Core)
-codesign_qt_module(Qt6::Gui)
-codesign_qt_module(Qt6::Widgets)
-codesign_qt_module(Qt6::OpenGL)
+#codesign_qt_module(Qt6::Core)
+#codesign_qt_module(Qt6::Gui)
+#codesign_qt_module(Qt6::Widgets)
+#codesign_qt_module(Qt6::OpenGL)
 
 target_link_import_library(${PROJECT_NAME} Qt6::Core)
 target_link_import_library(${PROJECT_NAME} Qt6::Gui)

@@ -80,12 +80,6 @@ if(SMTG_MAC)
             "--pluginfolder;$(BUILT_PRODUCTS_DIR)"
     )
 
-#    # Copy libMoltenVK.dylib to bundle
-#    add_custom_command(
-#        TARGET ${PROJECT_NAME} POST_BUILD
-#        COMMAND ${CMAKE_COMMAND} -E copy ${lib_dir}/libMoltenVK.dylib ${output_lib_dir}/libMoltenVK.dylib
-#    )
-
     # Update executable rpath if it hasn't been set already
     # Using a bash script, it checks if the '@executablepath/%{LIB_RPATH}/' already exists in the list displayed by 'otool -l'. If not, it calls the CMAKE_INSTALL_NAME_TOOL to install the name.
     add_custom_command(TARGET ${PROJECT_NAME}
