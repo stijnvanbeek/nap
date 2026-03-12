@@ -44,8 +44,8 @@
 #define SUB_VERSION_STR "0"
 #define SUB_VERSION_INT 0
 
-#define RELEASE_NUMBER_STR "1"
-#define RELEASE_NUMBER_INT 1
+#define RELEASE_NUMBER_STR "0"
+#define RELEASE_NUMBER_INT 0
 
 #define BUILD_NUMBER_STR "" // Build number to be sure that each result could identified.
 #define BUILD_NUMBER_INT 
@@ -57,7 +57,7 @@
 #define VERSION_STR MAJOR_VERSION_STR "." SUB_VERSION_STR "." RELEASE_NUMBER_STR
 
 // HERE you have to define your plug-in, company name, email and web
-#define stringPluginName		"exampleplugin"
+#define stringPluginName		""
 
 #if SMTG_PLATFORM_64
 #define stringFileDescription	stringPluginName" VST3-SDK (64Bit)"
@@ -65,8 +65,6 @@
 #define stringFileDescription	stringPluginName" VST3-SDK"
 #endif
 
-#define stringCompanyName		"https://github.com/napframework/nap"
-#define stringCompanyWeb		""
+#define stringCompanyName		"NAP Framework"
+#define stringCompanyWeb		"https://github.com/napframework/nap"
 #define stringCompanyEmail		""
-
-
