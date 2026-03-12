@@ -9,7 +9,6 @@ enable_language(OBJCXX)
 # Set global directories and paths
 set(VST3SDK_SOURCE_DIR ${NAP_ROOT}/../VST_SDK/vst3sdk)
 set(BIN_DIR ${CMAKE_BINARY_DIR}/bin)
-set(bundle_name "${PROJECT_NAME}.vst3")
 
 # Include NAP, VST3 SDK and NAP cmake utilites
 add_subdirectory(${VST3SDK_SOURCE_DIR} ${CMAKE_BINARY_DIR}/vst3)
@@ -42,50 +41,25 @@ target_link_libraries(${PROJECT_NAME} PRIVATE sdk vstgui_support napimgui_static
 
 smtg_target_configure_version_file(${PROJECT_NAME})
 
-set(app_install_data_dir ${BIN_DIR}/app_install_data/${PROJECT_NAME})
-
+set(bundle_name "${PROJECT_NAME}.vst3")
 set(source_data_dir ${CMAKE_CURRENT_SOURCE_DIR}/data)
+set(output_path "${CMAKE_BINARY_DIR}/VST3/${CMAKE_BUILD_TYPE}/${bundle_name}")
+set(lib_dir ${CMAKE_BINARY_DIR}/bin/lib)
 
-# Copy data directory to app specific bin
-set(bin_data_dir ${app_install_data_dir}/data)
+if (APPLE)
+    set(output_resources_dir ${output_path}/Contents/Resources)
+    set(output_lib_dir ${output_path}/Contents/MacOS/lib)
+endif ()
+
+# Copy data directory to bundle
 add_custom_command(
-        TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${source_data_dir} ${bin_data_dir})
-
-if (WIN32)
-    # Install all artifacts in app root on windows
-    set(CMAKE_INSTALL_BINDIR ${APP_INSTALL_NAME})
-    set(CMAKE_INSTALL_LIBDIR ${APP_INSTALL_NAME})
-    set(CMAKE_INSTALL_DATADIR ${APP_INSTALL_NAME})
-    set(CMAKE_INSTALL_DOCDIR ${APP_INSTALL_NAME}/doc)
-    set(CMAKE_INSTALL_MODULEINFODIR ${APP_INSTALL_NAME}/lib)
-else()
-    if (APPLE)
-        # Install in app bundle structure on MacOS
-        set(CMAKE_INSTALL_BINDIR ${APP_INSTALL_NAME}/Contents/MacOS)
-        set(CMAKE_INSTALL_LIBDIR ${APP_INSTALL_NAME}/Contents/MacOS/lib)
-        set(CMAKE_INSTALL_DATADIR ${APP_INSTALL_NAME}/Contents/Resources)
-        set(CMAKE_INSTALL_DOCDIR ${APP_INSTALL_NAME}/Contents/Resources/doc)
-        set(CMAKE_INSTALL_INFODIR ${APP_INSTALL_NAME}/Contents) # Used for Info.plist file
-        set(CMAKE_INSTALL_MODULEINFODIR ${APP_INSTALL_NAME}/Contents/Resources/lib)
-    else ()
-        # Install libraries in lib, executable in app root on Linux
-        set(CMAKE_INSTALL_BINDIR ${APP_INSTALL_NAME})
-        set(CMAKE_INSTALL_LIBDIR ${APP_INSTALL_NAME}/lib)
-        set(CMAKE_INSTALL_DATADIR ${APP_INSTALL_NAME})
-        set(CMAKE_INSTALL_DOCDIR ${APP_INSTALL_NAME}/doc)
-        set(CMAKE_INSTALL_MODULEINFODIR ${APP_INSTALL_NAME}/lib)
-    endif()
-endif()
+    TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${source_data_dir} ${output_resources_dir}
+)
 
 if (NOT DEFINED CODE_SIGNATURE)
     set(CODE_SIGNATURE "-")
 endif ()
-
-# Install to packaged app
-install(DIRECTORY ${bin_data_dir} TYPE DATA OPTIONAL)
-install(DIRECTORY ${bin_license_dir} TYPE DOC OPTIONAL)
 
 if(SMTG_MAC)
     set_source_files_properties(src/nappluginview.cpp PROPERTIES LANGUAGE OBJCXX)
@@ -97,8 +71,12 @@ if(SMTG_MAC)
             "/Applications/VST3PluginTestHost.app"
             "--pluginfolder;$(BUILT_PRODUCTS_DIR)"
     )
-    get_target_property(bundle_path ${PROJECT_NAME} SMTG_PLUGIN_PACKAGE_PATH)
-    message("vst path ${bundle_path}")
+
+    # Copy libMoltenVK.dylib to bundle
+    add_custom_command(
+        TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy ${lib_dir}/libMoltenVK.dylib ${output_lib_dir}/libMoltenVK.dylib
+    )
 
     # Update executable rpath if it hasn't been set already
     # Using a bash script, it checks if the '@executablepath/%{LIB_RPATH}/' already exists in the list displayed by 'otool -l'. If not, it calls the CMAKE_INSTALL_NAME_TOOL to install the name.
@@ -108,9 +86,6 @@ if(SMTG_MAC)
     add_custom_command(TARGET ${PROJECT_NAME}
             POST_BUILD COMMAND
             if ! otool -l $<TARGET_FILE:${PROJECT_NAME}> | grep -q @loader_path\; then ${CMAKE_INSTALL_NAME_TOOL} -add_rpath "@loader_path" $<TARGET_FILE:${PROJECT_NAME}>\; fi)
-
-    set(output_path "${CMAKE_BINARY_DIR}/VST3/${CMAKE_BUILD_TYPE}")
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${CMAKE_COMMAND} --install ${CMAKE_BINARY_DIR} --prefix ${output_path})
 
 elseif(SMTG_WIN)
 #    target_sources(MyPlugin
