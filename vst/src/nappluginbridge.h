@@ -15,8 +15,8 @@
 #include <imguiservice.h>
 #include <parameter.h>
 #include <parametergui.h>
-#include <renderwindow.h>
 
+#include "audioplugin.h"
 #include "sdlpoller.h"
 #include "nappluginview.h"
 #include "sdleventconverter.h"
@@ -29,17 +29,17 @@ namespace Vst {
 template <typename T>
 class AGainUIMessageController;
 
-class NapPlugin : public SingleComponentEffect, ITimerCallback
+class NapPluginBridge : public SingleComponentEffect, ITimerCallback
 {
 public:
 	//------------------------------------------------------------------------
 
-	NapPlugin ();
-	~NapPlugin() override { terminate(); }
+	NapPluginBridge ();
+	~NapPluginBridge() override { terminate(); }
 
-	static FUnknown* createInstance (void* /*context*/) { return (IAudioProcessor*)new NapPlugin; }
+	static FUnknown* createInstance (void* /*context*/) { return (IAudioProcessor*)new NapPluginBridge; }
 
-	//---from IComponent-----------------------
+	// Inherited from IComponent
 	tresult PLUGIN_API initialize (FUnknown* context) SMTG_OVERRIDE;
 	tresult PLUGIN_API terminate () SMTG_OVERRIDE;
 	tresult PLUGIN_API setActive (TBool state) SMTG_OVERRIDE;
@@ -52,7 +52,7 @@ public:
 	                                       SpeakerArrangement* outputs,
 	                                       int32 numOuts) SMTG_OVERRIDE;
 
-	//---from IEditController-------
+	// Inherited from IEditController
 	IPlugView* PLUGIN_API createView (const char* name) SMTG_OVERRIDE;
 	tresult PLUGIN_API setEditorState (IBStream* state) SMTG_OVERRIDE;
 	tresult PLUGIN_API getEditorState (IBStream* state) SMTG_OVERRIDE;
@@ -63,8 +63,8 @@ public:
 	                                          ParamValue& valueNormalized) SMTG_OVERRIDE;
 	void onTimer(Timer* timer) SMTG_OVERRIDE;
 
-	//---Interface---------
-	OBJ_METHODS (NapPlugin, SingleComponentEffect)
+	// VST exported interface
+	OBJ_METHODS (NapPluginBridge, SingleComponentEffect)
 	tresult PLUGIN_API queryInterface (const TUID iid, void** obj) SMTG_OVERRIDE;
 	REFCOUNT_METHODS (SingleComponentEffect)
 
@@ -82,7 +82,7 @@ public:
 
 private:
 	bool initializeNAP(nap::TaskQueue& mainThreadQueue, nap::utility::ErrorState& errorState);
-	void registerParameters(const std::vector<nap::rtti::ObjectPtr<nap::Parameter>>& napParameters);
+	void registerParameter(nap::Parameter& napParameter);
 
 	int kBypassId = 0;
 	bool mBypass = false;
@@ -106,13 +106,15 @@ private:
 
 	bool mUseVSTGUIInput = false;
 
-	nap::Slot<double> mControlSlot = { this, &NapPlugin::control };
+	nap::Slot<double> mControlSlot = { this, &NapPluginBridge::control };
 	void control(double deltaTime);
 	std::mutex mMutex; // Main mutex guarding control and main thread
 
 	nap::SDLPoller::Client mSDLPollerClient;
 	bool mInitialized = false;
 	NapPluginView* mView = nullptr;
+
+	std::unique_ptr<nap::AudioPlugin> mPlugin = nullptr;
 };
 
 //------------------------------------------------------------------------

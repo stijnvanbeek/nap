@@ -3,7 +3,7 @@
 //
 
 #include "nappluginview.h"
-#include "napplugin.h"
+#include "nappluginbridge.h"
 
 #import <AppKit/AppKit.h>
 

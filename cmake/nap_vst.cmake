@@ -32,11 +32,17 @@ macro(add_vst)
     if (NOT DEFINED description)
         set(description "This is a VST3 plugin made with NAP framework.")
     endif ()
+    if (NOT DEFINED app_structure_filename)
+        set(app_structure_filename "objects.json")
+    endif ()
+    if (NOT DEFINED plugin_type_name)
+        set(plugin_type_name "nap::AudioPlugin")
+    endif ()
 
     project(${plugin_name} VERSION 1.0.0  DESCRIPTION ${description})
     enable_language(OBJCXX)
 
-    configure_file(${NAP_ROOT}/vst/src/version.h.in ${CMAKE_CURRENT_LIST_DIR}/src/version.h @ONLY)
+    configure_file(${NAP_ROOT}/vst/src/project.h.in ${CMAKE_CURRENT_LIST_DIR}/src/project.h @ONLY)
 
     # Set global directories and paths
     set(BIN_DIR ${CMAKE_BINARY_DIR}/bin)

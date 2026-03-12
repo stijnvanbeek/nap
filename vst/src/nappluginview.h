@@ -15,13 +15,13 @@ namespace Steinberg
 	namespace Vst
 	{
 
-		class NapPlugin;
+		class NapPluginBridge;
 
 
 		class NapPluginView : public CPluginView
 		{
 		public:
-			NapPluginView(NapPlugin& plugin, nap::TaskQueue& mainThreadQueue, ViewRect& rect) : mPlugin(&plugin), mMainThreadQueue(mainThreadQueue), CPluginView(&rect) { }
+			NapPluginView(NapPluginBridge& plugin, nap::TaskQueue& mainThreadQueue, ViewRect& rect) : mPlugin(&plugin), mMainThreadQueue(mainThreadQueue), CPluginView(&rect) { }
 			~NapPluginView () = default;
 
 			tresult PLUGIN_API isPlatformTypeSupported (FIDString type) override { return kResultTrue; }
@@ -39,7 +39,7 @@ namespace Steinberg
 
 			std::unique_ptr<nap::RenderWindow> mRenderWindow = nullptr;
 			SDL_Window* mSDLWindow = nullptr;
-			NapPlugin* mPlugin = nullptr;
+			NapPluginBridge* mPlugin = nullptr;
 			nap::TaskQueue& mMainThreadQueue;
 			float mLeft = 0.f;
 			float mTop = 0.f;

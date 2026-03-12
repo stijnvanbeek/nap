@@ -1,5 +1,5 @@
-#include "napplugin.h"
-#include "version.h"
+#include "nappluginbridge.h"
+#include "project.h"
 
 #include "public.sdk/source/main/pluginfactory.h"
 #include "public.sdk/source/vst/vstaudioprocessoralgo.h"
@@ -11,6 +11,7 @@
 #include "pluginterfaces/base/funknownimpl.h"
 #include "base/source/fstreamer.h"
 
+#include <rtti/typeinfo.h>
 #include <parameternumeric.h>
 #include <parameterdropdown.h>
 #include <parametergroup.h>
@@ -35,12 +36,12 @@ namespace Steinberg
 	namespace Vst
 	{
 
-		NapPlugin::NapPlugin ()
+		NapPluginBridge::NapPluginBridge ()
 		{
 		}
 
 
-		tresult PLUGIN_API NapPlugin::initialize (FUnknown* context)
+		tresult PLUGIN_API NapPluginBridge::initialize (FUnknown* context)
 		{
 			tresult result = SingleComponentEffect::initialize (context);
 			if (result != kResultOk)
@@ -81,7 +82,7 @@ namespace Steinberg
 		}
 
 
-		bool NapPlugin::initializeNAP(nap::TaskQueue& mainThreadQueue, nap::utility::ErrorState& errorState)
+		bool NapPluginBridge::initializeNAP(nap::TaskQueue& mainThreadQueue, nap::utility::ErrorState& errorState)
 		{
 			mCore = std::make_unique<nap::Core>(mainThreadQueue);
 
@@ -111,10 +112,7 @@ namespace Steinberg
 			mAudioService->getNodeManager().setOutputChannelCount(2);
 
 			std::string data_dir = nap::utility::joinPath({ resourcedDir, "data" });;
-			std::string app_structure_path = nap::utility::joinPath({ data_dir, "objects.json" });
-
-			// std::string app_structure_path = xstr(APP_STRUCTURE_PATH);
-			// std::string data_dir = xstr(DATA_DIR);
+			std::string app_structure_path = nap::utility::joinPath({ data_dir, stringAppStructureFileName });
 
 			if (nap::utility::fileExists(app_structure_path))
 			{
@@ -143,14 +141,22 @@ namespace Steinberg
 			mSDLInputService = mCore->getService<nap::SDLInputService>();
 			mGuiService = mCore->getService<nap::IMGuiService>();
 
-			auto parameterGroup = mCore->getResourceManager()->findObject<nap::ParameterGroup>("Parameters").get();
-			if (parameterGroup != nullptr)
-				registerParameters(parameterGroup->mMembers);
+			auto pluginType = nap::rtti::TypeInfo::get_by_name(stringPluginTypeName);
+			assert(pluginType.can_create_instance());
+			std::vector<rttr::argument>	args = { rttr::argument(*mCore.get()) };
+			auto pluginVariant = pluginType.create(args);
+			auto plugin = pluginVariant.get_value<nap::AudioPlugin*>();
+			assert(plugin != nullptr);
+			mPlugin = std::unique_ptr<nap::AudioPlugin>(plugin);
 
-			mParameterGUI = std::make_unique<nap::ParameterGUI>(*mCore);
-			mParameterGUI->mParameterGroup = parameterGroup;
-			if (!mParameterGUI->init(errorState))
+			// Create a callback for parameter registration during the plugin's initialization
+			nap::Slot<nap::Parameter&> registerParameterSlot = { this, &NapPluginBridge::registerParameter };
+
+			if (!mPlugin->init(errorState))
+			{
+				nap::Logger::error("Failed to initialize plugin: %s", errorState.toString().c_str());
 				return false;
+			}
 
 			mInitialized = true;
 
@@ -158,7 +164,7 @@ namespace Steinberg
 		}
 
 
-		tresult PLUGIN_API NapPlugin::terminate ()
+		tresult PLUGIN_API NapPluginBridge::terminate ()
 		{
 			if (!mInitialized)
 				return kResultOk;
@@ -173,8 +179,7 @@ namespace Steinberg
 			std::atomic<bool> napTerminated(false);
 			mControlThread.enqueue([&]()
 			{
-				mParameterGUI->onDestroy();
-				mParameterGUI = nullptr;
+				mPlugin->shutdown();
 				mServices = nullptr;
 				mCore = nullptr;
 				napTerminated = true;
@@ -190,57 +195,40 @@ namespace Steinberg
 		}
 
 
- 		void NapPlugin::processNAPInputEvent(const nap::InputEvent& ev)
+ 		void NapPluginBridge::processNAPInputEvent(const nap::InputEvent& ev)
  		{
  			std::lock_guard<std::mutex> lock(mMutex);
  			mGuiService->processInputEvent(ev);
  		}
 
 
- 		void NapPlugin::onTimer(Timer *timer)
+ 		void NapPluginBridge::onTimer(Timer *timer)
  		{
 			mMainThreadQueue.process();
  		}
 
 
-		void NapPlugin::control(double deltaTime)
+		void NapPluginBridge::control(double deltaTime)
 		{
 			// Begin recording the render commands for the main render window
 			std::lock_guard<std::mutex> lock(mMutex);
 
-			std::function<void(double)> drawFunc;
+			std::function<void(double)> updateFunc;
 			if (mView != nullptr && mView->isAttached())
-				drawFunc = [&](double deltaTime)
-				{
-					ImGui::Begin("NAP", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-					if (mParameterGUI != nullptr)
-						mParameterGUI->show(false);
-					ImGui::NewLine();
-					std::string formattedText = nap::utility::stringFormat("Framerate: %.02f", mCore->getFramerate());
-					ImGui::Text(formattedText.c_str());
-					ImGui::End();
-				};
+				updateFunc = [&](double deltaTime){ mPlugin->update(deltaTime); };
 			else
-				drawFunc = [](double deltaTime) {};
+				updateFunc = [](double deltaTime) {};
 
-			mCore->update(drawFunc);
+			mCore->update(updateFunc);
 
-			mRenderService->beginFrame();
 			if (mView != nullptr && mView->isAttached())
-			{
-				if (mRenderService->beginRecording(*mView->getRenderWindow()))
-				{
-					mView->getRenderWindow()->beginRendering();
-					mGuiService->draw();
-					mView->getRenderWindow()->endRendering();
-					mRenderService->endRecording();
-				}
-			}
-			mRenderService->endFrame();
+				mPlugin->render(mView->getRenderWindow());
+			else
+				mPlugin->render(nullptr);
 		}
 
 
-		tresult PLUGIN_API NapPlugin::process (ProcessData& data)
+		tresult PLUGIN_API NapPluginBridge::process (ProcessData& data)
 		{
 			// Process parameters
 			if (data.inputParameterChanges)
@@ -339,13 +327,13 @@ namespace Steinberg
 		}
 
 
-		tresult PLUGIN_API NapPlugin::setActive (TBool state)
+		tresult PLUGIN_API NapPluginBridge::setActive (TBool state)
 		{
 			return kResultOk;
 		}
 
 
-		tresult PLUGIN_API NapPlugin::setState (IBStream* state)
+		tresult PLUGIN_API NapPluginBridge::setState (IBStream* state)
 		{
 			IBStreamer streamer (state, kLittleEndian);
 			int32 savedBypass = 0;
@@ -357,7 +345,7 @@ namespace Steinberg
 		}
 
 
-		tresult PLUGIN_API NapPlugin::getState (IBStream* state)
+		tresult PLUGIN_API NapPluginBridge::getState (IBStream* state)
 		{
 			IBStreamer streamer (state, kLittleEndian);
 
@@ -367,7 +355,7 @@ namespace Steinberg
 		}
 
 
-		tresult PLUGIN_API NapPlugin::setupProcessing (ProcessSetup& newSetup)
+		tresult PLUGIN_API NapPluginBridge::setupProcessing (ProcessSetup& newSetup)
 		{
 			// called before the process call, always in a disable state (not active)
 			// here we keep a trace of the processing mode (offline,...) for example.
@@ -379,7 +367,7 @@ namespace Steinberg
 		}
 
 
-		tresult PLUGIN_API NapPlugin::setBusArrangements (SpeakerArrangement* inputs, int32 numIns,
+		tresult PLUGIN_API NapPluginBridge::setBusArrangements (SpeakerArrangement* inputs, int32 numIns,
 		                                                    SpeakerArrangement* outputs, int32 numOuts)
 		{
 			auto& nodeManager = mAudioService->getNodeManager();
@@ -391,7 +379,7 @@ namespace Steinberg
 		}
 
 
-		tresult PLUGIN_API NapPlugin::canProcessSampleSize (int32 symbolicSampleSize)
+		tresult PLUGIN_API NapPluginBridge::canProcessSampleSize (int32 symbolicSampleSize)
 		{
 			if (symbolicSampleSize == kSample32)
 				return kResultTrue;
@@ -404,7 +392,7 @@ namespace Steinberg
 		}
 
 
-		IPlugView* PLUGIN_API NapPlugin::createView (const char* name)
+		IPlugView* PLUGIN_API NapPluginBridge::createView (const char* name)
 		{
 			if (mView != nullptr)
 				return nullptr;
@@ -415,19 +403,19 @@ namespace Steinberg
 		}
 
 
-		tresult PLUGIN_API NapPlugin::setEditorState (IBStream* state)
+		tresult PLUGIN_API NapPluginBridge::setEditorState (IBStream* state)
 		{
 			return kResultTrue;
 		}
 
 
-		tresult PLUGIN_API NapPlugin::getEditorState (IBStream* state)
+		tresult PLUGIN_API NapPluginBridge::getEditorState (IBStream* state)
 		{
 			return kResultTrue;
 		}
 
 
-		tresult PLUGIN_API NapPlugin::setParamNormalized(ParamID tag, ParamValue value)
+		tresult PLUGIN_API NapPluginBridge::setParamNormalized(ParamID tag, ParamValue value)
 		{
 			// called from host to update our parameters state
 			tresult result = SingleComponentEffect::setParamNormalized (tag, value);
@@ -435,63 +423,61 @@ namespace Steinberg
 		}
 
 
-		tresult PLUGIN_API NapPlugin::getParamStringByValue(ParamID tag, ParamValue valueNormalized, String128 string)
+		tresult PLUGIN_API NapPluginBridge::getParamStringByValue(ParamID tag, ParamValue valueNormalized, String128 string)
 		{
 			return SingleComponentEffect::getParamStringByValue(tag, valueNormalized, string);
 		}
 
 
-		tresult PLUGIN_API NapPlugin::getParamValueByString(ParamID tag, TChar* string, ParamValue& valueNormalized)
+		tresult PLUGIN_API NapPluginBridge::getParamValueByString(ParamID tag, TChar* string, ParamValue& valueNormalized)
 		{
 			return SingleComponentEffect::getParamValueByString(tag, string, valueNormalized);
 		}
 
 
-		tresult PLUGIN_API NapPlugin::queryInterface(const TUID iid, void** obj)
+		tresult PLUGIN_API NapPluginBridge::queryInterface(const TUID iid, void** obj)
 		{
 			return SingleComponentEffect::queryInterface(iid, obj);
 		}
 
 
-		void NapPlugin::registerParameters(const std::vector<nap::rtti::ObjectPtr<nap::Parameter>>& napParameters)
+		void NapPluginBridge::registerParameter(nap::Parameter& napParameter)
 		{
 			auto paramID = kBypassId + 1;
-			for (auto& napParameter : napParameters)
+
+			Vst::TChar paramName[128];
+
+ 			if (napParameter.get_type() == RTTI_OF(nap::ParameterFloat))
 			{
- 				Vst::TChar paramName[128];
+     			mParameters.emplace_back(&napParameter);
+ 				auto napParameterFloat = rtti_cast<nap::ParameterFloat>(&napParameter);
+				Steinberg::Vst::StringConvert::convert(napParameterFloat->getDisplayName(), paramName);
+				auto parameter = std::make_unique<Vst::RangeParameter>(paramName, paramID++, STR16(""), napParameterFloat->mMinimum, napParameterFloat->mMaximum, napParameterFloat->mValue);
+				parameters.addParameter(parameter.release());
+			}
 
- 				if (napParameter->get_type() == RTTI_OF(nap::ParameterFloat))
-				{
-     				mParameters.emplace_back(napParameter.get());
- 					auto napParameterFloat = rtti_cast<nap::ParameterFloat>(napParameter.get());
-					Steinberg::Vst::StringConvert::convert(napParameterFloat->getDisplayName(), paramName);
-					auto parameter = std::make_unique<Vst::RangeParameter>(paramName, paramID++, STR16(""), napParameterFloat->mMinimum, napParameterFloat->mMaximum, napParameterFloat->mValue);
-					parameters.addParameter(parameter.release());
-				}
+			if (napParameter.get_type() == RTTI_OF(nap::ParameterInt))
+			{
+     			mParameters.emplace_back(&napParameter);
+				auto napParameterInt = rtti_cast<nap::ParameterInt>(&napParameter);
+				Steinberg::Vst::StringConvert::convert(napParameterInt->getDisplayName(), paramName);
+				auto parameter = std::make_unique<Vst::RangeParameter>(paramName, paramID++, STR16(""), napParameterInt->mMinimum, napParameterInt->mMaximum, napParameterInt->mValue, 1.f);
+				parameters.addParameter(parameter.release());
+			}
 
-				if (napParameter->get_type() == RTTI_OF(nap::ParameterInt))
+			if (napParameter.get_type() == RTTI_OF(nap::ParameterDropDown))
+			{
+     			mParameters.emplace_back(&napParameter);
+				auto napParameterOptionList = rtti_cast<nap::ParameterDropDown>(&napParameter);
+				Steinberg::Vst::StringConvert::convert(napParameterOptionList->getDisplayName(), paramName);
+				auto parameter = std::make_unique<Vst::StringListParameter>(paramName, paramID++, STR16(""));
+				Vst::TChar optionName[128];
+				for (auto& option : napParameterOptionList->mItems)
 				{
-     				mParameters.emplace_back(napParameter.get());
-					auto napParameterInt = rtti_cast<nap::ParameterInt>(napParameter.get());
-					Steinberg::Vst::StringConvert::convert(napParameterInt->getDisplayName(), paramName);
-					auto parameter = std::make_unique<Vst::RangeParameter>(paramName, paramID++, STR16(""), napParameterInt->mMinimum, napParameterInt->mMaximum, napParameterInt->mValue, 1.f);
-					parameters.addParameter(parameter.release());
+					Steinberg::Vst::StringConvert::convert(option, optionName);
+					parameter->appendString(optionName);
 				}
-
-				if (napParameter->get_type() == RTTI_OF(nap::ParameterDropDown))
-				{
-     				mParameters.emplace_back(napParameter.get());
-					auto napParameterOptionList = rtti_cast<nap::ParameterDropDown>(napParameter.get());
-					Steinberg::Vst::StringConvert::convert(napParameterOptionList->getDisplayName(), paramName);
-					auto parameter = std::make_unique<Vst::StringListParameter>(paramName, paramID++, STR16(""));
-					Vst::TChar optionName[128];
-					for (auto& option : napParameterOptionList->mItems)
-					{
-						Steinberg::Vst::StringConvert::convert(option, optionName);
-						parameter->appendString(optionName);
-					}
-					parameters.addParameter(parameter.release());
-				}
+				parameters.addParameter(parameter.release());
 			}
 		}
 
@@ -507,12 +493,12 @@ BEGIN_FACTORY_DEF (stringCompanyName, stringCompanyWeb, stringCompanyEmail)
 	DEF_CLASS2 (INLINE_UID (0xBD58B550, 0xF9E5634E, 0x9D2EFF39, 0xEA0927B3),
 				PClassInfo::kManyInstances,					// cardinality  
 				kVstAudioEffectClass,						// the component category (do not change this)
-				"NapPlugin VST3",							// here the plug-in name (to be changed)
+				stringPluginName,							// here the plug-in name (to be changed)
 				0,											// single component effects cannot be distributed so this is zero
 				"Fx",										// Subcategory for this plug-in (to be changed)
 				FULL_VERSION_STR,							// Plug-in version (to be changed)
 				kVstVersionString,							// the VST 3 SDK version (do not change this, always use this define)
-				Steinberg::Vst::NapPlugin::createInstance)// function pointer called when this component should be instantiated
+				Steinberg::Vst::NapPluginBridge::createInstance) // function pointer called when this component should be instantiated
 END_FACTORY
 
 static ModuleInitializer gVSTGUIInit([]{ VSTGUI::init(getPlatformModuleHandle()); });
