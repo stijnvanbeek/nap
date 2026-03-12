@@ -2,10 +2,15 @@ cmake_minimum_required(VERSION 3.19)
 set(CMAKE_OSX_ARCHITECTURES arm64;x86_64)
 
 project(NAP)
+enable_language(OBJCXX)
 
 set(NAP_ROOT ${CMAKE_CURRENT_LIST_DIR})
 
+set(VST3SDK_SOURCE_DIR ${NAP_ROOT}/../VST_SDK/vst3sdk)
+add_subdirectory(${VST3SDK_SOURCE_DIR} ${CMAKE_BINARY_DIR}/vst3)
+
 add_subdirectory(vstplugins/fmsynthplugin)
+add_subdirectory(vstplugins/exampleplugin)
 
 include(${NAP_ROOT}/cmake/setup.cmake)
 include(${NAP_ROOT}/cmake/nap_utilities.cmake)

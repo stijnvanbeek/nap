@@ -4,14 +4,14 @@ cmake_minimum_required(VERSION 3.18.4)
 get_filename_component(plugin_name ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
 project(${plugin_name} VERSION 1.0.0  DESCRIPTION "Test Effect")
-enable_language(OBJCXX)
+#enable_language(OBJCXX)
 
 # Set global directories and paths
 set(VST3SDK_SOURCE_DIR ${NAP_ROOT}/../VST_SDK/vst3sdk)
 set(BIN_DIR ${CMAKE_BINARY_DIR}/bin)
 
 # Include NAP, VST3 SDK and NAP cmake utilites
-add_subdirectory(${VST3SDK_SOURCE_DIR} ${CMAKE_BINARY_DIR}/vst3)
+#add_subdirectory(${VST3SDK_SOURCE_DIR} ${CMAKE_BINARY_DIR}/vst3)
 include(${NAP_ROOT}/cmake/nap_utilities.cmake)
 
 # Scan for an app module
