@@ -48,18 +48,26 @@ set(lib_dir ${CMAKE_BINARY_DIR}/bin/lib)
 
 if (APPLE)
     set(output_resources_dir ${output_path}/Contents/Resources)
-    set(output_lib_dir ${output_path}/Contents/MacOS/lib)
+    set(bundle_relative_bin_dir Contents/MacOS)
 endif ()
+set(output_data_dir ${output_resources_dir}/data)
 
 # Copy data directory to bundle
 add_custom_command(
     TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${source_data_dir} ${output_resources_dir}
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${source_data_dir} ${output_data_dir}
 )
 
 if (NOT DEFINED CODE_SIGNATURE)
     set(CODE_SIGNATURE "-")
 endif ()
+
+install(DIRECTORY ${output_path} DESTINATION vst COMPONENT vst EXCLUDE_FROM_ALL)
+install(DIRECTORY ${lib_dir}
+        DESTINATION vst/${bundle_name}/${bundle_relative_bin_dir}
+        COMPONENT vst EXCLUDE_FROM_ALL
+        FILES_MATCHING PATTERN "*${CMAKE_SHARED_LIBRARY_SUFFIX}"
+)
 
 if(SMTG_MAC)
     set_source_files_properties(src/nappluginview.cpp PROPERTIES LANGUAGE OBJCXX)
@@ -72,11 +80,11 @@ if(SMTG_MAC)
             "--pluginfolder;$(BUILT_PRODUCTS_DIR)"
     )
 
-    # Copy libMoltenVK.dylib to bundle
-    add_custom_command(
-        TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy ${lib_dir}/libMoltenVK.dylib ${output_lib_dir}/libMoltenVK.dylib
-    )
+#    # Copy libMoltenVK.dylib to bundle
+#    add_custom_command(
+#        TARGET ${PROJECT_NAME} POST_BUILD
+#        COMMAND ${CMAKE_COMMAND} -E copy ${lib_dir}/libMoltenVK.dylib ${output_lib_dir}/libMoltenVK.dylib
+#    )
 
     # Update executable rpath if it hasn't been set already
     # Using a bash script, it checks if the '@executablepath/%{LIB_RPATH}/' already exists in the list displayed by 'otool -l'. If not, it calls the CMAKE_INSTALL_NAME_TOOL to install the name.
