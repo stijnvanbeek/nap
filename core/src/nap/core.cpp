@@ -138,10 +138,7 @@ namespace nap
 		// After creation we're able to access all special object creation functions.
 		// A default service configuration resource is created for all services that require one and
 		// isn't already created during *loadServiceConfigurations()*
-		// if (!createServices(*mProjectInfo, error))
-		// 	return false;
-
-		if (!createServicesFromRTTR(error))
+		if (!createServices(*mProjectInfo, error))
 			return false;
 
 		mInitialized = true;
