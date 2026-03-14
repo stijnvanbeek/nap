@@ -1784,7 +1784,7 @@ namespace nap
 		{
 			if (!SDL::videoInitialized())
 			{
-				auto config = getConfiguration<RenderServiceConfiguration>();
+				RenderServiceConfiguration* config = getConfiguration<RenderServiceConfiguration>();
 				mSDLInitialized = SDL::initVideo(config->mVideoDriver, errorState);
 				if (!errorState.check(mSDLInitialized, "Failed to init video subsystem"))
 					return;
