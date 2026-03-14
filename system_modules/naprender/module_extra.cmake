@@ -17,7 +17,7 @@ target_link_import_library(${PROJECT_NAME} vulkan)
 target_link_libraries(${PROJECT_NAME} debug ${SPIRVCROSS_LIBS_DEBUG} optimized ${SPIRVCROSS_LIBS_RELEASE})
 target_link_libraries(${PROJECT_NAME} debug "${GLSLANG_LIBS_DEBUG}" optimized "${GLSLANG_LIBS_RELEASE}")
 
-if(UNIX AND NOT APPLE AND ${ARCH} STREQUAL "armhf")
+if(UNIX AND NOT APPLE)
     target_link_libraries(${PROJECT_NAME} atomic)
 endif()
 
@@ -30,7 +30,7 @@ target_link_libraries(${static_target} INTERFACE debug ${SPIRVCROSS_LIBS_DEBUG} 
 target_link_libraries(${static_target} INTERFACE debug ${GLSLANG_LIBS_DEBUG} optimized ${GLSLANG_LIBS_RELEASE})
 target_include_directories(${static_target} INTERFACE ${SPIRVCROSS_INCLUDE_DIR} ${GLSLANG_INCLUDE_DIR})
 
-if(UNIX AND NOT APPLE AND ${ARCH} STREQUAL "armhf")
+if(UNIX AND NOT APPLE)
     target_link_libraries(${static_target} INTERFACE atomic)
 endif()
 
