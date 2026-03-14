@@ -1779,6 +1779,7 @@ namespace nap
 	{
 		// Attempt to initialize SDL video subsystem if not yet available
 		// TODO: Try to find a more clean, optimized way of handling this.
+		bool result = false;
 		getCore().runOnMainThread([&]()
 		{
 			if (!SDL::videoInitialized())
@@ -1786,13 +1787,17 @@ namespace nap
 				auto* config = getConfiguration<RenderServiceConfiguration>();
 				mSDLInitialized = SDL::initVideo(config->mVideoDriver, errorState);
 				if (!errorState.check(mSDLInitialized, "Failed to init video subsystem"))
-					return false;
+					return;
 			}
 
 			// Store selected video back-end
 			mVideoDriver = fromString(SDL::getCurrentVideoDriver());
-			Logger::info("Video backend: %s", toString(mVideoDriver).c_str());
+			auto driver_string = toString(mVideoDriver);
+			Logger::info("Video backend: %s", driver_string.c_str());
+			result = true;
 		});
+		if (!result)
+			return false;
 
 		// Initialize engine
 		return initEngine(errorState);
@@ -1906,15 +1911,19 @@ namespace nap
 #endif // __APPLE__
 
 		// Add displays
+		bool result = false;
 		getCore().runOnMainThread([&]()
 		{
 			for (const auto& display : SDL::getDisplays())
 			{
 				if (!errorState.check(display.isValid(), "Display: %d, unable to extract required information"))
-					return false;
+					return;
 				nap::Logger::info(display.toString());
 			}
+			result = true;
 		});
+		if (!result)
+			return false;
 
 		// Initialize shader compilation
 		mShInitialized = ShInitialize() != 0;
