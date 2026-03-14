@@ -34,7 +34,7 @@ function(target_link_import_library target library)
 
     if (${library_type} STREQUAL SHARED_LIBRARY)
         copy_import_library_to_bin(${target} ${library_path})
-        get_filename_component(library_file_name ${library} NAME)
+        get_filename_component(library_file_name ${library_path} NAME)
         install(FILES ${LIB_DIR}/${library_file_name} TYPE LIB OPTIONAL)
     endif()
 endfunction()
