@@ -32,7 +32,7 @@ elseif (APPLE)
 
 else ()
 
-    set(implib ${platform_dir/lib/libvulkan.so})
+    set(implib ${platform_dir}/lib/libvulkan.so)
     add_import_library(${PROJECT_NAME} ${implib} ${implib} ${include_dir})
 
 endif ()

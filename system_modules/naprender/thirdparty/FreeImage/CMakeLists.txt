@@ -14,8 +14,14 @@ else()
     set(implib ${lib_dir}/${implib_prefix}freeimage${implib_suffix})
     set(dll ${lib_dir}/${dll_prefix}freeimage${dll_suffix})
 endif()
-set(bin_dir ${platform_dir}/bin)
-set(static_lib ${bin_dir}/${static_lib_prefix}freeimage${static_lib_suffix})
 
-add_static_import_library(${PROJECT_NAME}${static_suffix} ${static_lib} ${include_dir})
 add_import_library(${PROJECT_NAME} ${implib} ${dll} ${include_dir})
+
+if (APPLE)
+    set(bin_dir ${platform_dir}/bin)
+    set(static_lib ${bin_dir}/${static_lib_prefix}freeimage${static_lib_suffix})
+    add_static_import_library(${PROJECT_NAME}${static_suffix} ${static_lib} ${include_dir})
+else ()
+    add_import_library(${PROJECT_NAME}${static_suffix} ${implib} ${dll} ${include_dir}) # USe shared lib for static builds for now
+endif ()
+
