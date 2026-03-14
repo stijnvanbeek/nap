@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.18.4)
 
 macro(add_vst)
+    if(UNIX)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-suggest-override -Wno-format-security -Wno-switch -Wno-inconsistent-missing-override -fvisibility=hidden")
+        if (APPLE)
+            # Add Apple specific flags
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-nullability-completeness")
+        endif ()
+    endif()
+
     if (NOT DEFINED major_version)
         set(major_version 0)
     endif()
