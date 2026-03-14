@@ -2,15 +2,20 @@ cmake_minimum_required(VERSION 3.19)
 set(CMAKE_OSX_ARCHITECTURES arm64;x86_64)
 
 project(NAP)
-enable_language(OBJCXX)
 
 set(NAP_ROOT ${CMAKE_CURRENT_LIST_DIR})
 
-set(VST3SDK_SOURCE_DIR ${NAP_ROOT}/../VST_SDK/vst3sdk)
-add_subdirectory(${VST3SDK_SOURCE_DIR} ${CMAKE_BINARY_DIR}/vst3)
-
-add_subdirectory(vstplugins/fmsynthplugin)
-add_subdirectory(vstplugins/exampleplugin)
+if (NOT DEFINED VST3SDK_DIR)
+    set(VST3SDK_DIR ${NAP_ROOT}/../vst3sdk)
+endif ()
+if (EXISTS ${VST3SDK_DIR})
+    if (APPLE)
+        enable_language(OBJCXX)
+    endif ()
+    add_subdirectory(${VST3SDK_DIR} ${CMAKE_BINARY_DIR}/vst3sdk)
+    add_subdirectory(vstplugins/fmsynthplugin)
+    add_subdirectory(vstplugins/exampleplugin)
+endif ()
 
 include(${NAP_ROOT}/cmake/setup.cmake)
 include(${NAP_ROOT}/cmake/nap_utilities.cmake)
@@ -45,10 +50,8 @@ add_subdirectory(system_modules/napmidi)
 add_subdirectory(system_modules/naprenderadvanced)
 
 set(NAP_BUILD_CONTEXT source) # This is here just to guarantee backwards compatibility with 0.6 style NAP modules
-#add_subdirectory_modules(modules)
+add_subdirectory_modules(modules)
 #add_subdirectory_apps(apps)
-add_subdirectory(modules/napaudioadvanced)
-add_subdirectory(modules/napcontrol)
 
 add_subdirectory(demos/helloworld)
 #add_subdirectory(demos/audioplayback)
