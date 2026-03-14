@@ -5,7 +5,13 @@
 #include "nappluginview.h"
 #include "nappluginbridge.h"
 
-#import <AppKit/AppKit.h>
+#ifdef __APPLE__
+	#import <AppKit/AppKit.h>
+#elif WIN32
+#else
+#include <X11/X.h>
+#endif
+
 
 #include <vstgui/lib/ccolor.h>
 
@@ -115,6 +121,8 @@ namespace Steinberg
 		{
 			nap::utility::ErrorState errorState;
 			SDL_PropertiesID props = SDL_CreateProperties();
+
+#ifdef __APPLE__
 			NSView* view = (NSView*)systemWindow;
 			mLeft = view.frame.origin.x;
 			mTop = view.frame.origin.y;
@@ -136,8 +144,32 @@ namespace Steinberg
 				nap::Logger::error(errorState.toString().c_str());
 				return;
 			}
+#elif WIN32
+#else
+			auto id = reinterpret_cast<XID>(systemWindow);
+			auto setup = SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X11_WINDOW_NUMBER, id);
+			if (!errorState.check(setup, "Unable to enable '%s', error: %s", SDL_PROP_WINDOW_CREATE_X11_WINDOW_NUMBER, SDL_GetError()))
+			{
+				nap::Logger::error(errorState.toString().c_str());
+				return;
+			}
 
-			// Create SDL window from host NSView
+			// Enable vulkan compatibility
+			bool vset = SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_VULKAN_BOOLEAN, true);
+			if (!errorState.check(vset, "Unable to enable '%s', error: %s", SDL_PROP_WINDOW_CREATE_VULKAN_BOOLEAN, SDL_GetError()))
+			{
+				nap::Logger::error(errorState.toString().c_str());
+				return;
+			}
+
+			mWidth = rect.getWidth();
+			mHeight = rect.getHeight();
+
+			//TODO create runloop
+
+#endif
+
+			// Create SDL window from host window handle
 			mSDLWindow = SDL_CreateWindowWithProperties(props);
 			if (!errorState.check(mSDLWindow != nullptr, "Failed to create window from handle: %s", SDL_GetError()))
 			{

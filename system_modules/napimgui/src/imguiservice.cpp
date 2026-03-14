@@ -590,16 +590,16 @@ namespace nap
 		mColorPalette = gui::getPalette(mConfiguration->mColorScheme);
 		assert(mColorPalette != nullptr);
 
-		// // Load all the default icons, bail if any of them fails to load
-		// if (getCore().getProjectInfo() != nullptr)
-		// {
-		// 	const auto& default_icons = icon::getDefaults();
-		// 	for (const auto& icon_name : default_icons)
-		// 	{
-		// 		if (!loadIcon(icon_name, getModule(), error))
-		// 			return false;
-		// 	}
-		// }
+		// Load all the default icons, bail if any of them fails to load
+		if (getCore().getProjectInfo() != nullptr)
+		{
+			const auto& default_icons = icon::getDefaults();
+			for (const auto& icon_name : default_icons)
+			{
+				if (!loadIcon(icon_name, getModule(), error))
+					return false;
+			}
+		}
 
 		return true;
 	}

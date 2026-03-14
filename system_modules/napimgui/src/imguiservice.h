@@ -310,8 +310,6 @@ namespace nap
 		void registerObjectCreators(rtti::Factory& factory) override;
 
 	private:
-		std::string getModuleName() const override { return "napimgui"; }
-
 		/**
 		 * Simple struct that combines an ImGUI context with additional state information.
 		 * Takes ownership of the context, destroys it on destruction.

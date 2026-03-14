@@ -1217,8 +1217,6 @@ namespace nap
 		 */
 		void removeChain(const RenderChain& chain);
 
-		std::string getModuleName() const override { return "naprender"; }
-
 	private:
 		struct UniqueMaterial;
 		using PipelineCache = std::unordered_map<PipelineKey, Pipeline>;
