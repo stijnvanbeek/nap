@@ -9,6 +9,6 @@
         "napimgui"
     ],
     "Data": "data/audioplayback.json",
-    "ServiceConfig": "config.json",
+    "ServiceConfig": "data/config.json",
     "PathMapping": "cache/path_mapping.json"
 }
