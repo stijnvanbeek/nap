@@ -4,7 +4,6 @@ file(GLOB_RECURSE SOURCES src/*.cpp src/*.h)
 
 # Find RTTR::Core through its provided cmake files using the package finder
 set(RTTR_DIR "${NAP_ROOT}/thirdparty/rttr/${NAP_THIRDPARTY_PLATFORM_DIR}/${ARCH}/cmake")
-find_package(RTTR CONFIG REQUIRED Core_Lib)
 find_package(RTTR CONFIG REQUIRED Core)
 
 set(rapidjson_FIND_QUIETLY TRUE)
@@ -39,17 +38,24 @@ target_include_directories(${static_target} INTERFACE src)
 target_include_directories(${static_target} INTERFACE ${RAPIDJSON_INCLUDE_DIRS})
 
 target_link_libraries(${PROJECT_NAME} naputility RTTR::Core)
-target_link_libraries(${static_target} INTERFACE naputility RTTR::Core_Lib)
 if(APPLE)
+    find_package(RTTR CONFIG REQUIRED Core_Lib)
     target_link_libraries(${PROJECT_NAME} "-framework CoreServices")
+    target_link_libraries(${static_target} INTERFACE naputility RTTR::Core_Lib)
     target_link_libraries(${static_target} INTERFACE "-framework CoreServices")
 elseif(UNIX)
     target_link_libraries(${PROJECT_NAME} dl pthread)
+    target_link_libraries(${static_target} INTERFACE naputility RTTR::Core)
     target_link_libraries(${static_target} INTERFACE dl pthread)
 endif ()
 
-# Codesign the shared libraries
-get_target_property(rttr_library_path RTTR::Core IMPORTED_LOCATION_RELEASE)
+# Copy rttr library to bin
+if (UNIX AND NOT APPLE)
+    # On linux we have to get the harcoded path because IMPORTED_LOCATION_RELEASE does not work
+    set(rttr_library_path ${THIRDPARTY_DIR}/rttr/linux/${ARCH}/bin/librttr_core.so.0.9.6)
+else ()
+    get_target_property(rttr_library_path RTTR::Core IMPORTED_LOCATION_RELEASE)
+endif ()
 get_filename_component(rttr_filename ${rttr_library_path} NAME)
 set(rttr_bin_path ${LIB_DIR}/${rttr_filename})
 
