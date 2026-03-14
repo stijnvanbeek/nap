@@ -40,12 +40,19 @@ namespace Steinberg
 		{
 		}
 
+		NapPluginBridge::~NapPluginBridge()
+		{
+			terminate();
+		}
+
 
 		tresult PLUGIN_API NapPluginBridge::initialize (FUnknown* context)
 		{
+
 			tresult result = SingleComponentEffect::initialize (context);
 			if (result != kResultOk)
 				return result;
+
 
 			// we want a stereo Input and a Stereo Output
 			addAudioInput  (STR16 ("Stereo In"),  SpeakerArr::kStereo);
@@ -86,15 +93,16 @@ namespace Steinberg
 		{
 			mCore = std::make_unique<nap::Core>(mainThreadQueue);
 
-#ifdef __APPLE__
+#ifdef WIN32
+			std::runtime_error("Not implemented for Windows yet");
+#else
 			Dl_info info;
 			dladdr((void*)(app_json), &info);
 			std::string loaderPath = info.dli_fname;
 			std::string loaderDir = nap::utility::getFileDir(loaderPath);
 			std::string resourcedDir = nap::utility::joinPath({ loaderDir, "..", "Resources" });
-#else
-			std::runtime_error("Not implemented for Windows yet");
 #endif
+
 
 			if (!mCore->initializeEngineWithoutProjectInfo(errorState))
 				return false;
@@ -170,8 +178,11 @@ namespace Steinberg
 				return kResultOk;
 			mInitialized = false;
 
-			mTimer->stop();
-			mTimer->release();
+			if (mTimer)
+			{
+				mTimer->stop();
+				mTimer->release();
+			}
 
 			mControlThread.disconnectPeriodicTask(mControlSlot);
 			nap::Logger::info("disconnected periodic task");

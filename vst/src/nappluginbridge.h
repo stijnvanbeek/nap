@@ -35,7 +35,7 @@ public:
 	//------------------------------------------------------------------------
 
 	NapPluginBridge ();
-	~NapPluginBridge() override { terminate(); }
+	~NapPluginBridge() override;
 
 	static FUnknown* createInstance (void* /*context*/) { return (IAudioProcessor*)new NapPluginBridge; }
 
