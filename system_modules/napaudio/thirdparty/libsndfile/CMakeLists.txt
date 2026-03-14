@@ -14,3 +14,4 @@ else ()
 endif ()
 
 add_import_library(${PROJECT_NAME} ${implib} ${dll} ${include_dir})
+add_import_library(${PROJECT_NAME}${static_suffix} ${implib} ${dll} ${include_dir})
