@@ -128,25 +128,17 @@ macro(add_vst)
         # Update executable rpath if it hasn't been set already
         # Using a bash script, it checks if the '@executablepath/%{LIB_RPATH}/' already exists in the list displayed by 'otool -l'. If not, it calls the CMAKE_INSTALL_NAME_TOOL to install the name.
         add_custom_command(TARGET ${PROJECT_NAME}
-                POST_BUILD COMMAND
-                if ! otool -l $<TARGET_FILE:${PROJECT_NAME}> | grep -q @loader_path/lib\; then ${CMAKE_INSTALL_NAME_TOOL} -add_rpath "@loader_path/lib" $<TARGET_FILE:${PROJECT_NAME}>\; fi)
+            POST_BUILD COMMAND
+            if ! otool -l $<TARGET_FILE:${PROJECT_NAME}> | grep -q @loader_path/lib\; then ${CMAKE_INSTALL_NAME_TOOL} -add_rpath "@loader_path/lib" $<TARGET_FILE:${PROJECT_NAME}>\; fi)
         add_custom_command(TARGET ${PROJECT_NAME}
-                POST_BUILD COMMAND
-                if ! otool -l $<TARGET_FILE:${PROJECT_NAME}> | grep -q @loader_path\; then ${CMAKE_INSTALL_NAME_TOOL} -add_rpath "@loader_path" $<TARGET_FILE:${PROJECT_NAME}>\; fi)
+            POST_BUILD COMMAND
+            if ! otool -l $<TARGET_FILE:${PROJECT_NAME}> | grep -q @loader_path\; then ${CMAKE_INSTALL_NAME_TOOL} -add_rpath "@loader_path" $<TARGET_FILE:${PROJECT_NAME}>\; fi)
 
     elseif(SMTG_WIN)
-        #    target_sources(MyPlugin
-        #            PRIVATE
-        #            resource/win32resource.rc
-        #    )
-        #    if(MSVC)
-        #        set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT MyPlugin)
-        #
-        #        smtg_target_set_debug_executable(MyPlugin
-        #                "$(ProgramW6432)/Steinberg/VST3PluginTestHost/VST3PluginTestHost.exe"
-        #                "--pluginfolder \"$(OutDir)/\""
-        #        )
-        #    endif()
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+            resource/win32resource.rc
+        )
     endif()
 
     codesign_target(${PROJECT_NAME})
