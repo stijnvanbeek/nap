@@ -40,7 +40,9 @@ macro(add_vst)
     endif ()
 
     project(${plugin_name} VERSION 1.0.0  DESCRIPTION ${description})
-    enable_language(OBJCXX)
+    if (APPLE)
+        enable_language(OBJCXX)
+    endif ()
 
     configure_file(${NAP_ROOT}/vst/src/project.h.in ${CMAKE_CURRENT_LIST_DIR}/src/project.h @ONLY)
 
@@ -63,8 +65,8 @@ macro(add_vst)
     file(GLOB_RECURSE napvst_headers ${NAP_ROOT}/vst/src/*.h ${NAP_ROOT}/vst/src/*.hpp)
 
     smtg_add_vst3plugin(${PROJECT_NAME}
-            ${VST3SDK_SOURCE_DIR}/public.sdk/source/vst/vstsinglecomponenteffect.cpp
-            ${VST3SDK_SOURCE_DIR}/public.sdk/source/vst/vstsinglecomponenteffect.h
+            ${VST3SDK_DIR}/public.sdk/source/vst/vstsinglecomponenteffect.cpp
+            ${VST3SDK_DIR}/public.sdk/source/vst/vstsinglecomponenteffect.h
             ${SOURCES}
             ${HEADERS}
             ${napvst_sources}
@@ -90,6 +92,9 @@ macro(add_vst)
     if (APPLE)
         set(output_resources_dir ${output_path}/Contents/Resources)
         set(bundle_relative_bin_dir Contents/MacOS)
+    elseif (UNIX)
+        set(output_resources_dir ${output_path}/Contents/Resources)
+        set(bundle_relative_bin_dir "Contents/x86_64-linux")
     endif ()
     set(output_data_dir ${output_resources_dir}/data)
 
@@ -103,11 +108,14 @@ macro(add_vst)
         set(CODE_SIGNATURE "-")
     endif ()
 
-    install(DIRECTORY ${output_path} DESTINATION vst COMPONENT vst EXCLUDE_FROM_ALL)
-    install(DIRECTORY ${lib_dir}
-            DESTINATION vst/${bundle_name}/${bundle_relative_bin_dir}
+    install(DIRECTORY "${output_path}" DESTINATION vst COMPONENT vst EXCLUDE_FROM_ALL)
+    install(DIRECTORY "${lib_dir}"
+            DESTINATION "vst/${bundle_name}/${bundle_relative_bin_dir}"
             COMPONENT vst EXCLUDE_FROM_ALL
-            FILES_MATCHING PATTERN "*${CMAKE_SHARED_LIBRARY_SUFFIX}"
+            FILES_MATCHING
+            PATTERN "*.*"
+            PATTERN "*.a" EXCLUDE
+            PATTERN "*.json" EXCLUDE
     )
 
     if(SMTG_MAC)
