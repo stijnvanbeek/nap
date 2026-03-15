@@ -1,4 +1,7 @@
 project(fbxconverter)
+
+set(CMAKE_SKIP_BUILD_RPATH TRUE)
+
 file(GLOB sources src/*.cpp src/*.h)
 include_directories(src)
 

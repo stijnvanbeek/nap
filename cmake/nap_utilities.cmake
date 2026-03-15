@@ -258,8 +258,8 @@ function(copy_import_library_to_bin target library_path)
 
     if (${target_type} STREQUAL INTERFACE_LIBRARY)
         # If the target is an interface library we need to copy immediately
+        update_install_name(${library_path})
         file(COPY ${library_path} DESTINATION ${LIB_DIR})
-        update_install_name(${dest_dll})
         execute_process(COMMAND codesign --force -s ${CODE_SIGNATURE} ${dest_dll})
     else ()
         # However we prefer deferring until before the target is build

@@ -46,11 +46,12 @@ macro(find_qt)
     find_package(Qt6Widgets REQUIRED)
     find_package(Qt6Gui REQUIRED)
     find_package(Qt6OpenGL REQUIRED)
+    find_package(Qt6DBus REQUIRED)
 
     set(CMAKE_AUTOMOC ON)
     set(CMAKE_AUTORCC ON)
     add_definitions(-DQT_NO_KEYWORDS)
 
-    set(QT_LIBS Qt6::Widgets Qt6::Core Qt6::Gui Qt6::OpenGL)
+    set(QT_LIBS Qt6::Widgets Qt6::Core Qt6::Gui Qt6::OpenGL Qt6::DBus)
 endmacro()
 

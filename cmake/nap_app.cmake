@@ -7,6 +7,7 @@ try_add_module_from_dir(${CMAKE_CURRENT_SOURCE_DIR}/module)
 get_filename_component(app_name ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
 project(${app_name})
+set(CMAKE_SKIP_BUILD_RPATH TRUE)
 
 # Bring in any additional app logic (pre-target definition)
 set(app_extra_pre_target_cmake_path ${CMAKE_CURRENT_SOURCE_DIR}/app_extra_pre_target.cmake)
