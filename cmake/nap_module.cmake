@@ -11,6 +11,12 @@ endif()
 
 project(${module_name})
 
+if (APPLE)
+    set(CMAKE_SKIP_BUILD_RPATH TRUE)
+else ()
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+endif ()
+
 # Add demo apps
 add_subdirectory_apps(demo)
 
@@ -20,6 +26,8 @@ file(GLOB HEADERS src/*.h src/*.hpp)
 
 # Compile target as shared lib
 add_library(${PROJECT_NAME} SHARED ${SOURCES} ${HEADERS})
+
+set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
 
 set(static_target ${PROJECT_NAME}${static_suffix})
 add_library(${static_target} INTERFACE)

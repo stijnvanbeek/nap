@@ -7,7 +7,12 @@ try_add_module_from_dir(${CMAKE_CURRENT_SOURCE_DIR}/module)
 get_filename_component(app_name ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
 project(${app_name})
-set(CMAKE_SKIP_BUILD_RPATH TRUE)
+
+if (APPLE)
+    set(CMAKE_SKIP_BUILD_RPATH TRUE)
+else ()
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+endif ()
 
 # Bring in any additional app logic (pre-target definition)
 set(app_extra_pre_target_cmake_path ${CMAKE_CURRENT_SOURCE_DIR}/app_extra_pre_target.cmake)
@@ -18,8 +23,6 @@ if(EXISTS ${app_extra_pre_target_cmake_path})
         return()
     endif()
 endif()
-
-#set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Add all cpp files to SOURCES
 file(GLOB_RECURSE SOURCES src/*.cpp)

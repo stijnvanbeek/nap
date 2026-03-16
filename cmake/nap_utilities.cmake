@@ -216,7 +216,7 @@ function(update_install_name library_path)
                 RESULT_VARIABLE EXIT_CODE
             )
             if(NOT ${EXIT_CODE} EQUAL 0)
-                message(FATAL_ERROR "Failed to set RPATH on ${library_file_name} using install_name_tool -id.")
+                message(FATAL_ERROR "Failed to set install name on ${library_file_name} using install_name_tool -id.")
             endif()
         else ()
             # Set so name or rpath for linux
@@ -225,7 +225,7 @@ function(update_install_name library_path)
                 RESULT_VARIABLE EXIT_CODE
             )
             if(NOT ${EXIT_CODE} EQUAL 0)
-                message(FATAL_ERROR "Failed to set RPATH on ${library_file_name} using patchelf. Is patchelf installed?")
+                message(FATAL_ERROR "Failed to set so name on ${library_file_name} using patchelf. Is patchelf installed?")
             endif()
         endif()
     endif ()

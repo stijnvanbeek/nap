@@ -1,8 +1,13 @@
 project(napkin)
 find_qt()
 
-# Ideally we would put this here but in napkin on Apple we need to link to original Qt locations.
-# set(CMAKE_SKIP_BUILD_RPATH TRUE)
+#if (APPLE)
+#    # Ideally we would put this here on Apple too but in napkin on Apple we need to link to original Qt locations.
+#    set(CMAKE_SKIP_BUILD_RPATH TRUE)
+#else ()
+#    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+#endif ()
+
 
 file(GLOB_RECURSE SOURCES src/*.cpp)
 file(GLOB_RECURSE HEADERS src/*.h)
@@ -30,11 +35,6 @@ endif()
 # The NAP modules Napkin needs
 set(NAP_MODULES_DEPENDENCIES napcore napscene napcolor napmath naprender napinput napfont napcameracontrol naprenderadvanced napimgui napapi)
 
-# Add python if enabled
-if(NAP_ENABLE_PYTHON)
-    list(APPEND NAP_MODULES_DEPENDENCIES nappython)
-endif()
-
 # Set libraries
 set(LIBS
     napqt
@@ -48,6 +48,8 @@ if(APPLE)
     add_custom_command(TARGET ${PROJECT_NAME}
             POST_BUILD COMMAND
             ${CMAKE_INSTALL_NAME_TOOL} -add_rpath "@executable_path/${LIB_RPATH}/." $<TARGET_FILE:${PROJECT_NAME}>)
+elseif (UNIX)
+
 endif()
 
 # Copy resources to bin and install to packaged app
