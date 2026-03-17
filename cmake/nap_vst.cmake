@@ -143,10 +143,10 @@ macro(add_vst)
             if ! otool -l $<TARGET_FILE:${PROJECT_NAME}> | grep -q @loader_path\; then ${CMAKE_INSTALL_NAME_TOOL} -add_rpath "@loader_path" $<TARGET_FILE:${PROJECT_NAME}>\; fi)
 
     elseif(SMTG_WIN)
-        target_sources(${PROJECT_NAME}
-            PRIVATE
-            resource/win32resource.rc
-        )
+#        target_sources(${PROJECT_NAME}
+#            PRIVATE
+#            resource/win32resource.rc
+#        )
     endif()
 
     codesign_target(${PROJECT_NAME})

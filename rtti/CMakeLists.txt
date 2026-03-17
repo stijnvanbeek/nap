@@ -47,25 +47,37 @@ elseif(UNIX)
     target_link_libraries(${PROJECT_NAME} dl pthread)
     target_link_libraries(${static_target} INTERFACE naputility RTTR::Core)
     target_link_libraries(${static_target} INTERFACE dl pthread)
+elseif (WIN32)
+    set(static_lib_path ${THIRDPARTY_DIR}/rttr/msvc/x86_64/static/librttr_core.a)
+    set(rttr_include_dir ${THIRDPARTY_DIR}/rttr/msvc/x86_64/include)
+    target_link_libraries(${static_target} INTERFACE naputility ${static_lib_path})
+    target_include_directories(${static_target} INTERFACE ${rttr_include_dir})
 endif ()
 
 # Copy rttr library to bin
-if (UNIX AND NOT APPLE)
-    # On linux we have to get the harcoded path because IMPORTED_LOCATION_RELEASE does not work
-    set(rttr_library_path ${THIRDPARTY_DIR}/rttr/linux/${ARCH}/bin/librttr_core.so.0.9.6)
-else ()
-    get_target_property(rttr_library_path RTTR::Core IMPORTED_LOCATION_RELEASE)
-endif ()
-get_filename_component(rttr_filename ${rttr_library_path} NAME)
-set(rttr_bin_path ${LIB_DIR}/${rttr_filename})
+if (UNIX)
+    if (APPLE)
+        get_target_property(rttr_library_path RTTR::Core IMPORTED_LOCATION_RELEASE)
+    else ()
+        # On linux we have to get the harcoded path because IMPORTED_LOCATION_RELEASE does not work
+        set(rttr_library_path ${THIRDPARTY_DIR}/rttr/linux/${ARCH}/bin/librttr_core.so.0.9.6)
+    endif ()
+    get_filename_component(rttr_filename ${rttr_library_path} NAME)
+    set(rttr_bin_path ${LIB_DIR}/${rttr_filename})
 
-# Copy to bin, update install name and codesign before building the target
-copy_import_library_to_bin(${PROJECT_NAME} ${rttr_library_path})
+    # Copy to bin, update install name and codesign before building the target
+    copy_import_library_to_bin(${PROJECT_NAME} ${rttr_library_path})
+
+    # Package RTTR::Core libraries
+    install(FILES ${rttr_bin_path} TYPE LIB OPTIONAL)
+else ()
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:RTTR::Core> ${LIB_DIR}
+    )
+    install(FILES $<TARGET_FILE:RTTR::Core> TYPE LIB OPTIONAL)
+endif ()
 
 codesign_target(${PROJECT_NAME})
-
-# Package RTTR::Core libraries
-install(FILES ${rttr_bin_path} TYPE LIB OPTIONAL)
 
 # Package naprtti library
 install(FILES $<TARGET_FILE:${PROJECT_NAME}> TYPE LIB OPTIONAL)

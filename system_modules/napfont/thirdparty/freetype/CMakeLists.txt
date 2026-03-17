@@ -17,8 +17,10 @@ elseif (WIN32)
     set(lib_dir ${platform_dir}/lib/Release)
     set(implib ${lib_dir}/${implib_prefix}${PROJECT_NAME}${implib_suffix})
     set(dll ${lib_dir}/${dll_prefix}${PROJECT_NAME}${dll_suffix})
+    set(bin_dir ${platform_dir}/bin)
+    set(static_lib ${bin_dir}/freetype.lib)
     add_import_library(${PROJECT_NAME} ${implib} ${dll} ${include_dir})
-    add_import_library(${PROJECT_NAME}${static_suffix} ${implib} ${dll} ${include_dir}) # Use dynamic library for static builds for now
+    add_static_import_library(${PROJECT_NAME}${static_suffix} ${static_lib} ${include_dir}) # Use dynamic library for static builds for now
 else ()
     set(lib_dir ${platform_dir}/lib)
     set(implib ${lib_dir}/${implib_prefix}${PROJECT_NAME}${implib_suffix})

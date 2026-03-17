@@ -35,7 +35,10 @@ if (APPLE)
             "-framework Carbon"               # HIToolbox (LMGetKbdType, TIS*)
             "-framework UniformTypeIdentifiers" # UTType
     )
-else ()
+elseif (WIN32)
+    set(static_lib ${platform_dir}/static/libSDL3.a)
+    add_static_import_library(${PROJECT_NAME}${static_suffix} ${static_lib} ${include_dir})
+else()
     add_import_library(${PROJECT_NAME}${static_suffix} ${implib} ${dll} ${include_dir})
 endif ()
 
