@@ -22,7 +22,9 @@
 #include <cstdio>
 #include <functional>
 
-#include <dlfcn.h>
+#ifndef WIN32
+	#include <dlfcn.h>
+#endif
 
 constexpr const char* app_json = "app.json";
 
@@ -94,13 +96,13 @@ namespace Steinberg
 			mCore = std::make_unique<nap::Core>(mainThreadQueue);
 
 #ifdef WIN32
-			std::runtime_error("Not implemented for Windows yet");
+			std::string resourceDir = "";
 #else
 			Dl_info info;
 			dladdr((void*)(app_json), &info);
 			std::string loaderPath = info.dli_fname;
 			std::string loaderDir = nap::utility::getFileDir(loaderPath);
-			std::string resourcedDir = nap::utility::joinPath({ loaderDir, "..", "Resources" });
+			std::string resourceDir = nap::utility::joinPath({ loaderDir, "..", "Resources" });
 #endif
 
 
@@ -119,7 +121,7 @@ namespace Steinberg
 			mAudioService->getNodeManager().setInputChannelCount(2);
 			mAudioService->getNodeManager().setOutputChannelCount(2);
 
-			std::string data_dir = nap::utility::joinPath({ resourcedDir, "data" });;
+			std::string data_dir = nap::utility::joinPath({ resourceDir, "data" });;
 			std::string app_structure_path = nap::utility::joinPath({ data_dir, stringAppStructureFileName });
 
 			if (nap::utility::fileExists(app_structure_path))

@@ -1991,6 +1991,11 @@ namespace nap
 		{
 			bool available = false;
 			getCore().runOnMainThread([&](){
+				// // Try explicit reload
+				// SDL_Vulkan_UnloadLibrary();
+				// if (!SDL_Vulkan_LoadLibrary(NULL))
+				// 	errorState.fail("Failed to load vulkan library: %s", SDL_GetError());
+
 				// Create surface based on new or existing window
 				available = render_config->mWindowHandle != nullptr ?
 					dummy_surface.init(reinterpret_cast<SDL_Window*>(render_config->mWindowHandle), errorState) :

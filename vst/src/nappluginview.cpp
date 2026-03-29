@@ -9,7 +9,7 @@
 	#import <AppKit/AppKit.h>
 #elif WIN32
 #else
-#include <X11/X.h>
+	#include <X11/X.h>
 #endif
 
 
@@ -145,6 +145,13 @@ namespace Steinberg
 				return;
 			}
 #elif WIN32
+			auto id = systemWindow;
+			auto setup = SDL_SetPointerProperty(props, SDL_PROP_WINDOW_CREATE_WIN32_HWND_POINTER, (void*)id);
+			if (!errorState.check(setup, "Unable to enable '%s', error: %s", SDL_PROP_WINDOW_CREATE_WIN32_HWND_POINTER, SDL_GetError()))
+			{
+				nap::Logger::error(errorState.toString().c_str());
+				return;
+			}
 #else
 			auto id = reinterpret_cast<XID>(systemWindow);
 			auto setup = SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X11_WINDOW_NUMBER, id);

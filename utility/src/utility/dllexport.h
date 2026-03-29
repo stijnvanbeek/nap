@@ -14,7 +14,8 @@
 	#ifdef NAP_SHARED_LIBRARY
 		#define NAPAPI __declspec(dllexport)	// Export the symbols
 	#else
-		#define NAPAPI __declspec(dllimport)	// Import the symbols
+		// #define NAPAPI __declspec(dllimport)	// Import the symbols
+		#define NAPAPI
 	#endif // NAP_SHARED_LIBRARY
 #else
     #define NAPAPI __attribute__ ((visibility ("default")))

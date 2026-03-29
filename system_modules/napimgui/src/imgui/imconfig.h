@@ -19,7 +19,7 @@
 #ifdef NAP_SHARED_LIBRARY_IMGUI
 	#define IMGUI_API __declspec(dllexport)    // Export the symbols
 #else
-	#define IMGUI_API __declspec(dllimport)    // Import the symbols
+	// #define IMGUI_API __declspec(dllimport)    // Import the symbols
 #endif // NAP_SHARED_LIBRARY
 #else
     #define IMGUI_API __attribute__ ((visibility ("default")))	// Export the symbols

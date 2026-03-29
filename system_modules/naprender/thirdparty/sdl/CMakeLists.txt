@@ -36,7 +36,7 @@ if (APPLE)
             "-framework UniformTypeIdentifiers" # UTType
     )
 elseif (WIN32)
-    set(static_lib ${platform_dir}/static/libSDL3.a)
+    set(static_lib ${platform_dir}/static/SDL3-static.lib)
     add_static_import_library(${PROJECT_NAME}${static_suffix} ${static_lib} ${include_dir})
 else()
     add_import_library(${PROJECT_NAME}${static_suffix} ${implib} ${dll} ${include_dir})

@@ -23,11 +23,29 @@ endif()
 
 target_link_import_library(${static_target} assimp${static_suffix})
 target_link_import_library(${static_target} SDL3${static_suffix})
+target_link_libraries(${static_target} INTERFACE
+        winmm
+        version
+        imm32
+        setupapi
+)
 target_link_import_library(${static_target} FreeImage${static_suffix})
+target_compile_definitions(${static_target} INTERFACE FREEIMAGE_LIB)
 target_link_import_library(${static_target} vulkan) # Also link shared vulkan lib for static
 
-target_link_libraries(${static_target} INTERFACE debug ${SPIRVCROSS_LIBS_DEBUG} optimized ${SPIRVCROSS_LIBS_RELEASE})
-target_link_libraries(${static_target} INTERFACE debug ${GLSLANG_LIBS_DEBUG} optimized ${GLSLANG_LIBS_RELEASE})
+if (UNIX)
+    target_link_libraries(${static_target} INTERFACE debug ${SPIRVCROSS_LIBS_DEBUG} optimized ${SPIRVCROSS_LIBS_RELEASE})
+    target_link_libraries(${static_target} INTERFACE debug ${GLSLANG_LIBS_DEBUG} optimized ${GLSLANG_LIBS_RELEASE})
+else ()
+    if(${CMAKE_BUILD_TYPE} STREQUAL Debug)
+        target_link_libraries(${static_target} INTERFACE ${SPIRVCROSS_LIBS_DEBUG})
+        target_link_libraries(${static_target} INTERFACE ${GLSLANG_LIBS_DEBUG})
+    else ()
+        target_link_libraries(${static_target} INTERFACE ${SPIRVCROSS_LIBS_RELEASE})
+        target_link_libraries(${static_target} INTERFACE ${GLSLANG_LIBS_RELEASE})
+    endif ()
+endif ()
+
 target_include_directories(${static_target} INTERFACE ${SPIRVCROSS_INCLUDE_DIR} ${GLSLANG_INCLUDE_DIR})
 
 if(UNIX AND NOT APPLE)
