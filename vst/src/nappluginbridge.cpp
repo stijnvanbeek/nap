@@ -14,15 +14,15 @@
 #include <rtti/typeinfo.h>
 #include <parameternumeric.h>
 #include <parameterdropdown.h>
-#include <parametergroup.h>
 #include <sdlhelpers.h>
 #include <utility/fileutils.h>
 
-#include <cmath>
-#include <cstdio>
 #include <functional>
 
-#ifndef WIN32
+#ifdef WIN32
+	#include <windows.h>
+	#include <atlstr.h>
+#else
 	#include <dlfcn.h>
 #endif
 
@@ -38,6 +38,19 @@ namespace Steinberg
 	namespace Vst
 	{
 
+
+		std::string WideToUtf8(LPCWSTR wstr) {
+			if (!wstr) return {};
+			int size_needed = WideCharToMultiByte(
+				CP_UTF8, 0, wstr, -1, nullptr, 0, nullptr, nullptr);
+			if (size_needed == 0) return {};
+			std::string result(size_needed - 1, '\0'); // exclude null
+			WideCharToMultiByte(CP_UTF8, 0, wstr, -1,
+								&result[0], size_needed, nullptr, nullptr);
+			return result;
+		}
+
+
 		NapPluginBridge::NapPluginBridge ()
 		{
 		}
@@ -45,6 +58,7 @@ namespace Steinberg
 		NapPluginBridge::~NapPluginBridge()
 		{
 			terminate();
+			mControlThread.stop();
 		}
 
 
@@ -96,7 +110,12 @@ namespace Steinberg
 			mCore = std::make_unique<nap::Core>(mainThreadQueue);
 
 #ifdef WIN32
-			std::string resourceDir = "";
+			HMODULE hModule = nullptr;
+			GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, LPCWSTR(app_json), &hModule);
+			WCHAR loaderPath[MAX_PATH];
+			GetModuleFileName(hModule, loaderPath, MAX_PATH);
+			std::string loaderDir = nap::utility::getFileDir(WideToUtf8(loaderPath));
+			std::string resourceDir = nap::utility::joinPath({ loaderDir, "..", "Resources" });
 #else
 			Dl_info info;
 			dladdr((void*)(app_json), &info);
@@ -104,7 +123,6 @@ namespace Steinberg
 			std::string loaderDir = nap::utility::getFileDir(loaderPath);
 			std::string resourceDir = nap::utility::joinPath({ loaderDir, "..", "Resources" });
 #endif
-
 
 			if (!mCore->initializeEngineWithoutProjectInfo(errorState))
 				return false;
@@ -136,10 +154,6 @@ namespace Steinberg
 				// mCore->getResourceManager()->watchDirectory(data_dir);
 			}
 			else {
-				// std::string app_structure = symbol(APP_STRUCTURE_BINARY);
-				// std::vector<nap::rtti::FileLink> fileLinks;
-				// if (!mCore->getResourceManager()->loadJSON(app_structure, std::string(), fileLinks, errorState))
-				// 	return false;
 				nap::Logger::error("Failed to load app structure. file not found: %s", app_structure_path.c_str());
 				return false;
 			}
@@ -200,8 +214,6 @@ namespace Steinberg
 			while (!napTerminated)
 				mMainThreadQueue.process();
 			mMainThreadQueue.process();
-
-			mControlThread.stop();
 
 			auto plugResult = SingleComponentEffect::terminate ();
 			return plugResult;
