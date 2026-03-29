@@ -58,7 +58,6 @@ namespace Steinberg
 		NapPluginBridge::~NapPluginBridge()
 		{
 			terminate();
-			mControlThread.stop();
 		}
 
 
@@ -158,7 +157,6 @@ namespace Steinberg
 				return false;
 			}
 
-			mAudioService = mCore->getService<nap::audio::AudioService>();
 			mMidiService = mCore->getService<nap::MidiService>();
 			mRenderService = mCore->getService<nap::RenderService>();
 			mInputService = mCore->getService<nap::InputService>();
@@ -215,8 +213,9 @@ namespace Steinberg
 				mMainThreadQueue.process();
 			mMainThreadQueue.process();
 
-			auto plugResult = SingleComponentEffect::terminate ();
-			return plugResult;
+			mControlThread.stop();
+
+			return SingleComponentEffect::terminate ();
 		}
 
 
