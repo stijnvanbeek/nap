@@ -9,7 +9,7 @@ macro(add_vst)
         endif ()
     endif()
     if (WIN32)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4244 /wd4305 /wd4996 /wd4267 /wd4018 /wd4251 /MP /bigobj /Zc:preprocessor /wd5105")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4244 /wd4305 /wd4996 /wd4267 /wd4018 /wd4251 /wd4099 /MP /bigobj /Zc:preprocessor /wd5105")
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /ZI")
     endif ()
 
@@ -85,13 +85,6 @@ macro(add_vst)
             ${napvst_headers}
     )
     target_include_directories(${PROJECT_NAME} PRIVATE ${NAP_ROOT}/vst/src src)
-
-#    target_compile_options(${PROJECT_NAME}
-#            PRIVATE
-#            $<$<CXX_COMPILER_ID:MSVC>:/Zc:preprocessor>
-#            $<$<CXX_COMPILER_ID:MSVC>:/bigobj>
-#            $<$<CXX_COMPILER_ID:MSVC>:$<IF:$<CONFIG:Debug>,/ZI,/Zi>>
-#    )
 
     # Pull in the project module if it exists
     if (TARGET nap${PROJECT_NAME})
