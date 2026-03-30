@@ -23,15 +23,36 @@ endif()
 
 target_link_import_library(${static_target} assimp${static_suffix})
 target_link_import_library(${static_target} SDL3${static_suffix})
-target_link_libraries(${static_target} INTERFACE
-        winmm
-        version
-        imm32
-        setupapi
-)
 target_link_import_library(${static_target} FreeImage${static_suffix})
-target_compile_definitions(${static_target} INTERFACE FREEIMAGE_LIB)
 target_link_import_library(${static_target} vulkan) # Also link shared vulkan lib for static
+if (WIN32)
+    # Addiotional depenendencies for statically linking SDL3
+    target_link_libraries(${static_target} INTERFACE
+            winmm
+            version
+            imm32
+            setupapi
+    )
+    # Needed to statically reference FreeImage
+    target_compile_definitions(${static_target} INTERFACE FREEIMAGE_LIB)
+endif ()
+if (APPLE)
+    target_link_libraries(${PROJECT_NAME}${static_suffix} INTERFACE
+            "-framework Cocoa"                # Common SDL deps
+            "-framework IOKit"
+            "-framework AVFoundation"         # Camera
+            "-framework CoreMedia"
+            "-framework CoreVideo"
+            "-framework CoreAudio"            # Audio object APIs
+            "-framework AudioToolbox"         # AudioQueue APIs
+            "-framework GameController"       # Controllers
+            "-framework CoreHaptics"          # Rumble
+            "-framework ForceFeedback"        # Legacy FF APIs
+            "-framework Carbon"               # HIToolbox (LMGetKbdType, TIS*)
+            "-framework UniformTypeIdentifiers" # UTType
+            "-framework Metal"
+    )
+endif ()
 
 if (UNIX)
     target_link_libraries(${static_target} INTERFACE debug ${SPIRVCROSS_LIBS_DEBUG} optimized ${SPIRVCROSS_LIBS_RELEASE})

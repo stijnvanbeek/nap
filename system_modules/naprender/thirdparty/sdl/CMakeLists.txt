@@ -21,20 +21,6 @@ if (APPLE)
     set(bin_dir ${platform_dir}/bin)
     set(static_lib ${bin_dir}/${static_lib_prefix}${PROJECT_NAME}${static_lib_suffix})
     add_static_import_library(${PROJECT_NAME}${static_suffix} ${static_lib} ${include_dir})
-    target_link_libraries(${PROJECT_NAME}${static_suffix} INTERFACE
-            "-framework Cocoa"                # Common SDL deps
-            "-framework IOKit"
-            "-framework AVFoundation"         # Camera
-            "-framework CoreMedia"
-            "-framework CoreVideo"
-            "-framework CoreAudio"            # Audio object APIs
-            "-framework AudioToolbox"         # AudioQueue APIs
-            "-framework GameController"       # Controllers
-            "-framework CoreHaptics"          # Rumble
-            "-framework ForceFeedback"        # Legacy FF APIs
-            "-framework Carbon"               # HIToolbox (LMGetKbdType, TIS*)
-            "-framework UniformTypeIdentifiers" # UTType
-    )
 elseif (WIN32)
     set(static_lib ${platform_dir}/static/SDL3-static.lib)
     add_static_import_library(${PROJECT_NAME}${static_suffix} ${static_lib} ${include_dir})

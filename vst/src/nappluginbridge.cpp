@@ -39,6 +39,7 @@ namespace Steinberg
 	{
 
 
+#ifdef WIN32
 		std::string WideToUtf8(LPCWSTR wstr) {
 			if (!wstr) return {};
 			int size_needed = WideCharToMultiByte(
@@ -49,6 +50,7 @@ namespace Steinberg
 								&result[0], size_needed, nullptr, nullptr);
 			return result;
 		}
+#endif
 
 
 		NapPluginBridge::NapPluginBridge ()
