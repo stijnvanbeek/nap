@@ -37,7 +37,7 @@ if (WIN32)
     target_compile_definitions(${static_target} INTERFACE FREEIMAGE_LIB)
 endif ()
 if (APPLE)
-    target_link_libraries(${PROJECT_NAME}${static_suffix} INTERFACE
+    target_link_libraries(${static_target} INTERFACE
             "-framework Cocoa"                # Common SDL deps
             "-framework IOKit"
             "-framework AVFoundation"         # Camera

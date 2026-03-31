@@ -19,6 +19,7 @@ namespace nap
 		virtual void update(double deltaTime) { }
 		virtual void render(RenderWindow* renderWindow) { }
 		virtual void shutdown() { }
+		virtual glm::vec2 getRenderWindowSize() { return glm::vec2(400.f, 300.f); }
 
 		Signal<Parameter&> registerParameterSignal;
 

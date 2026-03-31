@@ -1986,20 +1986,15 @@ namespace nap
 
 		// Temporary window used to bind an SDL_Window and Vulkan surface together. 
 		// Allows for easy destruction of previously created and assigned resources when initialization fails.
-		DummySurface dummy_surface(mInstance);
+		std::unique_ptr<DummySurface> dummy_surface = std::make_unique<DummySurface>(mInstance);
 		if (!mHeadless)
 		{
 			bool available = false;
 			getCore().runOnMainThread([&](){
-				// // Try explicit reload
-				// SDL_Vulkan_UnloadLibrary();
-				// if (!SDL_Vulkan_LoadLibrary(NULL))
-				// 	errorState.fail("Failed to load vulkan library: %s", SDL_GetError());
-
 				// Create surface based on new or existing window
 				available = render_config->mWindowHandle != nullptr ?
-					dummy_surface.init(reinterpret_cast<SDL_Window*>(render_config->mWindowHandle), errorState) :
-					dummy_surface.init(errorState);
+					dummy_surface->init(reinterpret_cast<SDL_Window*>(render_config->mWindowHandle), errorState) :
+					dummy_surface->init(errorState);
 			});
 
 			// Make sure it's available
@@ -2014,7 +2009,7 @@ namespace nap
 		VkQueueFlags req_queue_capabilities = getQueueFlags(render_config->mEnableCompute);
 
 		// Request a single (unified) family queue that supports the full set of QueueFamilyOptions in mQueueFamilies, meaning graphics/transfer and compute
-		if (!selectPhysicalDevice(mInstance, pref_gpu, mAPIVersion, dummy_surface.mSurface, req_queue_capabilities, mPhysicalDevice, errorState))
+		if (!selectPhysicalDevice(mInstance, pref_gpu, mAPIVersion, dummy_surface->mSurface, req_queue_capabilities, mPhysicalDevice, errorState))
 			return false;
 
 		// Sample physical device features and notify
@@ -2116,6 +2111,12 @@ namespace nap
 		}
 
 		mInitialized = true;
+
+		// Destruct the helper dummy surface on the main thread.
+		getCore().runOnMainThread([&](){
+			dummy_surface = nullptr;
+		});
+
 		return true;
 	}
 

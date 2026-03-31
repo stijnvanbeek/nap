@@ -3,27 +3,11 @@
 #pragma once
 
 #include "pluginterfaces/base/fplatform.h"
+#include "pluginterfaces/base/funknown.h"
+#include "pluginterfaces/vst/vstspeaker.h"
 
-#define MAJOR_VERSION_STR "@major_version@"
-#define MAJOR_VERSION_INT @major_version@
-
-#define SUB_VERSION_STR "@sub_version@"
-#define SUB_VERSION_INT @sub_version@
-
-#define RELEASE_NUMBER_STR "@release_number@"
-#define RELEASE_NUMBER_INT @release_number@
-
-#define BUILD_NUMBER_STR "@build_numer@" // Build number to be sure that each result could identified.
-#define BUILD_NUMBER_INT @build_numer@
-
-// Version with build number (example "1.0.3.342")
-#define FULL_VERSION_STR MAJOR_VERSION_STR "." SUB_VERSION_STR "." RELEASE_NUMBER_STR "." BUILD_NUMBER_STR
-
-// Version without build number (example "1.0.3")
-#define VERSION_STR MAJOR_VERSION_STR "." SUB_VERSION_STR "." RELEASE_NUMBER_STR
-
-// HERE you have to define your plug-in, company name, email and web
 #define stringPluginName		"@PROJECT_NAME@"
+#define stringPluginVersion     "@plugin_version@"
 
 #if SMTG_PLATFORM_64
 #define stringFileDescription	stringPluginName" VST3-SDK (64Bit)"
@@ -35,5 +19,10 @@
 #define stringCompanyWeb		"@company_website@"
 #define stringCompanyEmail		"@company_email@"
 
-#define stringAppStructureFileName	"@app_structure_filename@"
-#define stringPluginTypeName		"@plugin_type_name@"
+#define stringAppStructurePath	"@app_structure_path@"
+#define stringPluginClass		"@plugin_class_name@"
+#define stringPluginCategory	"@plugin_category@"
+
+static const Steinberg::FUID pluginFUID (@plugin_uid@);
+static const Steinberg::Vst::SpeakerArrangement pluginAudioInput = Steinberg::Vst::SpeakerArr::k@audio_input@;
+static const Steinberg::Vst::SpeakerArrangement pluginAudioOutput = Steinberg::Vst::SpeakerArr::k@audio_output@;

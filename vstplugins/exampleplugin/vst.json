@@ -1,0 +1,22 @@
+{
+  "Name": "Example",
+  "Version": "0.0.1",
+  "Description": "Example plugin",
+  "Company": "NAP Framework",
+  "CompanyWeb": "https://github.com/napframework/nap",
+  "CompanyEmail": "",
+  "Data": "data/objects.json",
+  "Class": "nap::AudioPlugin",
+  "Category": "Fx",
+  "AudioInput": "Stereo",
+  "AudioOutput": "Stereo",
+  "UID": "0xBD58B550, 0xF9E5634E, 0x9D2EFF39, 0xEA0927B4",
+  "RequiredModules": [
+    "napparameter",
+    "napimgui",
+	"napaudio",
+	"napmidi",
+    "napsdlinput",
+	"napcontrol"
+  ]
+}

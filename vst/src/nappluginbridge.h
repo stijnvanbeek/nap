@@ -14,7 +14,6 @@
 #include <sdlinputservice.h>
 #include <imguiservice.h>
 #include <parameter.h>
-#include <parametergui.h>
 
 #include "audioplugin.h"
 #include "sdlpoller.h"
@@ -100,7 +99,6 @@ private:
 	nap::ControlThread mControlThread;
 	nap::TaskQueue mMainThreadQueue;
 
-	std::unique_ptr<nap::ParameterGUI> mParameterGUI = nullptr;
 	Timer* mTimer = nullptr;
 	std::unique_ptr<nap::SDLEventConverter> mEventConverter = nullptr;
 

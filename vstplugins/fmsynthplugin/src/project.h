@@ -3,27 +3,11 @@
 #pragma once
 
 #include "pluginterfaces/base/fplatform.h"
+#include "pluginterfaces/base/funknown.h"
+#include "pluginterfaces/vst/vstspeaker.h"
 
-#define MAJOR_VERSION_STR "0"
-#define MAJOR_VERSION_INT 0
-
-#define SUB_VERSION_STR "0"
-#define SUB_VERSION_INT 0
-
-#define RELEASE_NUMBER_STR "0"
-#define RELEASE_NUMBER_INT 0
-
-#define BUILD_NUMBER_STR "" // Build number to be sure that each result could identified.
-#define BUILD_NUMBER_INT 
-
-// Version with build number (example "1.0.3.342")
-#define FULL_VERSION_STR MAJOR_VERSION_STR "." SUB_VERSION_STR "." RELEASE_NUMBER_STR "." BUILD_NUMBER_STR
-
-// Version without build number (example "1.0.3")
-#define VERSION_STR MAJOR_VERSION_STR "." SUB_VERSION_STR "." RELEASE_NUMBER_STR
-
-// HERE you have to define your plug-in, company name, email and web
 #define stringPluginName		"fmsynthplugin"
+#define stringPluginVersion     "0.0.1"
 
 #if SMTG_PLATFORM_64
 #define stringFileDescription	stringPluginName" VST3-SDK (64Bit)"
@@ -35,5 +19,10 @@
 #define stringCompanyWeb		"https://github.com/napframework/nap"
 #define stringCompanyEmail		""
 
-#define stringAppStructureFileName	"objects.json"
-#define stringPluginTypeName		"nap::FMSynthPlugin"
+#define stringAppStructurePath	"data/objects.json"
+#define stringPluginClass		"nap::FMSynthPlugin"
+#define stringPluginCategory	"Instrument|Synth"
+
+static const Steinberg::FUID pluginFUID (0xBD58B550, 0xF9E5634E, 0x9D2EFF39, 0xEA0927B3);
+static const Steinberg::Vst::SpeakerArrangement pluginAudioInput = Steinberg::Vst::SpeakerArr::kEmpty;
+static const Steinberg::Vst::SpeakerArrangement pluginAudioOutput = Steinberg::Vst::SpeakerArr::kStereo;

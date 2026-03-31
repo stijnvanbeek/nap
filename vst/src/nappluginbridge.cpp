@@ -71,9 +71,11 @@ namespace Steinberg
 				return result;
 
 
-			// we want a stereo Input and a Stereo Output
-			addAudioInput  (STR16 ("Stereo In"),  SpeakerArr::kStereo);
-			addAudioOutput (STR16 ("Stereo Out"), SpeakerArr::kStereo);
+			if (pluginAudioInput != SpeakerArr::kEmpty)
+				addAudioInput  (STR16 ("Input"),  pluginAudioInput);
+
+			if (pluginAudioOutput != SpeakerArr::kEmpty)
+				addAudioOutput (STR16 ("Output"), pluginAudioOutput);
 
 			// One single channel event bus
 			addEventInput (STR16 ("Event In"), 1);
@@ -140,8 +142,8 @@ namespace Steinberg
 			mAudioService->getNodeManager().setInputChannelCount(2);
 			mAudioService->getNodeManager().setOutputChannelCount(2);
 
-			std::string data_dir = nap::utility::joinPath({ resourceDir, "data" });;
-			std::string app_structure_path = nap::utility::joinPath({ data_dir, stringAppStructureFileName });
+			std::string app_structure_path = nap::utility::joinPath({ resourceDir, stringAppStructurePath });
+			std::string data_dir = nap::utility::getFileDir(app_structure_path);
 
 			if (nap::utility::fileExists(app_structure_path))
 			{
@@ -165,7 +167,7 @@ namespace Steinberg
 			mSDLInputService = mCore->getService<nap::SDLInputService>();
 			mGuiService = mCore->getService<nap::IMGuiService>();
 
-			auto pluginType = nap::rtti::TypeInfo::get_by_name(stringPluginTypeName);
+			auto pluginType = nap::rtti::TypeInfo::get_by_name(stringPluginClass);
 			assert(pluginType.can_create_instance());
 			std::vector<rttr::argument>	args = { rttr::argument(*mCore.get()) };
 			auto pluginVariant = pluginType.create(args);
@@ -423,7 +425,8 @@ namespace Steinberg
 			if (mView != nullptr)
 				return nullptr;
 
-			ViewRect rect = ViewRect(0, 0, 400, 300);
+			auto size = mPlugin->getRenderWindowSize();
+			ViewRect rect = ViewRect(0, 0, size.x, size.y);
 			mView = new NapPluginView(*this, mMainThreadQueue, rect);
 			return mView;
 		}
@@ -516,13 +519,13 @@ namespace Steinberg
 BEGIN_FACTORY_DEF (stringCompanyName, stringCompanyWeb, stringCompanyEmail)
 	//---First plug-in included in this factory-------
 	// its kVstAudioEffectClass component
-	DEF_CLASS2 (INLINE_UID (0xBD58B550, 0xF9E5634E, 0x9D2EFF39, 0xEA0927B3),
+	DEF_CLASS2 (INLINE_UID_FROM_FUID(pluginFUID),
 				PClassInfo::kManyInstances,					// cardinality  
 				kVstAudioEffectClass,						// the component category (do not change this)
 				stringPluginName,							// here the plug-in name (to be changed)
 				0,											// single component effects cannot be distributed so this is zero
-				"Fx",										// Subcategory for this plug-in (to be changed)
-				FULL_VERSION_STR,							// Plug-in version (to be changed)
+				stringPluginCategory,						// Subcategory for this plug-in (to be changed)
+				stringPluginVersion,						// Plug-in version (to be changed)
 				kVstVersionString,							// the VST 3 SDK version (do not change this, always use this define)
 				Steinberg::Vst::NapPluginBridge::createInstance) // function pointer called when this component should be instantiated
 END_FACTORY

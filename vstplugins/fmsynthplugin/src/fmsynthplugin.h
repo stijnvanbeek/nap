@@ -35,6 +35,7 @@ namespace nap
 
 			mParameterGUI = std::make_unique<nap::ParameterGUI>(getCore());
 			mParameterGUI->mParameterGroup = parameterGroup;
+			mParameterGUI->mSerializable = false;
 			if (!mParameterGUI->init(errorState))
 			{
 				errorState.fail("Failed to initialize parameter GUI.");
@@ -46,13 +47,28 @@ namespace nap
 
 		void update(double deltaTime) override
 		{
-			ImGui::Begin("NAP", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+			ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+			ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
+			ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.f);
+
+			ImGui::SetNextWindowPos(ImVec2(150, 0));
+			ImGui::SetNextWindowSize(ImVec2(400, 390));
+			ImGui::SetNextWindowBgAlpha(0.0f);
+
+			ImGui::Begin("FM Synth", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar);
 			if (mParameterGUI != nullptr)
 				mParameterGUI->show(false);
 			ImGui::NewLine();
+
 			std::string formattedText = nap::utility::stringFormat("Framerate: %.02f", getCore().getFramerate());
 			ImGui::Text(formattedText.c_str());
 			ImGui::End();
+
+			ImGui::PopStyleVar();
+			ImGui::PopStyleColor();
+			ImGui::PopStyleColor();
+			ImGui::PopStyleColor();
 		}
 
 		void render(nap::RenderWindow* renderWindow) override
@@ -76,6 +92,8 @@ namespace nap
 			mParameterGUI->onDestroy();
 			mParameterGUI = nullptr;
 		}
+
+		glm::vec2 getRenderWindowSize() override { return glm::vec2(600.f, 390.f); }
 
 	private:
 		std::unique_ptr<nap::ParameterGUI> mParameterGUI = nullptr;
