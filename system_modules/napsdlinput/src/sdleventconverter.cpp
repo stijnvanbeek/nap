@@ -380,6 +380,7 @@ namespace nap
 		nap_key_mod |= (mods & SDL_KMOD_SHIFT)	> 0 ? static_cast<nap::uint8>(nap::EKeyModifier::Shift)		: 0;
 		nap_key_mod |= (mods & SDL_KMOD_ALT)	> 0 ? static_cast<nap::uint8>(nap::EKeyModifier::Alt)		: 0;
 		nap_key_mod |= (mods & SDL_KMOD_CTRL)	> 0 ? static_cast<nap::uint8>(nap::EKeyModifier::Control)	: 0;
+		nap_key_mod |= (mods & SDL_KMOD_GUI)	> 0 ? static_cast<nap::uint8>(nap::EKeyModifier::Gui)		: 0;
 		return nap_key_mod;
 	}
 
