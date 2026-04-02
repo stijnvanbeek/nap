@@ -6,14 +6,19 @@ if(NAP_BUILD_CONTEXT MATCHES "source")
 
     file(GLOB_RECURSE KISS ${KISSFFT_INCLUDE_DIR}/*.c ${KISSFFT_INCLUDE_DIR}/*.h)
     source_group("kissfft" FILES ${KISS})
-    target_sources(${PROJECT_NAME} PRIVATE ${KISS})
 
+    target_sources(${PROJECT_NAME} PRIVATE ${KISS})
     target_include_directories(${PROJECT_NAME} PUBLIC ${KISSFFT_INCLUDE_DIR})
     target_compile_definitions(${PROJECT_NAME} PUBLIC KISSFFT_DATATYPE=float KISSFFT_STATIC=OFF)
+
+    target_sources(${PROJECT_NAME}${static_suffix} INTERFACE ${KISS})
+    target_include_directories(${PROJECT_NAME}${static_suffix} INTERFACE ${KISSFFT_INCLUDE_DIR})
+    target_compile_definitions(${PROJECT_NAME}${static_suffix} INTERFACE KISSFFT_DATATYPE=float KISSFFT_STATIC=OFF)
 
     # additional definitions
     if(WIN32)
         target_compile_definitions(${PROJECT_NAME} PUBLIC WIN32_LEAN_AND_MEAN _WIN32_WINNT=0x0A00)
+        target_compile_definitions(${PROJECT_NAME}${static_suffix} INTERFACE WIN32_LEAN_AND_MEAN _WIN32_WINNT=0x0A00)
     endif()
 
     # Package kissfft license into platform release
