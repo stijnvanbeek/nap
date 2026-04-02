@@ -177,6 +177,7 @@ namespace Steinberg
 
 			// Create a callback for parameter registration during the plugin's initialization
 			nap::Slot<nap::Parameter&> registerParameterSlot = { this, &NapPluginBridge::registerParameter };
+			mPlugin->registerParameterSignal.connect(registerParameterSlot);
 
 			if (!mPlugin->init(errorState))
 			{
@@ -264,8 +265,7 @@ namespace Steinberg
 				int32 numParamsChanged = data.inputParameterChanges->getParameterCount ();
 				for (int32 index = 0; index < numParamsChanged; index++)
 				{
-					Vst::IParamValueQueue* paramQueue =
-						data.inputParameterChanges->getParameterData (index);
+					Vst::IParamValueQueue* paramQueue = data.inputParameterChanges->getParameterData (index);
 					if (paramQueue)
 					{
 						Vst::ParamValue value;
@@ -472,8 +472,6 @@ namespace Steinberg
 
 		void NapPluginBridge::registerParameter(nap::Parameter& napParameter)
 		{
-			auto paramID = kBypassId + 1;
-
 			Vst::TChar paramName[128];
 
  			if (napParameter.get_type() == RTTI_OF(nap::ParameterFloat))
@@ -481,8 +479,16 @@ namespace Steinberg
      			mParameters.emplace_back(&napParameter);
  				auto napParameterFloat = rtti_cast<nap::ParameterFloat>(&napParameter);
 				Steinberg::Vst::StringConvert::convert(napParameterFloat->getDisplayName(), paramName);
-				auto parameter = std::make_unique<Vst::RangeParameter>(paramName, paramID++, STR16(""), napParameterFloat->mMinimum, napParameterFloat->mMaximum, napParameterFloat->mValue);
+ 				int paramId = mParamIdCounter++;
+				auto parameter = std::make_unique<Vst::RangeParameter>(paramName, paramId, STR16(""), napParameterFloat->mMinimum, napParameterFloat->mMaximum, napParameterFloat->mValue);
 				parameters.addParameter(parameter.release());
+ 				napParameterFloat->valueChanged.connect([paramId, napParameterFloat, this](float value)
+ 				{
+ 					float valueNormalized = (napParameterFloat->mValue - napParameterFloat->mMinimum) / (napParameterFloat->mMaximum - napParameterFloat->mMinimum);
+ 					beginEdit(paramId);
+ 					performEdit(paramId, valueNormalized);
+ 					endEdit(paramId);
+ 				});
 			}
 
 			if (napParameter.get_type() == RTTI_OF(nap::ParameterInt))
@@ -490,23 +496,39 @@ namespace Steinberg
      			mParameters.emplace_back(&napParameter);
 				auto napParameterInt = rtti_cast<nap::ParameterInt>(&napParameter);
 				Steinberg::Vst::StringConvert::convert(napParameterInt->getDisplayName(), paramName);
-				auto parameter = std::make_unique<Vst::RangeParameter>(paramName, paramID++, STR16(""), napParameterInt->mMinimum, napParameterInt->mMaximum, napParameterInt->mValue, 1.f);
+ 				int paramId = mParamIdCounter++;
+				auto parameter = std::make_unique<Vst::RangeParameter>(paramName, paramId, STR16(""), napParameterInt->mMinimum, napParameterInt->mMaximum, napParameterInt->mValue, 1.f);
 				parameters.addParameter(parameter.release());
+				napParameterInt->valueChanged.connect([paramId, napParameterInt, this](float value)
+				{
+					float valueNormalized = (napParameterInt->mValue - napParameterInt->mMinimum) / float(napParameterInt->mMaximum - napParameterInt->mMinimum);
+					beginEdit(paramId);
+					performEdit(paramId, valueNormalized);
+					endEdit(paramId);
+				});
 			}
 
 			if (napParameter.get_type() == RTTI_OF(nap::ParameterDropDown))
 			{
      			mParameters.emplace_back(&napParameter);
-				auto napParameterOptionList = rtti_cast<nap::ParameterDropDown>(&napParameter);
-				Steinberg::Vst::StringConvert::convert(napParameterOptionList->getDisplayName(), paramName);
-				auto parameter = std::make_unique<Vst::StringListParameter>(paramName, paramID++, STR16(""));
+				auto napParamDropDown = rtti_cast<nap::ParameterDropDown>(&napParameter);
+ 				int paramId = mParamIdCounter++;
+				Steinberg::Vst::StringConvert::convert(napParamDropDown->getDisplayName(), paramName);
+				auto parameter = std::make_unique<Vst::StringListParameter>(paramName, paramId, STR16(""));
 				Vst::TChar optionName[128];
-				for (auto& option : napParameterOptionList->mItems)
+				for (auto& option : napParamDropDown->mItems)
 				{
 					Steinberg::Vst::StringConvert::convert(option, optionName);
 					parameter->appendString(optionName);
 				}
 				parameters.addParameter(parameter.release());
+				napParamDropDown->indexChanged.connect([paramId, napParamDropDown, this](float value)
+				{
+					float valueNormalized = napParamDropDown->mSelectedIndex / float(napParamDropDown->mItems.size());
+					beginEdit(paramId);
+					performEdit(paramId, valueNormalized);
+					endEdit(paramId);
+				});
 			}
 		}
 

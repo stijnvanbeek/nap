@@ -84,6 +84,7 @@ private:
 	void registerParameter(nap::Parameter& napParameter);
 
 	int kBypassId = 0;
+	int mParamIdCounter = kBypassId + 1;
 	bool mBypass = false;
 	int mProcessingMode;
 
