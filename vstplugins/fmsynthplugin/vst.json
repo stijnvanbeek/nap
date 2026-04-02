@@ -17,6 +17,7 @@
     "napfmsynth",
     "napmidi",
     "napsdlinput",
-    "napcontrol"
+    "napcontrol",
+    "napfft"
   ]
 }
