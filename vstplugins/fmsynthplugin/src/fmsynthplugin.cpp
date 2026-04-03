@@ -106,6 +106,8 @@ namespace nap
 
 			// Displace the z coordinate of the vertex
 			float displacement = mFFTBufferSmoothing[index].getValue() * 10.f;
+			if (std::isnan(displacement))
+				mFFTBufferSmoothing[index].setValue(0.f);
 			positions[i].z = mOriginalHeights[i] + displacement;
 		}
 		// Push the mesh with the new vertex positions to the GPU
