@@ -30,6 +30,9 @@ echo "Patch entitlements (if missing)..."
 /usr/libexec/PlistBuddy -c "Add :com.apple.security.get-task-allow bool true" $entitlements_plist
 # allow custom dyld for sanitizers...
 /usr/libexec/PlistBuddy -c "Add :com.apple.security.cs.allow-dyld-environment-variables bool true" $entitlements_plist
+
+xattr -cr "$app_path"
+
 echo "Re-applying entitlements (if missing)..."
 codesign --force --options runtime --sign - --entitlements $entitlements_plist "$app_path" || { echo "codesign failed!"; }
 echo "Removing temporary plist..."
