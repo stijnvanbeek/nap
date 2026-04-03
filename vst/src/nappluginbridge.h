@@ -16,7 +16,6 @@
 #include <parameter.h>
 
 #include "audioplugin.h"
-#include "sdlpoller.h"
 #include "nappluginview.h"
 #include "sdleventconverter.h"
 #include "base/source/timer.h"
@@ -87,15 +86,18 @@ private:
 	int mParamIdCounter = kBypassId + 1;
 	bool mBypass = false;
 	int mProcessingMode;
+	bool mIsProcessingHostParamaterChange = false;
 
 	std::unique_ptr<nap::Core> mCore = nullptr;
 	nap::Core::ServicesHandle mServices;
+
 	nap::audio::AudioService* mAudioService = nullptr;
 	nap::MidiService* mMidiService = nullptr;
 	nap::RenderService* mRenderService = nullptr;
 	nap::InputService* mInputService = nullptr;
 	nap::SDLInputService* mSDLInputService = nullptr;
 	nap::IMGuiService* mGuiService = nullptr;
+
 	std::vector<nap::Parameter*> mParameters;
 	nap::ControlThread mControlThread;
 	nap::TaskQueue mMainThreadQueue;
@@ -109,7 +111,6 @@ private:
 	void control(double deltaTime);
 	std::mutex mMutex; // Main mutex guarding control and main thread
 
-	nap::SDLPoller::Client mSDLPollerClient;
 	bool mInitialized = false;
 	NapPluginView* mView = nullptr;
 

@@ -9,6 +9,7 @@
 #include "public.sdk/source/main/moduleinit.h"
 
 #include "pluginterfaces/base/funknownimpl.h"
+#include "pluginterfaces/base/ibstream.h"
 #include "base/source/fstreamer.h"
 
 #include <rtti/typeinfo.h>
@@ -102,6 +103,7 @@ namespace Steinberg
 			mEventConverter = std::make_unique<nap::SDLEventConverter>(*mSDLInputService);
 			mTimer = Timer::create(this, 1000.f / 60.f);
 
+			mControlThread.setDesiredControlRate(1000);
 			mControlThread.connectPeriodicTask(mControlSlot);
 
 			return result;
@@ -257,7 +259,7 @@ namespace Steinberg
 		}
 
 
-		tresult PLUGIN_API NapPluginBridge::process (ProcessData& data)
+		tresult PLUGIN_API NapPluginBridge::process(ProcessData& data)
 		{
 			// Process parameters
 			if (data.inputParameterChanges)
@@ -286,18 +288,25 @@ namespace Steinberg
 								{
 									auto floatParam = rtti_cast<nap::ParameterFloat>(parameter);
 									if (floatParam != nullptr)
-										mControlThread.enqueue([floatParam, value](){
+										mControlThread.enqueue([this, floatParam, value](){
+											mIsProcessingHostParamaterChange = true;
 											floatParam->setValue(nap::math::fit<float>(value, 0.f, 1.f, floatParam->mMinimum, floatParam->mMaximum));
+											mIsProcessingHostParamaterChange = false;
 										});
 									auto intParam = rtti_cast<nap::ParameterInt>(parameter);
 									if (intParam != nullptr)
-										mControlThread.enqueue([intParam, value](){
+										mControlThread.enqueue([this, intParam, value](){
+											mIsProcessingHostParamaterChange = true;
 											intParam->setValue(nap::math::fit<float>(value, 0.f, 1.f, intParam->mMinimum, intParam->mMaximum));
+											mIsProcessingHostParamaterChange = false;
 										});
 									auto optionParam = rtti_cast<nap::ParameterDropDown>(parameter);
 									if (optionParam != nullptr)
-										mControlThread.enqueue([optionParam, value](){
-											optionParam->setSelectedIndex(nap::math::fit<float>(value, 0.f, 1.f, 0, optionParam->mItems.size() - 1));
+										mControlThread.enqueue([this, optionParam, value](){
+											int index = nap::math::fit<float>(value, 0.f, 1.f, 0, optionParam->mItems.size());
+											mIsProcessingHostParamaterChange = true;
+											optionParam->setSelectedIndex(index);
+											mIsProcessingHostParamaterChange = false;
 										});
 								}
 							}
@@ -369,6 +378,16 @@ namespace Steinberg
 				return kResultFalse;
 			mBypass = savedBypass > 0;
 
+			for (auto& parameter : mParameters)
+			{
+				auto floatParam = rtti_cast<nap::ParameterFloat>(parameter);
+				if (floatParam != nullptr)
+					streamer.readFloat(floatParam->mValue);
+				auto dropdownParam = rtti_cast<nap::ParameterDropDown>(parameter);
+				if (dropdownParam != nullptr)
+					streamer.readInt32(dropdownParam->mSelectedIndex);
+			}
+
 			return kResultOk;
 		}
 
@@ -378,7 +397,15 @@ namespace Steinberg
 			IBStreamer streamer (state, kLittleEndian);
 
 			streamer.writeInt32 (mBypass ? 1 : 0);
-
+			for (auto& parameter : mParameters)
+			{
+				auto floatParam = rtti_cast<nap::ParameterFloat>(parameter);
+				if (floatParam != nullptr)
+					streamer.writeFloat(floatParam->mValue);
+				auto dropdownParam = rtti_cast<nap::ParameterDropDown>(parameter);
+				if (dropdownParam != nullptr)
+					streamer.writeInt32(dropdownParam->mSelectedIndex);
+			}
 			return kResultOk;
 		}
 
@@ -399,8 +426,14 @@ namespace Steinberg
 		                                                    SpeakerArrangement* outputs, int32 numOuts)
 		{
 			auto& nodeManager = mAudioService->getNodeManager();
-			nodeManager.setInputChannelCount(numIns);
-			nodeManager.setOutputChannelCount(numOuts);
+			if (inputs != nullptr)
+				nodeManager.setInputChannelCount(*inputs == SpeakerArr::kMono ? 1 : 2);
+			else
+				nodeManager.setInputChannelCount(0);
+			if (outputs != nullptr)
+				nodeManager.setOutputChannelCount(*outputs == SpeakerArr::kMono ? 1 : 2);
+			else
+				nodeManager.setOutputChannelCount(0);
 
 			SingleComponentEffect::setBusArrangements (inputs, numIns, outputs, numOuts);
 			return kResultFalse;
@@ -434,21 +467,45 @@ namespace Steinberg
 
 		tresult PLUGIN_API NapPluginBridge::setEditorState (IBStream* state)
 		{
+			IBStreamer streamer (state, kLittleEndian);
+			int32 savedBypass = 0;
+			if (!streamer.readInt32 (savedBypass))
+				return kResultFalse;
+			mBypass = savedBypass > 0;
+
+			for (int i = 0; i < parameters.getParameterCount(); i++)
+			{
+				auto parameter = parameters.getParameter(i);
+				float value;
+				streamer.readFloat(value);
+				parameter->setNormalized(value);
+			}
+
 			return kResultTrue;
 		}
 
 
 		tresult PLUGIN_API NapPluginBridge::getEditorState (IBStream* state)
 		{
+			IBStreamer streamer (state, kLittleEndian);
+
+			streamer.writeInt32 (mBypass ? 1 : 0);
+
+			for (int i = 0; i < parameters.getParameterCount(); i++)
+			{
+				auto parameter = parameters.getParameter(i);
+				float value = parameter->getNormalized();
+				streamer.writeFloat(value);
+			}
+
 			return kResultTrue;
 		}
 
 
 		tresult PLUGIN_API NapPluginBridge::setParamNormalized(ParamID tag, ParamValue value)
 		{
-			// called from host to update our parameters state
-			tresult result = SingleComponentEffect::setParamNormalized (tag, value);
-			return result;
+			// Update the VST parameter state
+			return SingleComponentEffect::setParamNormalized(tag, value);
 		}
 
 
@@ -485,9 +542,15 @@ namespace Steinberg
  				napParameterFloat->valueChanged.connect([paramId, napParameterFloat, this](float value)
  				{
  					float valueNormalized = (napParameterFloat->mValue - napParameterFloat->mMinimum) / (napParameterFloat->mMaximum - napParameterFloat->mMinimum);
- 					beginEdit(paramId);
- 					performEdit(paramId, valueNormalized);
- 					endEdit(paramId);
+ 					if (!mIsProcessingHostParamaterChange)
+ 					{
+ 						// Queue the parameter update to be processed on the main thread
+						 mMainThreadQueue.enqueue([paramId, valueNormalized, this](){
+							 beginEdit(paramId);
+							 performEdit(paramId, valueNormalized);
+							 endEdit(paramId);
+						 });
+ 					}
  				});
 			}
 
@@ -502,9 +565,15 @@ namespace Steinberg
 				napParameterInt->valueChanged.connect([paramId, napParameterInt, this](float value)
 				{
 					float valueNormalized = (napParameterInt->mValue - napParameterInt->mMinimum) / float(napParameterInt->mMaximum - napParameterInt->mMinimum);
-					beginEdit(paramId);
-					performEdit(paramId, valueNormalized);
-					endEdit(paramId);
+					if (!mIsProcessingHostParamaterChange)
+					{
+						// Queue the parameter update to be processed on the main thread
+						 mMainThreadQueue.enqueue([paramId, valueNormalized, this](){
+							 beginEdit(paramId);
+							 performEdit(paramId, valueNormalized);
+							 endEdit(paramId);
+						 });
+					}
 				});
 			}
 
@@ -525,9 +594,15 @@ namespace Steinberg
 				napParamDropDown->indexChanged.connect([paramId, napParamDropDown, this](float value)
 				{
 					float valueNormalized = napParamDropDown->mSelectedIndex / float(napParamDropDown->mItems.size());
-					beginEdit(paramId);
-					performEdit(paramId, valueNormalized);
-					endEdit(paramId);
+					if (!mIsProcessingHostParamaterChange)
+					{
+						// Queue the parameter update to be processed on the main thread
+						 mMainThreadQueue.enqueue([paramId, valueNormalized, this](){
+							 beginEdit(paramId);
+							 performEdit(paramId, valueNormalized);
+							 endEdit(paramId);
+						 });
+					}
 				});
 			}
 		}
