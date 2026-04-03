@@ -40,7 +40,6 @@ namespace Steinberg
 				mWindowID = (int)SDL_GetWindowID(mPluginView.mSDLWindow);
 				int px, py;
 				toNAP(where, px, py);
-				nap::Logger::info("clk %f %f", where.x, where.y);
 				auto btn = mapButton(buttons);
 				if (btn != nap::PointerClickEvent::EButton::UNKNOWN)
 				{
@@ -69,7 +68,6 @@ namespace Steinberg
 				int px, py; toNAP(where, px, py);
 				int rx = px - mLastX;
 				int ry = py - mLastY;
-				nap::Logger::info("mov %f %f", where.x, where.y);
 				nap::PointerMoveEvent ev(rx, ry, px, py, mWindowID, nap::PointerEvent::ESource::Mouse);
 				mPluginView.mPlugin->processNAPInputEvent(ev);
 				mLastX = px; mLastY = py;
