@@ -11,7 +11,6 @@
 // Audio includes
 #include <audio/service/audioservice.h>
 #include <audio/node/outputnode.h>
-#include <audio/node/pullnode.h>
 #include "audiocomponentbase.h"
 
 // RTTI
@@ -55,20 +54,10 @@ namespace nap
 				if (mChannelRouting[channel] < 0)
 					continue;
 				
-				if (channel >= nodeManager.getOutputChannelCount())
-				{
-					// If the channel is out of bounds we create a PullNode instead of an OutputNode in order to process the connected DSP branch.
-					auto pullNode = nodeManager.makeSafe<PullNode>(nodeManager);
-					pullNode->audioInput.connect(*mInput->getOutputForChannel(mChannelRouting[channel]));
-					mOutputs.emplace_back(std::move(pullNode));
-					continue;
-				}
-				else {
-					auto outputNode = nodeManager.makeSafe<OutputNode>(nodeManager);
-					outputNode->setOutputChannel(channel);
-					outputNode->audioInput.connect(*mInput->getOutputForChannel(mChannelRouting[channel]));
-					mOutputs.emplace_back(std::move(outputNode));
-				}
+				auto outputNode = nodeManager.makeSafe<OutputNode>(nodeManager);
+				outputNode->setOutputChannel(channel);
+				outputNode->audioInput.connect(*mInput->getOutputForChannel(mChannelRouting[channel]));
+				mOutputs.emplace_back(std::move(outputNode));
 			}
 			
 			return true;
@@ -85,17 +74,10 @@ namespace nap
 				for (auto channel = 0; channel < channelCount; ++channel)
 				{
 					auto outputNode = mOutputs[channel].getRaw();
-					
-					//
 					int inputChannel = mChannelRouting[channel] % inputPtr->getChannelCount();
 					
-					// in case of a normal output node
 					if (outputNode->get_type().is_derived_from(RTTI_OF(OutputNode)))
 						static_cast<OutputNode*>(outputNode)->audioInput.connect(*inputPtr->getOutputForChannel(inputChannel));
-					
-					// in case this actual output channel is not available on the device we are dealing with a pulling node
-					if (outputNode->get_type().is_derived_from(RTTI_OF(PullNode)))
-						static_cast<PullNode*>(outputNode)->audioInput.connect(*inputPtr->getOutputForChannel(inputChannel));
 				}
 			});
 		}
