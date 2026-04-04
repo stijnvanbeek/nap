@@ -241,7 +241,6 @@ namespace Steinberg
 
 		void NapPluginBridge::control(double deltaTime)
 		{
-			// Begin recording the render commands for the main render window
 			std::lock_guard<std::mutex> lock(mMutex);
 
 			std::function<void(double)> updateFunc;
