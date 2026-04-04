@@ -6,7 +6,8 @@
     "RequiredModules": [
         "napapp",
         "napparametergui",
-        "napaudiovisualfft"
+        "napaudiovisualfft",
+        "napportaudio"
     ],
     "Data": "data/objects.json",
     "ServiceConfig": "",
