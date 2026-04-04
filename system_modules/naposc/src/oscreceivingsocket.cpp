@@ -4,7 +4,7 @@
 
 #include "oscreceivingsocket.h"
 
-#include <nap/Logger.h>
+#include <nap/logger.h>
 
 namespace nap
 {
