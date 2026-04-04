@@ -60,7 +60,7 @@ add_subdirectory(system_modules/naprenderadvanced)
 add_subdirectory(system_modules/napfft)
 
 add_subdirectory_modules(modules)
-#add_subdirectory_apps(apps)
+add_subdirectory_apps(apps)
 
 add_subdirectory(demos/helloworld)
 add_subdirectory(demos/audioplayback)
