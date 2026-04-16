@@ -33,7 +33,7 @@ Newly created or cloned user modules and apps will automatically be detected by 
 
 `clone https://github.com/stijnvanbeek/napaudioadvanced modules`
 
-`sh package_app.sh fmsyth -t`
+`sh package_app.sh fmsynth -t`
 
 Clones the napaudioadvanced module and builds and tests its fmsynth demo. Happy napping!
 
