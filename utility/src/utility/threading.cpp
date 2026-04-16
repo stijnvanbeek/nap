@@ -4,6 +4,8 @@
 
 #include "threading.h"
 
+#include <condition_variable>
+
 #ifdef _WIN32
 #include <windows.h>
 #endif

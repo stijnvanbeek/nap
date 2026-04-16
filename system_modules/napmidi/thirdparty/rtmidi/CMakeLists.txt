@@ -8,7 +8,7 @@ set(lib_dir ${platform_dir}/lib)
 
 if(WIN32)
     set(staticlib ${lib_dir}/${PROJECT_NAME}.lib)
-    if (DEFINED ${CMAKE_BUILD_TYPE})
+    if (DEFINED CMAKE_BUILD_TYPE)
         if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
             set(staticlib ${lib_dir}/${PROJECT_NAME}d.lib)
         endif ()

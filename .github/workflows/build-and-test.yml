@@ -7,16 +7,13 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
 
 env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
 
 jobs:
   build:
-    # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
-    # You can convert this to a matrix build if you need cross-platform coverage.
-    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -33,27 +30,6 @@ jobs:
         sudo apt update --fix-missing
         sudo apt install -f
         sudo apt install -y libx11-dev mesa-vulkan-drivers build-essential libxcb-xinerama0 libxcb-cursor0 libglu1-mesa-dev libxkbcommon-dev xvfb
-
-#    - name: Install Virtual-Display-Driver
-#      shell: pwsh
-#      if: matrix.os == 'windows-latest'
-#      run: |
-#        ./tools/vdd/install_vdd.ps1
-#
-#    - name: Install Vulkan SDK
-#      if: matrix.os == 'windows-latest'
-#      uses: jakoch/install-vulkan-sdk-action@v1
-#      with:
-#        # You can set the Vulkan SDK version to download.
-#        # Defaults to latest version, if version not set.
-#        vulkan_version: 1.4.304.1
-#        optional_components: com.lunarg.vulkan.vma
-#        install_runtime: true
-#        cache: true
-#        stripdown: false
-#        # You can install a software rasterizer.
-#        install_swiftshader: true
-#        install_lavapipe: true
 
     - name: Check build environment
       shell: bash

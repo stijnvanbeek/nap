@@ -260,7 +260,8 @@ namespace nap
 			{ SDL_KMOD_NONE,	nap::EKeyModifier::None },
 			{ SDL_KMOD_SHIFT,	nap::EKeyModifier::Shift },
 			{ SDL_KMOD_CTRL,	nap::EKeyModifier::Control },
-			{ SDL_KMOD_ALT,		nap::EKeyModifier::Alt }
+			{ SDL_KMOD_ALT,		nap::EKeyModifier::Alt },
+			{ SDL_KMOD_GUI,		nap::EKeyModifier::Gui }
 		}; 
 		return sdl_key_mod_map;
 	}
@@ -380,6 +381,7 @@ namespace nap
 		nap_key_mod |= (mods & SDL_KMOD_SHIFT)	> 0 ? static_cast<nap::uint8>(nap::EKeyModifier::Shift)		: 0;
 		nap_key_mod |= (mods & SDL_KMOD_ALT)	> 0 ? static_cast<nap::uint8>(nap::EKeyModifier::Alt)		: 0;
 		nap_key_mod |= (mods & SDL_KMOD_CTRL)	> 0 ? static_cast<nap::uint8>(nap::EKeyModifier::Control)	: 0;
+		nap_key_mod |= (mods & SDL_KMOD_GUI)	> 0 ? static_cast<nap::uint8>(nap::EKeyModifier::Gui)		: 0;
 		return nap_key_mod;
 	}
 

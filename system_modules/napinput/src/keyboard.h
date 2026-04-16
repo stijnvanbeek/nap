@@ -23,7 +23,8 @@ namespace nap
 		None	= 0x00,
 		Shift	= 0x02,
 		Control = 0x04,
-		Alt		= 0x08
+		Alt		= 0x08,
+		Gui		= 0x10
 	};
 
 	/**

@@ -12,7 +12,7 @@ else()
 endif()
 
 if(WIN32)
-    if (DEFINED ${CMAKE_BUILD_TYPE})
+    if (DEFINED CMAKE_BUILD_TYPE)
         set(staticlib ${lib_dir}/${CMAKE_BUILD_TYPE}/${PROJECT_NAME}.lib)
     else ()
         set(staticlib ${lib_dir}/Release/${PROJECT_NAME}.lib)
