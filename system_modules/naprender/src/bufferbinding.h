@@ -88,6 +88,11 @@ namespace nap
 		virtual size_t getSize() const					{ assert(mBuffer != nullptr); return mBuffer->getSize(); }
 
 		/**
+		 * @return The element size in bytes
+		 */
+		virtual size_t getElementSize() const			{ assert(mBuffer != nullptr); return mBuffer->getElementSize(); }
+
+		/**
 		 * @return the base GPU buffer, nullptr if not set
 		 */
 		const GPUBuffer* getBuffer() const				{ return mBuffer; }
@@ -178,7 +183,6 @@ namespace nap
 	using BufferBindingVec3		= TypedBufferBindingNumeric<glm::vec3>;
 	using BufferBindingVec4		= TypedBufferBindingNumeric<glm::vec4>;
 	using BufferBindingIVec4	= TypedBufferBindingNumeric<glm::ivec4>;
-	using BufferBindingUVec4	= TypedBufferBindingNumeric<glm::uvec4>;
 	using BufferBindingMat4		= TypedBufferBindingNumeric<glm::mat4>;
 
 

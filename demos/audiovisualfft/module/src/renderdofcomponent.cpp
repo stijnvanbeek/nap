@@ -9,13 +9,10 @@
 #include "gpubuffer.h"
 #include "renderglobals.h"
 #include "uniforminstance.h"
-#include "renderglobals.h"
 #include "dofshader.h"
 #include "textureutils.h"
 
 // External Includes
-#include <entity.h>
-#include <glm/gtc/matrix_transform.hpp>
 #include <entity.h>
 #include <nap/core.h>
 #include <orthocameracomponent.h>
@@ -60,10 +57,6 @@ namespace nap
 
 		// Verify the input render target is available
 		if (!errorState.check(mResource->mInputTarget != nullptr, "InputTarget not set"))
-			return false;
-
-		// Verify the render target has a depth texture resource
-		if (!errorState.check(mResource->mInputTarget->hasDepthTexture(), "The specified InputTarget has no depth texture resource"))
 			return false;
 
 		// Get render service
@@ -138,7 +131,7 @@ namespace nap
 		mIntermediateTexture.mWidth = mResource->mInputTarget->getBufferSize().x;
 		mIntermediateTexture.mHeight = mResource->mInputTarget->getBufferSize().y;
 		mIntermediateTexture.mColorFormat = mResource->mInputTarget->getColorTexture().mColorFormat;
-		mIntermediateTexture.mUsage = Texture::EUsage::Static;
+		mIntermediateTexture.mUsage = Texture2D::EUsage::Internal;
 		if (!mIntermediateTexture.init(errorState))
 		{
 			errorState.fail("%s: Failed to initialize internal render target", mIntermediateTexture.mID.c_str());
