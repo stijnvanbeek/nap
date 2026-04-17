@@ -1,4 +1,24 @@
 macro(setup)
+    # Try find VST3 sdk and include
+    # This is done before other setup, to isolate VST3 sdk project settings.
+    if (NOT DEFINED VST3SDK_DIR)
+        set(VST3SDK_DIR "../vst3sdk")
+    endif()
+    if (NOT EXISTS ${VST3SDK_DIR}/public.sdk/source/vst3stdsdk.cpp)
+        set(VST3SDK_DIR ${NAP_ROOT}/${VST3SDK_DIR})
+    endif ()
+    message("Trying VST3 SDK directory: ${VST3SDK_DIR}")
+    if (EXISTS ${VST3SDK_DIR}/public.sdk/source/vst3stdsdk.cpp)
+        message("VST3 SDK directory found.")
+        if (APPLE)
+            enable_language(OBJCXX)
+        endif ()
+        add_subdirectory(${VST3SDK_DIR} ${CMAKE_BINARY_DIR}/vst3sdk)
+    else()
+        unset(VST3SDK_DIR)
+        message("VST3 SDK directory not found.")
+    endif ()
+
     setup_build_tools()
 
     # Set global directories

@@ -12,6 +12,24 @@ if (WIN32)
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /ZI")
 endif ()
 
+# Update build output directories with vst3 specifics.
+foreach(configuration ${CMAKE_CONFIGURATION_TYPES})
+    string(TOUPPER ${configuration} configuration_up)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${configuration_up} ${BIN_DIR}/VST3/${configuration})
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${configuration_up} ${CMAKE_BINARY_DIR}/VST3/${configuration})
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${configuration_up} ${LIB_DIR}/VST3/${configuration})
+endforeach()
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${BIN_DIR}/VST3/${configuration})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${LIB_DIR}/VST3/${configuration})
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${LIB_DIR}/VST3/${configuration})
+
+# Overwriting NAP defaults for the VST's scope.
+if (APPLE)
+    set(CMAKE_SKIP_BUILD_RPATH FALSE)
+else ()
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+endif ()
+
 # Read vst.json from file
 set(vst_json_path ${CMAKE_CURRENT_SOURCE_DIR}/vst.json)
 file(READ ${vst_json_path} vst_json)

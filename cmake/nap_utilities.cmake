@@ -121,12 +121,13 @@ function(add_source_dir NAME DIR)
 endfunction()
 
 
-function(add_subdirectory_apps subdirectory)
+function(add_subdirectory_projects subdirectory)
     set(directory ${CMAKE_CURRENT_SOURCE_DIR}/${subdirectory})
     file(GLOB children ${directory}/*)
     foreach(child ${children})
         if (IS_DIRECTORY ${child})
             try_add_app_from_dir(${child})
+            try_add_vst_from_dir(${child})
         endif ()
     endforeach ()
 endfunction()
@@ -172,6 +173,26 @@ function(try_add_app_from_dir app_dir)
         file(RELATIVE_PATH app_subdirectory ${CMAKE_CURRENT_SOURCE_DIR} ${app_dir})
         add_subdirectory(${app_subdirectory})
     endif()
+endfunction()
+
+
+function(try_add_vst_from_dir vst_dir)
+    if (EXISTS ${VST3SDK_DIR}) # Only add if VST3 sdk has been located and napvst is present
+        if (EXISTS ${NAP_ROOT}/vst)
+            if (EXISTS ${vst_dir}/vst.json)
+                # We have a vst plugin!
+                # Create CMakeLists.txt
+                set(cmake_list ${vst_dir}/CMakeLists.txt)
+                if (NOT EXISTS ${cmake_list})
+                    file(WRITE ${cmake_list}
+                            [=[include(${NAP_ROOT}/cmake/nap_vst.cmake)]=]
+                    )
+                endif()
+                file(RELATIVE_PATH vst_subdirectory ${CMAKE_CURRENT_SOURCE_DIR} ${vst_dir})
+                add_subdirectory(${vst_subdirectory})
+            endif()
+        endif()
+    endif ()
 endfunction()
 
 

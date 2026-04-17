@@ -17,8 +17,8 @@ else ()
     set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 endif ()
 
-# Add demo apps
-add_subdirectory_apps(demo)
+# Add demo projects
+add_subdirectory_projects(demo)
 
 # Add source
 file(GLOB SOURCES src/*.cpp)
