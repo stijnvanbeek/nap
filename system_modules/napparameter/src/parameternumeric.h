@@ -17,7 +17,7 @@ namespace nap
 	 * A numeric parameter can hold any numeric type and provides a minimum & maximum value to ensure the value stays within range
 	 */
 	template<typename T>
-	class ParameterNumeric : public Parameter
+	class NAPAPI ParameterNumeric : public Parameter
 	{
 		RTTI_ENABLE(Parameter)
 	public:
@@ -44,6 +44,8 @@ namespace nap
 		 * @param maximum The maximum value for this parameter
 		 */
 		void setRange(T minimum, T maximum);
+
+		T getValue() const { return mValue; }
 
 	public:
 		T			mValue;							///< Property: 'Value' the value of this parameter
