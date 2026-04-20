@@ -151,6 +151,8 @@ namespace nap {
             
             for (auto& modified_file : mPImpl->callbackInfo.modifiedFiles)
             {
+            	if (!utility::fileExists(modified_file))
+            		continue;
                 std::string comparable_modified_file = std::filesystem::canonical(modified_file);
                 if (!std::filesystem::is_directory(modified_file))
                 {
