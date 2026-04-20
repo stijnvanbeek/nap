@@ -153,6 +153,8 @@ namespace nap
 		RTTI_ENABLE(Resource)
 
 	public:
+		using InstanceType = ComponentInstance; // This is needed to init a generic vector<ComponentPtr<Component>> property.
+
 		/**
 		 * Populates a list of components this component depends on.
 		 * Every component dependency, when found, is initialized before this component.
