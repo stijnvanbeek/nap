@@ -52,8 +52,8 @@ namespace nap
 			float** out = (float**) outputBuffer;
 			float** in = (float**) inputBuffer;
 			
-			AudioService* service = (AudioService*) userData;
-			service->onAudioCallback(in, out, framesPerBuffer);
+			PortAudioService* service = (PortAudioService*) userData;
+			service->onAudioCallback(in, out, framesPerBuffer, timeInfo, statusFlags);
 			
 			return 0;
 		}
@@ -129,6 +129,31 @@ namespace nap
             auto result = _openStream(deviceSettings, errorState);
             mErrorMessage = errorState.toString();
             return result;
+        }
+
+
+        void PortAudioService::onAudioCallback(float **inputBuffer, float **outputBuffer, unsigned long framesPerBuffer,
+	        const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags flags)
+        {
+			mCallbackFlags = flags;
+			mLastOutputBufferDACTime = mCallbackTimeInfo.outputBufferDacTime;
+			mCallbackTimeInfo = *timeInfo;
+
+			const double bufferDuration = framesPerBuffer / getNodeManager().getSampleRate();
+			const double dt = getOutputBufferDacTime() - getLastOutputBufferDACTime();
+			if (dt > 1.5f * bufferDuration)
+			{
+				nap::Logger::info("PortAudio: Late callback detected.");
+				lateAudioCallback.trigger(dt);
+			}
+
+			if (checkOutputUnderflow())
+				nap::Logger::info("PortAudio: Output buffer underflow detected.");
+			if (checkInputUnderflow())
+				nap::Logger::info("PortAudio: Input buffer underflow detected.");
+
+
+			mAudioService->onAudioCallback(inputBuffer, outputBuffer, framesPerBuffer);
         }
 
 
@@ -272,21 +297,26 @@ namespace nap
             if (mInputDeviceIndex >= 0)
             {
 #ifdef __APPLE__
-            	inputParameters.suggestedLatency = 0.f;
+                inputParameters.suggestedLatency = 0.f;
 #else
-            	inputParameters.suggestedLatency = Pa_GetDeviceInfo(mInputDeviceIndex)->defaultLowInputLatency;
+                inputParameters.suggestedLatency = Pa_GetDeviceInfo(mInputDeviceIndex)->defaultLowInputLatency;
 #endif
                 inputParamsPtr = &inputParameters;
             }
-
-			PaStreamParameters* outputParamsPtr = nullptr;
+            PaStreamParameters* outputParamsPtr = nullptr;
             if (mOutputDeviceIndex >= 0)
             {
+#ifdef __APPLE__
+                outputParameters.suggestedLatency = 0.f;
+#else
                 outputParameters.suggestedLatency = Pa_GetDeviceInfo(mOutputDeviceIndex)->defaultLowOutputLatency;
+#endif
                 outputParamsPtr = &outputParameters;
             }
 
-            PaError error = Pa_OpenStream(&mStream, inputParamsPtr, outputParamsPtr, getNodeManager().getSampleRate(), device_settings.mBufferSize, paNoFlag, &audioCallback, mAudioService);
+			beforeOpenStream(device_settings);
+
+            PaError error = Pa_OpenStream(&mStream, inputParamsPtr, outputParamsPtr, getNodeManager().getSampleRate(), device_settings.mBufferSize, paNoFlag, &audioCallback, this);
             if (error != paNoError)
             {
                 errorState.fail("Error opening audio stream: %s", Pa_GetErrorText(error));
@@ -577,9 +607,41 @@ namespace nap
 		}
 		
 		
-		bool PortAudioService::isActive()
+		bool PortAudioService::isActive() const
 		{
 			return Pa_IsStreamActive(mStream) == 1;
 		}
+
+
+		bool PortAudioService::isFormatSupported(int inputDeviceIndex, int outputDeviceIndex, int inputChannelCount,
+			int outputChannelCount, int sampleRate)
+		{
+			PaStreamParameters inputParameters;
+			if (inputDeviceIndex >= 0)
+			{
+				inputParameters.device = inputDeviceIndex;
+				inputParameters.channelCount = inputChannelCount;
+				inputParameters.sampleFormat = paFloat32;
+				inputParameters.hostApiSpecificStreamInfo = nullptr;
+			}
+
+			PaStreamParameters outputParameters;
+			if (outputDeviceIndex >= 0)
+			{
+				outputParameters.device = outputDeviceIndex;
+				outputParameters.channelCount = outputChannelCount;
+				outputParameters.sampleFormat = paFloat32;
+				outputParameters.hostApiSpecificStreamInfo = nullptr;
+			}
+
+			const auto result = Pa_IsFormatSupported(inputDeviceIndex >= 0 ? &inputParameters : nullptr, outputDeviceIndex >= 0 ? &outputParameters : nullptr, sampleRate);
+			if (result != 0)
+				return false;
+
+			return true;
+		}
+
+
 	}
+	
 }
