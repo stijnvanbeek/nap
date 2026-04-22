@@ -177,7 +177,7 @@ endfunction()
 
 
 function(try_add_vst_from_dir vst_dir)
-    if (DEFINED ${VST3SDK_DIR}) # Only add if VST3 sdk has been located and napvst is present
+    if (DEFINED VST3SDK_DIR) # Only add if VST3 sdk has been located and napvst is present
         if (EXISTS ${NAP_ROOT}/vst)
             if (EXISTS ${vst_dir}/vst.json)
                 # We have a vst plugin!
