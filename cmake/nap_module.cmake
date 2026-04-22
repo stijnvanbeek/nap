@@ -84,6 +84,7 @@ if (EXISTS ${MODULE_EXTRA_CMAKE_PATH})
     include(${MODULE_EXTRA_CMAKE_PATH})
 endif()
 
+# Copy module.json to bin and install
 add_custom_command(
         TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy
@@ -107,4 +108,3 @@ codesign_target(${PROJECT_NAME})
 # Install library and module json
 install(FILES $<TARGET_FILE:${PROJECT_NAME}> TYPE LIB OPTIONAL)
 install(FILES ${LIB_DIR}/${PROJECT_NAME}.json DESTINATION ${CMAKE_INSTALL_MODULEINFODIR} OPTIONAL)
-

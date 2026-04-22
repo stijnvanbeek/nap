@@ -37,7 +37,7 @@ if (TARGET nap${PROJECT_NAME})
     target_link_libraries(${PROJECT_NAME} PRIVATE nap${PROJECT_NAME})
 endif()
 
-set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
+set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN/${LIB_RPATH}")
 
 # Create the cache directory in source
 set(cache_dir ${CMAKE_CURRENT_SOURCE_DIR}/cache)
