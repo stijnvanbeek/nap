@@ -467,11 +467,13 @@ namespace nap
 		{
 			const auto& wheel_event = static_cast<const MouseWheelEvent&>(event);
 #ifdef __APPLE__
-			int delta = ImGui::GetIO().KeyShift ? wheel_event.mX * -1 : wheel_event.mY;
+			// int delta = ImGui::GetIO().KeyShift ? wheel_event.mX * -1 : wheel_event.mY;
+			int delta = wheel_event.mY;
+			context->second->mMouseWheel = delta * 0.1f;
 #else
 			int delta = wheel_event.mY;
-#endif
 			context->second->mMouseWheel = delta > 0 ? 1.0f : -1.0f;
+#endif
 		}
 
 		return context->second->mContext;
