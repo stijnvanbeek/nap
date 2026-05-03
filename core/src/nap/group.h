@@ -181,9 +181,11 @@ namespace nap
 	rtti::ObjectPtr<T> nap::Group<T>::findObjectRecursive(const std::string& id) const
 	{
 		// Find in this group
-		rtti::ObjectPtr<T> object = findObject(id);
-		if (object != nullptr)
-			return object;
+		{
+			rtti::ObjectPtr<T> object = findObject(id);
+			if (object != nullptr)
+				return object;
+		}
 
 		// Find in sub-groups
 		for (const auto& child : mChildren)

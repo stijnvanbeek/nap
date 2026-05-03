@@ -74,7 +74,7 @@ if(WIN32)
 endif()
 
 # Package naprtti and RTTR into apps for macOS/Linux
-if(NOT WIN32)
+if(UNIX)
     install(FILES ${NAPRTTI_LIBS_RELEASE} DESTINATION lib CONFIGURATIONS Release)
     install(FILES $<TARGET_FILE:RTTR::Core> DESTINATION lib CONFIGURATIONS Release)
 
@@ -88,18 +88,16 @@ if(NOT WIN32)
     endif()
 
     # On Linux use lib directory for RPATH
-    if(UNIX AND NOT APPLE)
-        install(CODE "message(\"Setting RPATH on ${CMAKE_INSTALL_PREFIX}/lib/naprtti.so\")
-                      execute_process(COMMAND patchelf
-                                              --set-rpath
-                                              $ORIGIN/.
-                                              ${CMAKE_INSTALL_PREFIX}/lib/naprtti.so
-                                      RESULT_VARIABLE EXIT_CODE)
-                      if(NOT \${EXIT_CODE} EQUAL 0)
-                          message(FATAL_ERROR \"Failed to fetch RPATH on naprtti.so using patchelf\")
-                      endif()
-                      ")
-    endif()
+    install(CODE "message(\"Setting RPATH on ${CMAKE_INSTALL_PREFIX}/lib/naprtti.so\")
+                  execute_process(COMMAND patchelf
+                                          --set-rpath
+                                          $ORIGIN/.
+                                          ${CMAKE_INSTALL_PREFIX}/lib/naprtti.so
+                                  RESULT_VARIABLE EXIT_CODE)
+                  if(NOT \${EXIT_CODE} EQUAL 0)
+                      message(FATAL_ERROR \"Failed to fetch RPATH on naprtti.so using patchelf\")
+                  endif()
+                  ")
 
     # Package our Python dylib from thirdparty. Doing this here instead of in nappython as RTTI (and as a result Core)
     # depends on Python. The Python modules however are only installed if we're using nappython as they're not required

@@ -111,11 +111,17 @@ namespace nap
 						if (!current_context.is_valid())
 							return false;
 
-						// See if the object that's currently on the resolved path has a property with this name.
-						// If not, it means the path is invalid
 						rtti::TypeInfo current_context_type = current_context.get_type();
 						if (current_context_type.is_derived_from<ObjectPtrBase>())
-							current_context_type = current_context_type.get_wrapped_type().get_raw_type();
+						{
+							// In case of an ObjectPtr property we have to acquire the raw type through its value.
+							// current_context.get_wrapped_type().get_raw_type() does not work as expected.
+							rtti::Object* elementObject = current_context.get_value<ObjectPtr<Object>>().get();
+							current_context_type = elementObject->get_type();
+						}
+
+						// See if the object that's currently on the resolved path has a property with this name.
+						// If not, it means the path is invalid
 						rtti::Property property = current_context_type.get_property(element.Attribute.Name);
 						if (!property.is_valid())
 							return false;

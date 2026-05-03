@@ -19,7 +19,7 @@
 #ifdef NAP_SHARED_LIBRARY_IMGUI
 	#define IMGUI_API __declspec(dllexport)    // Export the symbols
 #else
-	#define IMGUI_API __declspec(dllimport)    // Import the symbols
+	// #define IMGUI_API __declspec(dllimport)    // Import the symbols
 #endif // NAP_SHARED_LIBRARY
 #else
     #define IMGUI_API __attribute__ ((visibility ("default")))	// Export the symbols
@@ -86,6 +86,11 @@
 
 //---- Use 32-bit vertex indices (instead of default: 16-bit) to allow meshes with more than 64K vertices
 #define ImDrawIdx unsigned int
+
+// ---- Forward declare thread local ImGUI context
+struct ImGuiContext;
+extern thread_local ImGuiContext* ImGuiTLS;
+#define GImGui ImGuiTLS
 
 //---- Tip: You can add extra functions within the ImGui:: namespace, here or in your own headers files.
 //---- e.g. create variants of the ImGui::Value() helper for your low-level math types, or your own widgets/helpers.

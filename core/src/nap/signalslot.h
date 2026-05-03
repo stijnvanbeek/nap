@@ -11,9 +11,6 @@
 #include <memory>
 #include <iostream>
 
-// Pybind includes
-#include "python.h"
-
 namespace nap
 {
     
@@ -64,18 +61,11 @@ namespace nap
          */
 		void disconnect(Signal<Args...>& signal);
 
-#ifdef NAP_ENABLE_PYTHON
         /**
-         * Connect a function from a pybind11 python module. Internally the python function is wrapped in a function object.
+         * Convenience method to connect a member function.
          */
-        void connect(const pybind11::function pythonFunction);
-#endif // NAP_ENABLE_PYTHON
-
-        /**
-         * Convenience method to connect a member function with one argument.
-         */
-		template <typename U, typename F>
-		void connect(U* object, F memberFunction)									{ connect(std::bind(memberFunction, object, std::placeholders::_1)); }
+		template <typename U>
+		void connect(U* object, void(U::*memberFunction)(Args...))					{ connect([object, memberFunction](Args... args){ (object->*memberFunction)(args...); }); }
 
         /**
          * Call operator to trigger the signal to be emitted.
@@ -154,24 +144,28 @@ namespace nap
 		{ }
 
 		/**
-		 * This templated constructor can be used to initialize the slot with a member function with one single parameter
+		 * This templated constructor can be used to initialize the slot with a member function
 		 * @param parent parent object
 		 * @param memberFunction member function to call
 		 */
-		template <typename U, typename F>
-		Slot(U* parent, F memberFunction) : 
-			mFunction(std::bind(memberFunction, parent, std::placeholders::_1))
-		{ }
+		template <typename U>
+		Slot(U* parent, void(U::*memberFunction)(Args...))
+		{
+			mFunction = [parent, memberFunction](Args... args){ (parent->*memberFunction)(args...); };
+		}
 
 		/**
-		 * This templated constructor can be used to initialize the slot with a member function with one single
-		 * parameter, last argument is a signal to connect to straightaway after construction
+		 * This templated constructor can be used to initialize the slot with a member function,
+		 * last argument is a signal to connect to straightaway after construction
 		 * @param parent parent object
 		 * @param memberFunction member function to call
 		 */
-		template <typename U, typename F>
-		Slot(U* parent, F memberFunction, Signal<Args...>& signal) : 
-			mFunction(std::bind(memberFunction, parent, std::placeholders::_1))		{ signal.connect(*this); }
+		template <typename U>
+		Slot(U* parent, void(U::*memberFunction)(Args...), Signal<Args...>& signal)
+		{
+			mFunction = [parent, memberFunction](Args... args){ (parent->*memberFunction)(args...); };
+			signal.connect(*this);
+		}
 
 		// Disconnect slot from signals on destruction
 		~Slot()																		{ disconnect(); }
@@ -326,29 +320,6 @@ namespace nap
 		mFunctionEffects->emplace_back(inFunction);
 	}
     
-#ifdef NAP_ENABLE_PYTHON   
-    template <typename... Args>
-    void Signal<Args...>::connect(const pybind11::function pythonFunction)
-    {
-        Function func = [pythonFunction](Args... args)
-        {
-            try
-            {
-                pythonFunction(pybind11::cast(std::forward<Args>(args)..., std::is_lvalue_reference<Args>::value
-                                              ? pybind11::return_value_policy::reference : pybind11::return_value_policy::automatic_reference)...);
-            }
-            catch (const pybind11::error_already_set& err)
-            {
-                auto message = std::string("Runtime python error while executing signal: ") + std::string(err.what());
-                
-                // TODO It would be preferable to log python error message using the nap logger.
-                // Unfortunately the logger is not accessible in signalslot.h though because it uses Signals itself.
-                std::cout << message << std::endl;
-            }
-        };
-        connect(func);
-    }
-#endif // NAP_ENABLE_PYTHON
     
 	template <typename... Args>
 	void Signal<Args...>::trigger(Args... args)

@@ -9,7 +9,6 @@
 #include "serviceobjectgraphitem.h"
 #include "objectgraph.h"
 // #include "packaginginfo.h"
-#include "python.h"
 
 // External Includes
 #include <iostream>
@@ -40,7 +39,18 @@ namespace nap
 		// Initialize timer
 		mTimer.reset();
 		mResourceManager = std::make_unique<ResourceManager>(*this);
-		mModuleManager = std::make_unique<ModuleManager>(*this);
+		mModuleManager = std::make_unique<ModuleManager>();
+	}
+
+
+	Core::Core(TaskQueue &mainThreadQueue)
+	{
+		// Initialize timer
+		mTimer.reset();
+		mResourceManager = std::make_unique<ResourceManager>(*this);
+		mModuleManager = std::make_unique<ModuleManager>();
+
+		mMainThreadQueue = &mainThreadQueue;
 	}
 
 
@@ -52,6 +62,8 @@ namespace nap
 
 	Core::~Core()
 	{
+		mResourceManager.reset(nullptr);
+
 		// After that remove all services
 		mServices.clear();
 
@@ -82,6 +94,16 @@ namespace nap
 	}
 
 
+	bool Core::initializeEngineWithoutProjectInfo(utility::ErrorState& error)
+	{
+		if (!createServicesFromRTTR(error))
+			return false;
+
+		mInitialized = true;
+		return true;
+	}
+
+
 	bool Core::initializeEngine(const std::string& projectInfofile, ProjectInfo::EContext context, utility::ErrorState& error)
 	{
 		// Load project information
@@ -101,7 +123,7 @@ namespace nap
 		// Apply any platform specific environment setup
 		setupPlatformSpecificEnvironment();
 
-		// Load modules
+		// // Load modules
 		if (!mModuleManager->loadModules(*mProjectInfo, error))
 			return false;
 
@@ -109,10 +131,10 @@ namespace nap
 		// Note that having a config file is optional, but if there *is* one, it should be valid
 		if(!loadServiceConfigurations(error))
 			return false;
-		
-		// Always create services! 
+
+		// Always create services!
 		// Failure to create all the required services will result in certain objects unable to be created!
-		// Creation is therefore required, in every context. Initialization happens later. 
+		// Creation is therefore required, in every context. Initialization happens later.
 		// After creation we're able to access all special object creation functions.
 		// A default service configuration resource is created for all services that require one and
 		// isn't already created during *loadServiceConfigurations()*
@@ -124,21 +146,6 @@ namespace nap
 	}
 
 
-	bool Core::initializePython(utility::ErrorState& error)
-	{
-#ifdef NAP_ENABLE_PYTHON
-		// Here we register a callback that is called when the nap python module is imported.
-		// We register a 'core' attribute so that we can write nap.core.<function>() in python
-		// to access core functionality as a 'global'.
-		nap::rtti::PythonModule::get("nap").registerImportCallback([this](pybind11::module& module)
-		{
-			module.attr("core") = this;
-		});
-#endif
-		return true;
-	}
-
-
 	Core::ServicesHandle Core::initializeServices(utility::ErrorState& errorState)
 	{
 		// Attempt to initialize services
@@ -146,7 +153,7 @@ namespace nap
 		if (!services_handle->initialized())
 			return nullptr;
 
-		// Listen to potential resource file changes and 
+		// Listen to potential resource file changes and
 		// forward those to all registered services
 		mResourceManager->mPreResourcesLoadedSignal.connect(mPreResourcesLoadedSlot);
 		mResourceManager->mPostResourcesLoadedSignal.connect(mPostResourcesLoadedSlot);
@@ -237,14 +244,23 @@ namespace nap
 			assert(service_configuration_type.is_valid());
 			assert(service_configuration_type.can_create_instance());
 
-			// Construct the service configuration, store in unique ptr
-			std::unique_ptr<ServiceConfiguration> service_config(service_configuration_type.create<ServiceConfiguration>());
-			rtti::TypeInfo service_type = service_config->getServiceType();
+			// Create service config and store in unique_ptr
+			std::unique_ptr<ServiceConfiguration> service_config (
+				static_cast<ServiceConfiguration*>(mResourceManager->getFactory().create(service_configuration_type))
+			);
 
-			// Check if the service associated with the configuration isn't already part of the map, if so add as default
-			// Config is automatically destructed otherwise.
-			if (findServiceConfig(service_type) == nullptr)
-				addServiceConfig(std::move(service_config));
+			// Multiple nap applications can co-exist in the same runtime environment, it is therefore
+			// important to filter out incompatible ones.
+			rtti::TypeInfo service_type = service_config->getServiceType();
+			if (mModuleManager->findModule(service_type) == nullptr)
+				continue;
+
+			// Add service configuration if not previously loaded from config file.
+			if (findServiceConfig(service_type) == nullptr &&
+				!addServiceConfig(std::move(service_config), errorState))
+			{
+				assert(false); return false;
+			}
 		}
 
 		// First create and add all the services (unsorted)
@@ -260,6 +276,85 @@ namespace nap
 
 			// Create the service
 			if (!addService(module->getServiceType(), configuration, services, errorState))
+				return false;
+		}
+
+		// Create dependency graph
+		ObjectGraph<ServiceObjectGraphItem> graph;
+
+		// Build service dependency graph
+		bool success = graph.build(services, [&](Service* service)
+		{
+			return ServiceObjectGraphItem::create(service, &services);
+		}, errorState);
+
+		// Make sure the graph was successfully build
+		if (!errorState.check(success, "unable to build service dependency graph"))
+			return false;
+
+		// Add services in right order
+		for (auto& node : graph.getSortedNodes())
+		{
+			// Add the service to core
+			nap::Service* service = node->mItem.mObject;
+			mServices.emplace_back(std::unique_ptr<nap::Service>(service));
+
+			// This happens within this loop so services are able to query their dependencies while registering object creators
+			service->registerObjectCreators(mResourceManager->getFactory());
+
+			// Notify the service that is has been created and its core pointer is available
+			// We put this call here so the service's dependencies are present and can already be queried if necessary
+			service->created();
+		}
+		return true;
+	}
+
+
+	bool Core::createServicesFromRTTR(utility::ErrorState& errorState)
+	{
+		// Gather all service configuration types
+		std::vector<rtti::TypeInfo> service_configuration_types;
+		rtti::getDerivedTypesRecursive(RTTI_OF(ServiceConfiguration), service_configuration_types);
+
+		// For any ServiceConfigurations which weren't present in the config file, construct a default version of it,
+		// so the service doesn't get a nullptr for its ServiceConfiguration if it depends on one
+		for (const rtti::TypeInfo& service_configuration_type : service_configuration_types)
+		{
+			// Skip base class, not associated with any service.
+			if (service_configuration_type == RTTI_OF(ServiceConfiguration))
+				continue;
+
+			assert(service_configuration_type.is_valid());
+			assert(service_configuration_type.can_create_instance());
+
+			// Construct the service configuration, store in unique ptr
+			std::unique_ptr<ServiceConfiguration> service_config(service_configuration_type.create<ServiceConfiguration>());
+			rtti::TypeInfo service_type = service_config->getServiceType();
+
+			// Check if the service associated with the configuration isn't already part of the map, if so add as default
+			// Config is automatically destructed otherwise.
+			if (findServiceConfig(service_type) == nullptr)
+				if (!addServiceConfig(std::move(service_config), errorState))
+					return false;
+		}
+
+		// Gather all service types
+		std::vector<rtti::TypeInfo> service_types;
+		rtti::getDerivedTypesRecursive(RTTI_OF(Service), service_types);
+
+		// First create and add all the services (unsorted)
+		std::vector<Service*> services;
+		for (const auto& service_type : service_types)
+		{
+			// Skip base class, not associated with any service.
+			if (service_type == RTTI_OF(Service))
+				continue;
+
+			// Find the ServiceConfiguration that should be used to construct this service (if any)
+			ServiceConfiguration* configuration = findServiceConfig(service_type);
+
+			// Create the service
+			if (!addService(service_type, configuration, services, errorState))
 				return false;
 		}
 
@@ -332,6 +427,7 @@ namespace nap
 	bool Core::addService(const rtti::TypeInfo& type, ServiceConfiguration* configuration, std::vector<Service*>& outServices, utility::ErrorState& errorState)
 	{
 		assert(type.is_valid());
+		auto ctors = type.get_constructors();
 		assert(type.can_create_instance());
 		assert(type.is_derived_from<Service>());
 
@@ -368,81 +464,6 @@ namespace nap
 	}
 
 
-	void Core::setupPythonEnvironment()
-	{
-#ifdef _WIN32
-		const std::string platformPrefix = "msvc";
-        const std::string version = "3.6";
-#elif defined(__APPLE__)
-		const std::string platformPrefix = "macos";
-        const std::string version = "3.11";
-#else // __unix__
-		const std::string platformPrefix = "linux";
-        const std::string version = "3.6";
-#endif
-
-#ifdef NAP_PACKAGED_BUILD
-		const bool packagedBuild = true;
-#else
-		const bool packagedBuild = false;
-#endif
-
-		const std::string exeDir = utility::getExecutableDir();
-
-#if _WIN32
-		if (packagedBuild)
-		{
-			// TODO Explore locating Python instead in third party to reduce duplication on disk
-			// We have our Python modules zip alongside our executable for running against NAP source or packaged apps
-			const std::string packagedAppPythonPath = utility::joinPath({exeDir, "python36.zip"});
-			_putenv_s("PYTHONPATH", packagedAppPythonPath.c_str());
-		}
-		else {
-			// Set PYTHONPATH for thirdparty location beside NAP source
-			const std::string pythonHome = utility::joinPath({mProjectInfo->getNAPRootDir(), "thirdparty", "python", "msvc", "x86_64", "python36.zip"});
-			_putenv_s("PYTHONPATH", pythonHome.c_str());
-		}
-#else
-		if (packagedBuild)
-		{
-			// Check for packaged app modules dir
-			std::string packagedAppPythonPath = utility::joinPath({mProjectInfo->getProjectDir(), "lib", "python" + version});
-			if (utility::dirExists(packagedAppPythonPath)) {
-				setenv("PYTHONHOME", mProjectInfo->getProjectDir().c_str(), 1);
-			}
-			else {
-#ifdef __APPLE__
-                // Check for app bundle directory structure
-			    std::string appBundleResourcesPath = utility::joinPath({mProjectInfo->getProjectDir(), "..", "Resources"});
-                packagedAppPythonPath = utility::joinPath({appBundleResourcesPath, "lib", "python" + version});
-			    if (utility::dirExists(packagedAppPythonPath))
-			    {
-                    Logger::info("Python home: %s", appBundleResourcesPath.c_str());
-                    setenv("PYTHONHOME", appBundleResourcesPath.c_str(), 1);
-                }
-			    else {
-                    // Set PYTHONHOME to thirdparty location within packaged NAP release
-                    const std::string pythonHome = utility::joinPath({mProjectInfo->getNAPRootDir(), "thirdparty", "python", platformPrefix, sBuildArch});
-                    Logger::info("Python home: %s", pythonHome.c_str());
-                    setenv("PYTHONHOME", pythonHome.c_str(), 1);
-                }
-#else
-                // Set PYTHONHOME to thirdparty location within packaged NAP release
-                const std::string pythonHome = utility::joinPath({mProjectInfo->getNAPRootDir(), "thirdparty", "python"});
-                Logger::info("Python home: %s", pythonHome.c_str());
-                setenv("PYTHONHOME", pythonHome.c_str(), 1);
-#endif
-			}
-		}
-		else {
-			// set PYTHONHOME for thirdparty location inside NAP source
-			const std::string pythonHome = utility::joinPath({mProjectInfo->getNAPRootDir(), "thirdparty", "python", platformPrefix, sBuildArch});
-			setenv("PYTHONHOME", pythonHome.c_str(), 1);
-		}
-#endif
-	}
-
-
 	nap::ServiceConfiguration* Core::findServiceConfig(rtti::TypeInfo type) const
 	{
 		auto it = mServiceConfigs.find(type);
@@ -450,11 +471,17 @@ namespace nap
 	}
 
 
-	bool Core::addServiceConfig(std::unique_ptr<nap::ServiceConfiguration> serviceConfig)
+
+	bool Core::addServiceConfig(std::unique_ptr<nap::ServiceConfiguration> serviceConfig, utility::ErrorState& error)
 	{
 		rtti::TypeInfo service_type = serviceConfig->getServiceType();
-		auto return_v = mServiceConfigs.emplace(std::make_pair(service_type, std::move(serviceConfig)));
-		return return_v.second;
+		if (!mServiceConfigs.try_emplace(service_type, std::move(serviceConfig)).second)
+		{
+			error.fail("Duplicate service configuration found with id '%s', service type: %s",
+				serviceConfig->mID.c_str(), service_type.get_name().to_string().c_str());
+			return false;
+		}
+		return true;
 	}
 
 
@@ -509,19 +536,15 @@ namespace nap
 					return false;
 
 				// Get type before moving and store pointer for
-                nap::ServiceConfiguration* config_ptr = config.get();
-				bool added = addServiceConfig(std::move(config));
-
-				// Duplicates are not allowed
-				if(!err.check(added, "Duplicate service configuration found with id: %s, type: %s",
-							   config_ptr->mID.c_str(), config_ptr->getServiceType().get_name().to_string().c_str()))
+				if (!addServiceConfig(std::move(config), err))
 					return false;
 			}
 		}
 		else
 		{
 			// File doesn't exist or can't be deserialized
-			nap::Logger::warn(deserialize_error.toString().c_str());
+			deserialize_error.fail("Service config '%s' de-serialization failed", mProjectInfo->mServiceConfigFilename.c_str());
+			Logger::error(deserialize_error.toString().c_str());
 		}
 		return true;
 	}
@@ -602,6 +625,15 @@ namespace nap
 			configs.emplace_back(config.second.get());
 		}
 		return configs;
+	}
+
+
+	void Core::runOnMainThread(TaskQueue::Task task)
+	{
+		if (mMainThreadQueue != nullptr)
+			mMainThreadQueue->enqueue(task, true);
+		else
+			task();
 	}
 
 

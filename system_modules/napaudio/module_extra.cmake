@@ -1,10 +1,11 @@
 # Set this flag in order to link libsndfile and mpg123 and build support for reading audio files
-set(NAP_AUDIOFILE_SUPPORT ON)
+option(NAP_AUDIOFILE_SUPPORT "Link to libsndfile and mpg123 to support audio file handling." ON)
 
 # Add sources to target
 if (NAP_AUDIOFILE_SUPPORT)
     # Add compile definition to enable audio file support
     target_compile_definitions(${PROJECT_NAME} PRIVATE NAP_AUDIOFILE_SUPPORT)
+    target_compile_definitions(${PROJECT_NAME}${static_suffix} INTERFACE NAP_AUDIOFILE_SUPPORT)
 else()
     # Filter out sources for audio file functionality
     set(AUDIO_FILE_SUPPORT_FILTER ".*audiofileutils.*" ".*audiofileresource.*")
@@ -24,6 +25,8 @@ if (NAP_AUDIOFILE_SUPPORT)
 
     target_link_import_library(${PROJECT_NAME} libsndfile)
     target_link_import_library(${PROJECT_NAME} mpg123)
+    target_link_import_library(${PROJECT_NAME}${static_suffix} libsndfile${static_suffix})
+    target_link_import_library(${PROJECT_NAME}${static_suffix} mpg123${static_suffix})
 
     if (APPLE)
         list(APPEND LIBRARIES "-framework CoreFoundation")
@@ -31,8 +34,10 @@ if (NAP_AUDIOFILE_SUPPORT)
         list(APPEND LIBRARIES atomic)
     endif()
     target_link_libraries(${PROJECT_NAME} ${LIBRARIES})
+    target_link_libraries(${PROJECT_NAME}${static_suffix} INTERFACE ${LIBRARIES})
 
     target_compile_definitions(${PROJECT_NAME} PRIVATE _USE_MATH_DEFINES)
+    target_compile_definitions(${PROJECT_NAME}${static_suffix} INTERFACE _USE_MATH_DEFINES)
 
     add_license(libsndfile ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/libsndfile/source/COPYING)
     add_license(mpg123 ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/mpg123/source/COPYING)

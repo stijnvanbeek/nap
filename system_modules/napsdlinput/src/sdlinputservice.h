@@ -7,8 +7,8 @@
 // External Includes
 #include <inputservice.h>
 #include <unordered_map>
-#include <SDL_gamecontroller.h>
-#include <SDL_joystick.h>
+#include <SDL3/SDL_joystick.h>
+#include <SDL3/SDL_gamepad.h>
 
 namespace nap
 {

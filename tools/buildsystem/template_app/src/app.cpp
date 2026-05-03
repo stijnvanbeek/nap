@@ -8,7 +8,8 @@
 #include <rendergnomoncomponent.h>
 
 namespace nap 
-{    
+{
+
     bool CoreApp::init(utility::ErrorState& error)
     {
 		// Retrieve services

@@ -18,6 +18,7 @@
 #include <rtti/deserializeresult.h>
 #include <unordered_set>
 #include <utility/dllexport.h>
+#include <utility/threading.h>
 #include <unordered_map>
 #include <vector>
 
@@ -94,6 +95,12 @@ namespace nap
 		Core();
 
 		/**
+		 * Constructor used when the Core is not running on the mainthread.
+		 * @param mainThreadQueue An event queue that should be processed on the main thread during initialization of the Core and creation and initialization of the Services. Functionality that is restricted to the main thread (like creation of SDL windows on some platforms) should be executed in parallel using this queue.
+		 */
+		Core(TaskQueue& mainThreadQueue);
+
+		/**
 		 * Extension constructor.
 		 * Used to add additional information to Core.
 		 * This is the case on specific platforms, where additional information is required to correctly initialize Core.
@@ -144,6 +151,8 @@ namespace nap
 		 */
 		bool initializeEngine(const std::string& projectInfofile, ProjectInfo::EContext context, utility::ErrorState& error);
 
+		bool initializeEngineWithoutProjectInfo(utility::ErrorState& error);
+
 		/**
 		 * Attempts to initialize all registered services. Call this after initializeEngine().
 		 * Initialization occurs based on service dependencies, this means that if service B depends on Service A,
@@ -159,11 +168,6 @@ namespace nap
 		 * @return true if the engine initialized successfully, false otherwise. 
 		 */
 		bool isInitialized() const;
-
-		/**
-		 * Initialize python interpreter so we can have components running python scripts
-		 */
-		bool initializePython(utility::ErrorState& error);
 
 		/**
 		 * Starts core, call this after initializing the engine, just before starting the application loop.
@@ -266,6 +270,15 @@ namespace nap
 		const T& getExtension() const;
 
 		/**
+		 * Returns the extension associated with this instance of core as T.
+		 * Note that an extension is given explicitly to core on construction.
+		 * When using the default constructor core has no interface associated with it!
+		 * @return extension associated with core as type T
+		 */
+		template <typename T>
+		T& getExtension();
+
+		/**
 		 * @return if core has an extension of type T	
 		 */
 		template <typename T>
@@ -300,6 +313,14 @@ namespace nap
 		 * @return all available service configurations.
 		 */
 		std::vector<const ServiceConfiguration*> getServiceConfigs() const;
+
+		/**
+		 * If a main thread TaskQueue was passed to the constructor, the task will be enqueued on the main thread.
+		 * The method will block untill the task is done.
+		 * If no main thread TaskQueue was provided the task will be performed immediately on the caller thread.
+		 * @param task Task to perform on main thread.
+		 */
+		void runOnMainThread(TaskQueue::Task task);
 
 		/**
 		 * Used on macOS to apply an environment variable for Vulkan.
@@ -361,6 +382,8 @@ namespace nap
 		 */
 		bool createServices(const nap::ProjectInfo& projectInfo, utility::ErrorState& errorState);
 
+		bool createServicesFromRTTR(utility::ErrorState& errorState);
+
 		/**
 		* Adds a new service of type @type to @outServices
 		* @param type the type of service to add
@@ -374,7 +397,7 @@ namespace nap
 		/**
 		 * Loads the service configurations from file.
 		 * If the service configuration file does not exist a warning is issued and system defaults are used.
-		 * Loading fails if the file can be deserialized but contains duplicate IDs or 
+		 * Loading fails if the file can be deserialized but contains duplicate IDs or
 		 * objects not derived from nap::ServiceConfiguration.
 		 * @param err contains the error if loading fails.
 		 * @return if loading succeeded.
@@ -412,12 +435,6 @@ namespace nap
 		void calculateFramerate(double deltaTime);
 
 		/**
-		 * Setup our Python environment to find Python in thirdparty for NAP release or NAP source,
-		 * or alongside our binary for a packaged project
-		 */
-		void setupPythonEnvironment();
-
-		/**
 		 * Explicitly load a project from file.
 		 * Call this before initializeEngine() if custom project setup is required.
 		 * @param projectFilename absolute path to the project file on disk.
@@ -439,7 +456,7 @@ namespace nap
 		 * @param serviceConfig the service configuration to add.
 		 * @return true when added, false if already present.
 		 */
-		bool addServiceConfig(std::unique_ptr<nap::ServiceConfiguration> serviceConfig);
+		bool addServiceConfig(std::unique_ptr<nap::ServiceConfiguration> serviceConfig, utility::ErrorState& error);
 
 		// Manages all the loaded modules
 		std::unique_ptr<ModuleManager> mModuleManager = nullptr;
@@ -475,6 +492,9 @@ namespace nap
 
 		// If the engine is initialized
 		bool mInitialized = false;
+
+		// In case this Core is not running on the main thread this has to be set to a queue that is processed
+		TaskQueue* mMainThreadQueue = nullptr;
 
 		// Called before resources are loaded
 		nap::Slot<> mPreResourcesLoadedSlot		= { [&]() -> void { preResourcesLoaded();  } };
@@ -513,6 +533,18 @@ const T* nap::Core::getService() const
  */
 template <typename T>
 const T& nap::Core::getExtension() const
+{
+	T* core_ext = rtti_cast<T>(mExtension.get());
+	assert(core_ext != nullptr);
+	return *core_ext;
+}
+
+
+/**
+ * Returns the core extension as an extension of type T
+ */
+template <typename T>
+T& nap::Core::getExtension()
 {
 	T* core_ext = rtti_cast<T>(mExtension.get());
 	assert(core_ext != nullptr);

@@ -1,4 +1,11 @@
 project(fbxconverter)
+
+if (APPLE)
+    set(CMAKE_SKIP_BUILD_RPATH TRUE)
+else ()
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+endif ()
+
 file(GLOB sources src/*.cpp src/*.h)
 include_directories(src)
 
@@ -10,7 +17,9 @@ include_directories(${TCLAP_INCLUDE_DIRS})
 add_executable(${PROJECT_NAME} ${sources})
 set_target_properties(${PROJECT_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "$(OutDir)")
 set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER Tools)
+set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "\${ORIGIN}/lib")
 target_compile_definitions(${PROJECT_NAME} PRIVATE MODULE_NAME=${PROJECT_NAME})
+
 target_link_libraries(${PROJECT_NAME} naprender)
 
 # Update executable rpath if it hasn't been set already

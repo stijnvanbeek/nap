@@ -1,73 +1,95 @@
 include (${NAP_ROOT}/cmake/nap_utilities.cmake)
 
 add_subdirectory(thirdparty/assimp)
-add_subdirectory(thirdparty/SDL2)
+add_subdirectory(thirdparty/sdl)
 add_subdirectory(thirdparty/FreeImage)
+add_subdirectory(thirdparty/vulkansdk)
 
-target_link_import_library(${PROJECT_NAME} assimp)
-target_link_import_library(${PROJECT_NAME} SDL2)
-target_link_import_library(${PROJECT_NAME} FreeImage)
-
-# Find other package dependencies
-find_package(vulkansdk REQUIRED)
 find_package(SPIRVCross REQUIRED)
 find_package(glslang REQUIRED)
 
-# Add includes
-set(INCLUDES ${VULKANSDK_INCLUDE_DIRS} ${SPIRVCROSS_INCLUDE_DIR} ${GLSLANG_INCLUDE_DIR})
-target_include_directories(${PROJECT_NAME} PUBLIC ${INCLUDES})
+# Link dependencies
+target_link_import_library(${PROJECT_NAME} assimp)
+target_link_import_library(${PROJECT_NAME} SDL3)
+target_link_import_library(${PROJECT_NAME} FreeImage)
+target_link_import_library(${PROJECT_NAME} vulkan)
 
-# Set compile definitions
-target_compile_definitions(${PROJECT_NAME} PRIVATE _USE_MATH_DEFINES)
-if(APPLE)
-    target_compile_definitions(${PROJECT_NAME} PUBLIC VK_USE_PLATFORM_METAL_EXT=1)
-endif()
-
-# Add libraries
-set(LIBRARIES ${VULKANSDK_LIBS})
-
-if(UNIX AND NOT APPLE AND ${ARCH} STREQUAL "armhf")
-    list(APPEND LIBRARIES atomic)
-endif()
-
-# Link libraries
-target_link_libraries(${PROJECT_NAME} ${LIBRARIES})
 target_link_libraries(${PROJECT_NAME} debug ${SPIRVCROSS_LIBS_DEBUG} optimized ${SPIRVCROSS_LIBS_RELEASE})
 target_link_libraries(${PROJECT_NAME} debug "${GLSLANG_LIBS_DEBUG}" optimized "${GLSLANG_LIBS_RELEASE}")
 
-# Copy vulkan shared library to bin and install
-# We are not copying the whole vulkansdk target because it links OS installed libraries as well
-codesign(${VULKAN_LIB})
-add_custom_command(
-        TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy
-        ${VULKAN_LIB}
-        ${LIB_DIR})
-install(FILES ${VULKAN_LIB} TYPE LIB OPTIONAL)
-
-if (APPLE)
-    codesign(${MOLTENVK_LIB})
-    add_custom_command(
-            TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy
-            ${MOLTENVK_LIB}
-            ${LIB_DIR})
-    install(FILES ${MOLTENVK_LIB} TYPE LIB OPTIONAL)
+if(UNIX AND NOT APPLE)
+    target_link_libraries(${PROJECT_NAME} atomic)
 endif()
 
-# Copy MoltenVK_icd.json to bin and install
-add_custom_command(
-        TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy
-        ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/vulkansdk/macos/universal/share/vulkan/icd.d/MoltenVK_icd.json
-        ${LIB_DIR}/MoltenVK_icd.json)
-install(FILES ${LIB_DIR}/MoltenVK_icd.json DESTINATION ${CMAKE_INSTALL_MODULEINFODIR} OPTIONAL)
-#install(FILES ${LIB_DIR}/MoltenVK_icd.json TYPE DATA OPTIONAL)
+target_link_import_library(${static_target} assimp${static_suffix})
+target_link_import_library(${static_target} SDL3${static_suffix})
+target_link_import_library(${static_target} FreeImage${static_suffix})
+target_link_import_library(${static_target} vulkan) # Also link shared vulkan lib for static
+if (WIN32)
+    # Addiotional depenendencies for statically linking SDL3
+    target_link_libraries(${static_target} INTERFACE
+            winmm
+            version
+            imm32
+            setupapi
+    )
+    # Needed to statically reference FreeImage
+    target_compile_definitions(${static_target} INTERFACE FREEIMAGE_LIB)
+endif ()
+if (APPLE)
+    target_link_libraries(${static_target} INTERFACE
+            "-framework Cocoa"                # Common SDL deps
+            "-framework IOKit"
+            "-framework AVFoundation"         # Camera
+            "-framework CoreMedia"
+            "-framework CoreVideo"
+            "-framework CoreAudio"            # Audio object APIs
+            "-framework AudioToolbox"         # AudioQueue APIs
+            "-framework GameController"       # Controllers
+            "-framework CoreHaptics"          # Rumble
+            "-framework ForceFeedback"        # Legacy FF APIs
+            "-framework Carbon"               # HIToolbox (LMGetKbdType, TIS*)
+            "-framework UniformTypeIdentifiers" # UTType
+            "-framework Metal"
+    )
+endif ()
+
+if (UNIX)
+    target_link_libraries(${static_target} INTERFACE debug ${SPIRVCROSS_LIBS_DEBUG} optimized ${SPIRVCROSS_LIBS_RELEASE})
+    target_link_libraries(${static_target} INTERFACE debug ${GLSLANG_LIBS_DEBUG} optimized ${GLSLANG_LIBS_RELEASE})
+else ()
+    if(${CMAKE_BUILD_TYPE} STREQUAL Debug)
+        target_link_libraries(${static_target} INTERFACE ${SPIRVCROSS_LIBS_DEBUG})
+        target_link_libraries(${static_target} INTERFACE ${GLSLANG_LIBS_DEBUG})
+    else ()
+        target_link_libraries(${static_target} INTERFACE ${SPIRVCROSS_LIBS_RELEASE})
+        target_link_libraries(${static_target} INTERFACE ${GLSLANG_LIBS_RELEASE})
+    endif ()
+endif ()
+
+target_include_directories(${static_target} INTERFACE ${SPIRVCROSS_INCLUDE_DIR} ${GLSLANG_INCLUDE_DIR})
+
+if(UNIX AND NOT APPLE)
+    target_link_libraries(${static_target} INTERFACE atomic)
+endif()
+
+# Add include directories
+target_include_directories(${PROJECT_NAME} PUBLIC ${SPIRVCROSS_INCLUDE_DIR} ${GLSLANG_INCLUDE_DIR})
+
+# Set compile definitions
+target_compile_definitions(${static_target} INTERFACE _USE_MATH_DEFINES)
+if(APPLE)
+    target_compile_definitions(${static_target} INTERFACE VK_USE_PLATFORM_METAL_EXT=1)
+endif()
+target_compile_definitions(${static_target} INTERFACE _USE_MATH_DEFINES)
+if(APPLE)
+    target_compile_definitions(${static_target} INTERFACE VK_USE_PLATFORM_METAL_EXT=1)
+endif()
 
 # Copy thirdparty licenses
 add_license(assimp ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/assimp/source/LICENSE)
 add_license(FreeImage ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/FreeImage/${NAP_THIRDPARTY_PLATFORM_DIR}/${ARCH}/license-fi.txt)
 add_license(glslang ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/glslang/source/LICENSE.txt)
-add_license(SDL2 ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/SDL2/COPYING.txt)
+add_license(SDL2 ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/sdl/LICENSE.txt)
 add_license(SPIRV-cross ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/SPIRV-cross/source/LICENSE)
 add_license(vulkansdk ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/vulkansdk/LICENSE.txt)

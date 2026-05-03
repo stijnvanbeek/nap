@@ -1,12 +1,16 @@
 cmake_minimum_required(VERSION 3.19)
 set(CMAKE_OSX_ARCHITECTURES arm64;x86_64)
+
 project(NAP)
 
 set(NAP_ROOT ${CMAKE_CURRENT_LIST_DIR})
+
 include(${NAP_ROOT}/cmake/setup.cmake)
 include(${NAP_ROOT}/cmake/nap_utilities.cmake)
 
 setup()
+
+set(NAP_BUILD_CONTEXT source) # This is here just to guarantee backwards compatibility with 0.6 style NAP modules
 
 add_subdirectory(utility)
 add_subdirectory(rtti)
@@ -23,21 +27,21 @@ add_subdirectory(system_modules/napimgui)
 add_subdirectory(system_modules/napparameter)
 add_subdirectory(system_modules/napparametergui)
 add_subdirectory(system_modules/napcameracontrol)
+add_subdirectory(system_modules/napapi)
 add_subdirectory(system_modules/napaudio)
-add_subdirectory(system_modules/napportaudio)
 add_subdirectory(system_modules/napmidi)
+add_subdirectory(system_modules/napportaudio)
 add_subdirectory(system_modules/naposc)
 add_subdirectory(system_modules/napudp)
 add_subdirectory(system_modules/napasio)
-add_subdirectory(system_modules/napapi)
 add_subdirectory(system_modules/napcalendar)
 add_subdirectory(system_modules/napsequence)
 add_subdirectory(system_modules/napsequencegui)
 add_subdirectory(system_modules/naprenderadvanced)
+add_subdirectory(system_modules/napfft)
 
-set(NAP_BUILD_CONTEXT source) # This is here just to guarantee backwards compatibility with 0.6 style NAP modules
 add_subdirectory_modules(modules)
-add_subdirectory_apps(apps)
+add_subdirectory_projects(apps)
 
 add_subdirectory(demos/helloworld)
 add_subdirectory(demos/audioplayback)
@@ -49,6 +53,12 @@ add_subdirectory(demos/computeflocking)
 add_subdirectory(demos/lightsandshadow)
 add_subdirectory(demos/spotlight)
 add_subdirectory(demos/skybox)
+add_subdirectory(demos/dynamicgeo)
+add_subdirectory(demos/heightmap)
+add_subdirectory(demos/audiovisualfft)
+if (DEFINED VST3SDK_DIR)
+    add_subdirectory(demos/exampleplugin)
+endif()
 
 add_subdirectory(tools/fbxconverter)
 if (DEFINED ENV{QT_DIR})

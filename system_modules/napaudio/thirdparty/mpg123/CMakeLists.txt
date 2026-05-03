@@ -9,3 +9,4 @@ set(implib ${lib_dir}/lib${PROJECT_NAME}${implib_suffix})
 set(dll ${lib_dir}/lib${PROJECT_NAME}${dll_suffix})
 
 add_import_library(${PROJECT_NAME} ${implib} ${dll} ${include_dir})
+add_import_library(${PROJECT_NAME}${static_suffix} ${implib} ${dll} ${include_dir})

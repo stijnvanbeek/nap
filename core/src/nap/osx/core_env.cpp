@@ -9,6 +9,7 @@
 #include <utility/fileutils.h>
 #include <stdlib.h>
 #include <nap/logger.h>
+#include <dlfcn.h>
 
 namespace nap
 {
@@ -18,13 +19,26 @@ namespace nap
     {
         // Build Vulkan ICD path environment variable. We're currently blatting this blindly, which
         // won't do any harm, even if the project isn't using graphics.
-        std::vector<std::string> paths;
-        for (auto& modulePath : mProjectInfo->mPathMapping->mModulePaths)
-            paths.emplace_back(nap::utility::joinPath({ modulePath, moltenvk_icd }));
-        mProjectInfo->patchPaths(paths);
 
-        // Set environment variable
-        std::string icd_paths = utility::joinString(paths, ":");
-        setenv("VK_ICD_FILENAMES", icd_paths.c_str(), 1);
+        if (mProjectInfo != nullptr)
+        {
+            std::vector<std::string> paths;
+            for (auto& modulePath : mProjectInfo->mPathMapping->mModulePaths)
+                paths.emplace_back(nap::utility::joinPath({ modulePath, moltenvk_icd }));
+            mProjectInfo->patchPaths(paths);
+
+            // Set environment variable
+            std::string icd_paths = utility::joinString(paths, ":");
+            setenv("VK_ICD_FILENAMES", icd_paths.c_str(), 1);
+        }
+
+
+        Dl_info info;
+        dladdr((void*)(moltenvk_icd), &info);
+        std::string loaderPath = info.dli_fname;
+        std::string loaderDir = utility::getFileDir(loaderPath);
+        std::string icdPath = utility::joinPath({ loaderDir, moltenvk_icd });
+        if (utility::fileExists(icdPath))
+            setenv("VK_ICD_FILENAMES", icdPath.c_str(), 1);
     }
 }

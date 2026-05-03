@@ -8,6 +8,12 @@ get_filename_component(app_name ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
 project(${app_name})
 
+if (APPLE)
+    set(CMAKE_SKIP_BUILD_RPATH TRUE)
+else ()
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+endif ()
+
 # Bring in any additional app logic (pre-target definition)
 set(app_extra_pre_target_cmake_path ${CMAKE_CURRENT_SOURCE_DIR}/app_extra_pre_target.cmake)
 if(EXISTS ${app_extra_pre_target_cmake_path})
@@ -17,8 +23,6 @@ if(EXISTS ${app_extra_pre_target_cmake_path})
         return()
     endif()
 endif()
-
-#set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Add all cpp files to SOURCES
 file(GLOB_RECURSE SOURCES src/*.cpp)
@@ -30,10 +34,10 @@ add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${SHADERS})
 
 # Pull in the app module if it exists
 if (TARGET nap${PROJECT_NAME})
-    target_link_libraries(${PROJECT_NAME} nap${PROJECT_NAME})
+    target_link_libraries(${PROJECT_NAME} PRIVATE nap${PROJECT_NAME})
 endif()
 
-set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
+set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN/${LIB_RPATH}")
 
 # Create the cache directory in source
 set(cache_dir ${CMAKE_CURRENT_SOURCE_DIR}/cache)
@@ -56,11 +60,7 @@ endwhile()
 if (NOT required_modules)
     set(required_modules napcore)
 endif()
-target_link_libraries(${PROJECT_NAME} ${required_modules})
-
-if(NAP_ENABLE_PYTHON)
-    target_link_libraries(${PROJECT_NAME} ${PYTHON_LIBRARIES})
-endif()
+target_link_libraries(${PROJECT_NAME} PRIVATE ${required_modules})
 
 # Include any extra app CMake logic
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/app_extra.cmake)
@@ -135,9 +135,10 @@ add_custom_command(
         ${cache_dir}/build_app.json
         ${BIN_DIR}/${PROJECT_NAME}.json)
 
+set(source_data_dir ${CMAKE_CURRENT_SOURCE_DIR}/data)
+
 # Run FBX converter post-build within bin data dir
 add_dependencies(${PROJECT_NAME} fbxconverter)
-set(source_data_dir ${CMAKE_CURRENT_SOURCE_DIR}/data)
 add_custom_command(TARGET ${PROJECT_NAME}
         POST_BUILD
         COMMAND ${BIN_DIR}/fbxconverter -o ${source_data_dir} ${source_data_dir}/*.fbx
@@ -167,13 +168,11 @@ if(APPLE)
             POST_BUILD COMMAND
             if ! otool -l $<TARGET_FILE:${PROJECT_NAME}> | grep -q @executable_path/${LIB_RPATH}/.\; then ${CMAKE_INSTALL_NAME_TOOL} -add_rpath "@executable_path/${LIB_RPATH}/." $<TARGET_FILE:${PROJECT_NAME}>\; fi)
 
-    # Codesign the shared library
-    set(signature "-")
-    if (DEFINED ${MACOS_CODE_SIGNATURE})
-        set(signature ${MACOS_CODE_SIGNATURE})
+    # Codesign the executable
+    if (NOT ${CODE_SIGNATURE} STREQUAL "-")
         # Codesign the executable with signature in environment variable with runtime option
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND codesign --force -s ${MACOS_CODE_SIGNATURE} $<TARGET_FILE:${PROJECT_NAME}> --options runtime)
+                COMMAND codesign --force -s ${CODE_SIGNATURE} $<TARGET_FILE:${PROJECT_NAME}> --options runtime)
     else ()
         # Codesign the executable with an ad hoc sign
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD

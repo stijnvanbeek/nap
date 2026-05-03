@@ -3,7 +3,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 // Local Includes
-#include "python.h"
 #include "logger.h"
 #include "service.h"
 #include "core.h"
@@ -22,8 +21,8 @@ namespace nap
 {
 	Service::Service(ServiceConfiguration* configuration) :
 		mConfiguration(configuration)
-	{
-	}
+	{}
+
 
 	/**
 	@brief Destructor
@@ -67,12 +66,16 @@ namespace nap
 		std::string file_name = utility::stringFormat("%s_%s",
 			utility::toLower(utility::stripNamespace(getTypeName())).c_str(),
 			utility::toLower(appendix).c_str());
-		return getCore().getProjectInfo()->getIniFilePath(file_name);
+		if (getCore().getProjectInfo() != nullptr)
+			return getCore().getProjectInfo()->getIniFilePath(file_name);
+		else return "";
 	}
 
 
 	const Module& Service::getModule() const
 	{
+		// auto name = getModuleName();
+		// assert(!name.empty());
 		auto module = getCore().getModuleManager().findModule(this->get_type());
 		assert(module != nullptr);
 		return *module;

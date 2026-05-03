@@ -6,5 +6,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC src/imgui)
 target_sources(${PROJECT_NAME} PRIVATE ${GUI})
 target_compile_definitions(${PROJECT_NAME} PRIVATE NAP_SHARED_LIBRARY_IMGUI)
 
+target_include_directories(${PROJECT_NAME}${static_suffix} INTERFACE src/imgui)
+target_sources(${PROJECT_NAME}${static_suffix} INTERFACE ${GUI})
+
 add_license(imgui ${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/LICENSE.txt)
 

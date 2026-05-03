@@ -187,10 +187,13 @@ namespace nap
 		{
 			const rtti::TypeInfo& type = parameter->get_type();
 			auto editor = mParameterGUIService.findEditor(*parameter);
-			assert(editor != nullptr);
-			ImGui::PushID(&parameter);
-			(*editor)(*parameter);
-			ImGui::PopID();
+			// assert(editor != nullptr);
+			if (editor != nullptr)
+			{
+				ImGui::PushID(&parameter);
+				(*editor)(*parameter);
+				ImGui::PopID();
+			}
 		}
 
 		// Add indentation if depth is higher than zero
@@ -222,7 +225,8 @@ namespace nap
 		bool has_preset = mSelectedPresetIndex >= 0 && mSelectedPresetIndex < mPresets.size();
 		ImGui::Text(has_preset ? mPresets[mSelectedPresetIndex].data() : "<No preset>");
 
-		if (ImGui::ImageButton(mGUIService.getIcon(icon::save)))
+		// if (ImGui::ImageButton(mGUIService.getIcon(icon::save)))
+		if (ImGui::Button("Save"))
 		{
 			if (has_preset)
 			{
@@ -247,7 +251,8 @@ namespace nap
 		}
 
 		ImGui::SameLine();
-		if (ImGui::ImageButton(mGUIService.getIcon(icon::saveAs)))
+		// if (ImGui::ImageButton(mGUIService.getIcon(icon::saveAs)))
+		if (ImGui::Button("Save As"))
 		{
 			ImGui::OpenPopup("Save As");
 			savePresetState();
@@ -255,7 +260,8 @@ namespace nap
 		}
 
 		ImGui::SameLine();
-		if (ImGui::ImageButton(mGUIService.getIcon(icon::load)))
+		// if (ImGui::ImageButton(mGUIService.getIcon(icon::load)))
+		if (ImGui::Button("Load"))
 		{
 			ImGui::OpenPopup("Load");
 			savePresetState();

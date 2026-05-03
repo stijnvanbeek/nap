@@ -4,7 +4,7 @@
 
 #include "oscreceivingsocket.h"
 
-#include <nap/Logger.h>
+#include <nap/logger.h>
 
 namespace nap
 {
@@ -49,6 +49,10 @@ namespace nap
 			catch (osc::Exception& e)
 			{
 				Logger::warn("Exception receiving OSC: %s", e.what());
+				stopped = false;
+			}
+			catch (...)
+			{
 				stopped = false;
 			}
 		}

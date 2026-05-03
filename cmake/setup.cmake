@@ -1,8 +1,29 @@
 macro(setup)
-    bootstrap_environment()
+    # Try find VST3 sdk and include
+    # This is done before other setup, to isolate VST3 sdk project settings.
+    if (NOT DEFINED VST3SDK_DIR)
+        set(VST3SDK_DIR "${NAP_ROOT}/../vst3sdk")
+    endif()
+    if (NOT EXISTS ${VST3SDK_DIR}/public.sdk/source/vst3stdsdk.cpp)
+        set(VST3SDK_DIR ${NAP_ROOT}/${VST3SDK_DIR})
+    endif ()
+    message("Trying VST3 SDK directory: ${VST3SDK_DIR}")
+    if (EXISTS ${VST3SDK_DIR}/public.sdk/source/vst3stdsdk.cpp)
+        message("VST3 SDK directory found.")
+        if (APPLE)
+            enable_language(OBJCXX)
+        endif ()
+        add_subdirectory(${VST3SDK_DIR} ${CMAKE_BINARY_DIR}/vst3sdk)
+    else()
+        unset(VST3SDK_DIR)
+        message("VST3 SDK directory not found.")
+    endif ()
+
+    setup_build_tools()
 
     # Set global directories
     set(THIRDPARTY_DIR ${NAP_ROOT}/thirdparty)
+    set(SCRIPT_DIR ${NAP_ROOT}/cmake/scripts)
 
     # Set the build output directories
     if(WIN32)
@@ -23,7 +44,14 @@ macro(setup)
 
     # Rpath for searching dynamic libraries
     file(RELATIVE_PATH LIB_RPATH ${BIN_DIR} ${LIB_DIR})
-    set(CMAKE_BUILD_RPATH_USE_ORIGIN TRUE)
+
+    if (APPLE)
+# This is moved to nap_app.cmake because napkin still needs it to function in IDE
+#        set(CMAKE_SKIP_BUILD_RPATH TRUE)
+    else ()
+        set(CMAKE_BUILD_RPATH_USE_ORIGIN TRUE)
+    endif ()
+
 
     # Set the app installation directories
     if (NOT DEFINED APP_INSTALL_NAME)
@@ -31,8 +59,9 @@ macro(setup)
             set(APP_INSTALL_NAME "MyApp.app")
         else()
             set(APP_INSTALL_NAME "MyApp")
-        endif()
-    endif()
+        endif ()
+    endif ()
+    message("Output bundle name: ${APP_INSTALL_NAME}")
     if (WIN32)
         # Install all artifacts in app root on windows
         set(CMAKE_INSTALL_BINDIR ${APP_INSTALL_NAME})
@@ -67,6 +96,7 @@ macro(setup)
         set(implib_suffix ".dylib")
         set(dll_prefix "lib")
         set(dll_suffix ".dylib")
+        set(static_lib_prefix "lib")
         set(static_lib_suffix ".a")
     elseif(WIN32)
         set(NAP_THIRDPARTY_PLATFORM_DIR "msvc")
@@ -74,6 +104,7 @@ macro(setup)
         set(implib_suffix ".lib")
         set(dll_prefix "")
         set(dll_suffix ".dll")
+        set(static_lib_prefix "")
         set(static_lib_suffix ".lib")
     else()
         set(NAP_THIRDPARTY_PLATFORM_DIR "linux")
@@ -81,9 +112,9 @@ macro(setup)
         set(implib_suffix ".so")
         set(dll_prefix "lib")
         set(dll_suffix ".so")
+        set(static_lib_prefix "lib")
         set(static_lib_suffix ".a")
     endif()
-    set(static_lib_prefix "")
 
     foreach(configuration ${CMAKE_CONFIGURATION_TYPES})
         string(TOUPPER ${configuration} configuration)
@@ -95,10 +126,21 @@ macro(setup)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${LIB_DIR})
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${LIB_DIR})
     set(EXECUTABLE_OUTPUT_PATH ${BIN_DIR})
+
+    # Static linking
+    set(static_suffix _static)
+
+    # Set default ad hoc code signature
+    if (NOT DEFINED CODE_SIGNATURE)
+        set(CODE_SIGNATURE "-")
+        message("Codesigning with ad hoc signature")
+    else ()
+        message("Codesigning with signature: ${CODE_SIGNATURE}")
+    endif ()
 endmacro()
 
 
-macro(bootstrap_environment)
+macro(setup_build_tools)
     # Enforce GCC on Linux for now (when doing packaging build at least)
     if(UNIX AND NOT APPLE)
         if(NOT NAP_BUILD_CONTEXT MATCHES "source" OR DEFINED NAP_PACKAGED_BUILD)
@@ -118,7 +160,7 @@ macro(bootstrap_environment)
     if(WIN32)
         if(MSVC)
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4244 /wd4305 /wd4996 /wd4267 /wd4018 /wd4251 /MP /bigobj /Zc:preprocessor /wd5105")
-            set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
+            set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /ZI")
             set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF")
             set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF")
 
@@ -139,6 +181,10 @@ macro(bootstrap_environment)
                 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s")
             endif()
         endif()
+        if (APPLE)
+            # Add Apple specific flags
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-nullability-completeness")
+        endif ()
     endif()
 
     # We don't actively support and work on macOS anymore.

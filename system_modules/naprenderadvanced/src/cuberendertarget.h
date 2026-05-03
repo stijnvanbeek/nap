@@ -12,6 +12,7 @@
 #include <nap/resource.h>
 #include <nap/resourceptr.h>
 #include <vulkan/vulkan_core.h>
+#include <texturelink.h>
 
 namespace nap
 {
@@ -125,6 +126,11 @@ namespace nap
 		virtual bool getSampleShadingEnabled() const override					{ return mSampleShading; }
 
 		/**
+		 * @return layout of the texture when render pass ends
+		 */
+		virtual VkImageLayout getFinalLayout() const override					{ return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; }
+
+		/**
 		 * @return the absolute size of a single cube face in pixels.
 		 */
 		glm::ivec2 getSize() const												{ return mSize; }
@@ -175,23 +181,17 @@ namespace nap
 		uint getLayerIndex() const												{ return mLayerIndex; }
 
 		/**
-		 * @return a list of view matrices that correspond to each cube texture layer index.
-		 */
-		static const std::vector<glm::mat4>& getCubeMapViewMatrices();
-
-		/**
 		 * @return a list of inverse view matrices that correspond to each cube texture layer index.
 		 */
-		static const std::vector<glm::mat4>& getCubeMapInverseViewMatrices();
+		static const std::vector<glm::mat4>& getCubeMapViewTransforms();
 
 		bool									mSampleShading = true;										///< Property: 'SampleShading' Reduces texture aliasing when enabled, at higher computational cost.
-		bool									mUpdateLODs = false;										///< Property: 'UpdateLODs0' Updates mip-maps using blit operations after rendering when the texture has LODs enabled.
+		bool									mUpdateLODs = false;										///< Property: 'UpdateLODs' Updates mip-maps using blit operations after rendering when the texture has LODs enabled.
 		RGBAColorFloat							mClearColor = { 0.0f, 0.0f, 0.0f, 0.0f };					///< Property: 'ClearColor' color selection used for clearing the render target.
-
 		RenderTextureCube::EFormat				mColorFormat = RenderTextureCube::EFormat::RGBA8;			///< Property: 'ColorFormat' the cube texture color format.
 		DepthRenderTextureCube::EDepthFormat	mDepthFormat = DepthRenderTextureCube::EDepthFormat::D16;	///< Property: 'DepthFormat' the cube texture depth format.
-
-		ResourcePtr<TextureCube>				mCubeTexture;												///< Property: 'CubeTexture' cube texture to render to.
+		ResourcePtr<RenderTextureCube>			mCubeTexture;												///< Property: 'CubeTexture' cube texture to render to.
+		bool									mClear = true;												///< Property: 'Clear' whether to clear the render target at the start of each render pass
 
 	private:
 		/**
@@ -215,8 +215,8 @@ namespace nap
 
 		std::array<VkFramebuffer, TextureCube::layerCount>	mFramebuffers = { VK_NULL_HANDLE };
 
-		glm::ivec2								mSize;
-		uint									mLayerIndex = 0U;
-		bool									mIsFirstPass = true;
+		glm::ivec2								mSize = { 0, 0 };
+		uint									mLayerIndex = 0;
+		TextureCubeTargetLink					mTextureLink;
 	};
 }

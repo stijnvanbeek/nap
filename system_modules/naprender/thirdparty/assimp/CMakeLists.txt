@@ -14,3 +14,20 @@ else ()
 endif()
 
 add_import_library(${PROJECT_NAME} ${implib} ${dll} ${include_dir})
+
+if (APPLE)
+    set(bin_dir ${platform_dir}/bin)
+    set(static_lib ${bin_dir}/${static_lib_prefix}${PROJECT_NAME}${static_lib_suffix})
+    add_static_import_library(${PROJECT_NAME}${static_suffix} ${static_lib} ${include_dir})
+elseif(WIN32)
+    set(bin_dir ${platform_dir}/static)
+    if (${CMAKE_BUILD_TYPE} STREQUAL Debug)
+        set(static_lib ${bin_dir}/assimp-vc143-mtd.lib)
+    else ()
+        set(static_lib ${bin_dir}/assimp-vc143-mt.lib)
+    endif ()
+    add_static_import_library(${PROJECT_NAME}${static_suffix} ${static_lib} ${include_dir})
+else ()
+    add_import_library(${PROJECT_NAME}${static_suffix} ${implib} ${dll} ${include_dir}) # Use shared library for static builds for now
+endif ()
+

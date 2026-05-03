@@ -64,7 +64,6 @@ while getopts 'b:s:n:zetd' OPTION; do
       echo "The build directory: $OPTARG"
       ;;
     s)
-      export MACOS_CODE_SIGNATURE="$OPTARG"
       code_signature="$OPTARG"
       codesign=true
       echo "Using MacOS code signature: $OPTARG"
@@ -104,7 +103,11 @@ rm -rf $build_directory/bin
 
 # Generate the build directory
 if [ "$(uname)" = "Darwin" ]; then
-  cmake -S . -B $build_directory -DCMAKE_BUILD_TYPE=RELEASE
+  if [ $codesign = true ]; then
+    cmake -S . -B $build_directory -DCMAKE_BUILD_TYPE=RELEASE -DCODE_SIGNATURE="$code_signature"
+  else
+    cmake -S . -B $build_directory -DCMAKE_BUILD_TYPE=RELEASE
+  fi
 elif [ "$(uname)" = "Linux" ]; then
   cmake -S . -B $build_directory -DCMAKE_BUILD_TYPE=RELEASE
 else

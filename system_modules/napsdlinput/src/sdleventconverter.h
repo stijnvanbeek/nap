@@ -10,7 +10,7 @@
 // External Includes
 #include <utility/dllexport.h>
 #include <keyboard.h>
-#include <SDL_events.h>
+#include <SDL3/SDL_events.h>
 #include <inputevent.h>
 #include <windowevent.h>
 

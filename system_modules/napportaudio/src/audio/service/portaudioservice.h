@@ -316,14 +316,74 @@ namespace nap
 			/**
 			 * @return Whether the audio stream is currently running and not been paused.
 			 */
-			bool isActive();
+			bool isActive() const;
+
+		    /**
+		     * Check if a certain channel count and sample rate are supported by a device.
+		     * This method has to be called when the audio stream is not running.
+		     * @param inputDeviceIndex Index of the input device
+		     * @param outputDeviceIndex Index of the output device
+		     * @param inputChannelCount Number of input channels
+		     * @param outputChannelCount  Number of output channels
+		     * @param sampleRate Samplerate
+		     * @return True if the settings are supported.
+		     */
+		    static bool isFormatSupported(int inputDeviceIndex, int outputDeviceIndex, int inputChannelCount, int outputChannelCount, int sampleRate);
+
+		    /**
+		     * Call from the audio thread.
+		     * @return True if the last (or current) callback was late and caused a skipped buffer.
+		     */
+		    bool checkOutputUnderflow() const { return isActive() && mCallbackFlags & paOutputUnderflow; }
+
+			/**
+		     * Call from the audio thread.
+			 * @return True if the last (or current) callback didn't receive enough input samples.
+			 */
+			bool checkInputUnderflow() const { return isActive() && mCallbackFlags & paInputUnderflow; }
+
+		    /**
+		     * @return The output time in seconds of the current callback.
+		     */
+		    double getOutputBufferDacTime() const { return isActive() ? mCallbackTimeInfo.outputBufferDacTime : 0.f; }
+
+		    /**
+		     * @return The output time in seconds of the previous callback.
+		     */
+		    double getLastOutputBufferDACTime() const { return mLastOutputBufferDACTime; }
+
+		    /**
+		     * @return The current CPU load of the audio callback as a percentage between 0.0 and 1.0.
+		     */
+		    double getCPULoad() const { return isActive() ? Pa_GetStreamCpuLoad(mStream) : 0.f; }
 
             /**
              * @return Error message from last call to openStream() in case it was unsuccessful.
              */
             const std::string& getErrorMessage() const { return mErrorMessage; }
 
-        private:
+		    /**
+		     * Signal emitted before an audio stream is opened.
+		     * @param settings const ref to DeviceSettings struct containing the settings used to open the stream.
+		     */
+		    Signal<const PortAudioServiceConfiguration::DeviceSettings&> beforeOpenStream;
+
+		    /**
+		     * Signal emitted when a late audio callback is detected.
+		     * @param time The time in seconds between the last and the current callback's output.
+		     */
+		    Signal<double> lateAudioCallback;
+
+			/**
+			 * Called directly by the portaudio callback function.
+			 * @param inputBuffer: an array of float arrays, representing one sample buffer for every channel
+			 * @param outputBuffer: an array of float arrays, representing one sample buffer for every channel
+			 * @param framesPerBuffer: the number of samples that has to be processed per channel
+			 * @param flags: flags passed by portaudio to report about the status of the audio stream.
+			 */
+			void onAudioCallback(float** inputBuffer, float** outputBuffer, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags flags);
+
+		private:
             /**
              * Does the actual work for the public openStream() so it can conveniently store the message from the errorState.
              * Stores the device settings and tries to open audio stream with given device settings, return true on succes
@@ -352,6 +412,10 @@ namespace nap
 			int mOutputDeviceIndex = -1; // The actual output device being used, if any.
 			bool mPortAudioInitialized = false; // If port audio is initialized
 			bool mMpg123Initialized	   = false;	// If mpg123 is initialized
+
+			PaStreamCallbackFlags mCallbackFlags;
+			PaStreamCallbackTimeInfo mCallbackTimeInfo;
+			PaTime mLastOutputBufferDACTime = 0.f;
 
             std::string mErrorMessage = ""; // Holds the error message if public openStream() method was called unsuccesfully.
 
