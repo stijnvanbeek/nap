@@ -19,6 +19,7 @@ RTTI_BEGIN_STRUCT(nap::RootEntity)
 RTTI_END_CLASS
 
 RTTI_BEGIN_CLASS_NO_DEFAULT_CONSTRUCTOR(nap::Scene, "Spawns and manages a set of entities")
+	RTTI_CONSTRUCTOR(nap::Core&)
 	RTTI_FUNCTION("findEntity",			&nap::Scene::findEntity)
 	RTTI_PROPERTY("Entities",			&nap::Scene::mEntities,					nap::rtti::EPropertyMetaData::Required, "The entities to spawn")
 RTTI_END_CLASS
