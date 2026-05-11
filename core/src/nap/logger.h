@@ -223,7 +223,7 @@ namespace nap
 		static Logger& instance();
 
 		// this signal is emitted every time a log message is output.
-		Signal<LogMessage> log;
+		Signal<const LogMessage&> log;
 
 		// all log messages will be displayed
 		NAP_DECLARE_LOG_LEVEL(50, fine)
@@ -299,7 +299,7 @@ namespace nap
 		void initialize();
 		void onLog(const LogMessage& message);
 
-		Slot<LogMessage> onLogSlot = {[&](LogMessage message)	{ onLog(message); }};
+		Slot<const LogMessage&> onLogSlot = {[&](LogMessage message)	{ onLog(message); }};
 		const LogLevel* mLevel;
 		std::vector<std::unique_ptr<LogHandler>> mHandlers{};
 	};

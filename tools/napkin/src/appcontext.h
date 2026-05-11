@@ -492,7 +492,7 @@ namespace napkin
 		void closeServiceConfiguration();
 
 		// Slot to relay nap log messages into a Qt Signal (for thread safety)
-		nap::Slot<nap::LogMessage> mLogHandler = { this, &AppContext::logMessage };
+		nap::Slot<const nap::LogMessage&> mLogHandler = { this, &AppContext::logMessage };
 
 		nap::Core mCore;															// The nap::Core
 		ThemeManager mThemeManager;			 										// The theme manager
