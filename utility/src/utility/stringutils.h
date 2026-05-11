@@ -96,6 +96,14 @@ namespace nap
 		std::string stripNamespace(const std::string& str);
 
 		/**
+		 * Removes any prepending namespace identifiers.
+		 * For example: "nap::audio::object" becomes just "object"
+		 * @param str Input with namespaces
+		 * @return Output witht the namespaces removed
+		 */
+		std::string removeNamespaces(const std::string& str);
+
+		/**
 		 * Remove a list of characters from the given string
 		 * @param chars the chars to remove
 		 * @param string the string to remove chars from

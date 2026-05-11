@@ -123,6 +123,16 @@ namespace nap
 		}
 
 
+		std::string removeNamespaces(const std::string &str)
+		{
+			auto pos = str.rfind("::");
+			if (pos != str.size() && pos < str.size() - 2)
+				return str.substr(pos + 2, str.size() - pos - 2);
+			else
+				return str;
+		}
+
+
 		void removeChars(const char* chars, std::string& str)
 		{
 			for (auto i = 0; i < strlen(chars); i++)
