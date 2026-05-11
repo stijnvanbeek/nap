@@ -42,7 +42,7 @@ RTTI_END_CLASS
 // Ensures the current enabled context is local to the thread accessing it
 // Without thread local access the context is shared among gui instances
 //////////////////////////////////////////////////////////////////////////
-thread_local ImGuiContext* ImGuiTLS = nullptr;
+IMGUI_API thread_local ImGuiContext* ImGuiTLS = nullptr;
 
 namespace nap
 {
