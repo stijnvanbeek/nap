@@ -86,7 +86,7 @@ namespace nap {
 	{
         mPImpl = std::unique_ptr<PImpl, PImpl_deleter>(new PImpl);
         
-        mPImpl->watchThread = std::make_unique<std::thread>([&](){
+        mPImpl->watchThread = std::make_unique<std::thread>([&, directory](){
             
             // retain and release have to be set to NULL explicitly otherwise this causes irregular crashes
             mPImpl->context.version = 0;
