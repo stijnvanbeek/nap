@@ -232,6 +232,7 @@ namespace nap
 		std::set<std::string>				mFilesToWatch;					// Files currently loaded, used for watching changes on the files
 		FileLinkMap							mFileLinkMap;					// Map containing links from target to source file, for updating source files if the file monitor sees changes
 		std::unique_ptr<DirectoryWatcher>	mDirectoryWatcher = nullptr;	// File monitor, detects changes on files
+		std::string							mWatchedDirectory;
 		ModifiedTimeMap						mFileModTimes;					// Cache for file modification times to avoid responding to too many file events
 		std::unique_ptr<CoreFactory>		mFactory = nullptr;				// Responsible for creating objects when de-serializing
 		Core&								mCore;							// Core

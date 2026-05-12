@@ -597,6 +597,7 @@ namespace nap
 
 	void ResourceManager::watchDirectory(const std::string& directory)
 	{
+		mWatchedDirectory = directory;
 		mDirectoryWatcher = std::make_unique<DirectoryWatcher>(directory);
 	}
 }

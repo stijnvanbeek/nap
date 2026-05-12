@@ -32,6 +32,8 @@ namespace nap
         std::vector<std::string> modified_files;
         if (mDirectoryWatcher != nullptr && mDirectoryWatcher->update(modified_files))
         {
+            auto previousDir = nap::utility::getCWD();
+            nap::utility::changeDir(mWatchedDirectory);
             for (std::string& modified_file : modified_files)
             {
                 // Multiple events for the same file may occur, and we do not want to reload for every event given.
@@ -78,6 +80,7 @@ namespace nap
                     }
                 }
             }
+            nap::utility::changeDir(previousDir);
         }
     }
 }
