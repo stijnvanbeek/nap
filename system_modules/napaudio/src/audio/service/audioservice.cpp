@@ -44,6 +44,8 @@ namespace nap
 
 		void AudioService::shutdown()
 		{
+			mDeletionQueue.clear();
+
 #ifdef NAP_AUDIOFILE_SUPPORT
 			// Close mpg123 library
 			if (mMpg123Initialized)
@@ -65,7 +67,7 @@ namespace nap
 
 			// process the node manager
 			mNodeManager.process(inputBuffer, outputBuffer, framesPerBuffer);
-			
+
 			// clean the trash bin with nodes and resources that are no longer used and scheduled for destruction
 			mDeletionQueue.clear();
 		}

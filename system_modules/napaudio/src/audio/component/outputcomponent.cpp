@@ -58,6 +58,7 @@ namespace nap
 				outputNode->setOutputChannel(channel);
 				outputNode->audioInput.connect(*mInput->getOutputForChannel(mChannelRouting[channel]));
 				mOutputs.emplace_back(std::move(outputNode));
+				nodeManager.registerRootProcess(outputNode.get());
 			}
 			
 			return true;
@@ -75,7 +76,7 @@ namespace nap
 				{
 					auto outputNode = mOutputs[channel].getRaw();
 					int inputChannel = mChannelRouting[channel] % inputPtr->getChannelCount();
-					
+
 					if (outputNode->get_type().is_derived_from(RTTI_OF(OutputNode)))
 						static_cast<OutputNode*>(outputNode)->audioInput.connect(*inputPtr->getOutputForChannel(inputChannel));
 				}

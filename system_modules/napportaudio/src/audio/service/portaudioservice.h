@@ -384,6 +384,12 @@ namespace nap
 			void onAudioCallback(float** inputBuffer, float** outputBuffer, unsigned long framesPerBuffer, const PaStreamCallbackTimeInfo* timeInfo, PaStreamCallbackFlags flags);
 
 		private:
+		    /**
+		     * Signal emitted before an audio stream is opened.
+		     * @param settings const ref to DeviceSettings struct containing the settings used to open the stream.
+		     */
+		    Signal<const PortAudioServiceConfiguration::DeviceSettings&> beforeOpenStream;
+
             /**
              * Does the actual work for the public openStream() so it can conveniently store the message from the errorState.
              * Stores the device settings and tries to open audio stream with given device settings, return true on succes
