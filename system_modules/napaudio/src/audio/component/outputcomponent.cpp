@@ -57,8 +57,8 @@ namespace nap
 				auto outputNode = nodeManager.makeSafe<OutputNode>(nodeManager);
 				outputNode->setOutputChannel(channel);
 				outputNode->audioInput.connect(*mInput->getOutputForChannel(mChannelRouting[channel]));
-				mOutputs.emplace_back(std::move(outputNode));
 				nodeManager.registerRootProcess(outputNode.get());
+				mOutputs.emplace_back(std::move(outputNode));
 			}
 			
 			return true;
