@@ -100,13 +100,13 @@ namespace nap
 		 */
 		Service& operator=(Service&&) = delete;
 
-	protected:
 		/**
 		 * Override this function to register specific object creators for classes associated with this module
 		 * @param factory the factory used by the resource manager to instantiate objects
 		 */
 		virtual void registerObjectCreators(rtti::Factory& factory)						{ }
 
+	protected:
 		/**
 		 * Override this function to register service dependencies
 		 * A service that depends on another service is initialized after all it's associated dependencies
