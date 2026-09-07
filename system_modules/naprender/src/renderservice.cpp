@@ -89,6 +89,7 @@ RTTI_BEGIN_CLASS(nap::RenderServiceConfiguration, "Render service configuration"
 	RTTI_PROPERTY("EnableRobustBufferAccess",	&nap::RenderServiceConfiguration::mEnableRobustBufferAccess,	nap::rtti::EPropertyMetaData::Default, "Enables buffer bounds-checking on the GPU, only necessary for debugging purposes")
 	RTTI_PROPERTY("ShowLayers",					&nap::RenderServiceConfiguration::mPrintAvailableLayers,		nap::rtti::EPropertyMetaData::Default, "Print all available Vulkan layers to console")
 	RTTI_PROPERTY("ShowExtensions",				&nap::RenderServiceConfiguration::mPrintAvailableExtensions,	nap::rtti::EPropertyMetaData::Default, "Print all available Vulkan extensions to console")
+	RTTI_PROPERTY("SetWindowIcon",				&nap::RenderServiceConfiguration::mSetWindowIcon,	nap::rtti::EPropertyMetaData::Default, "Show NAP logo as app window icon")
 RTTI_END_CLASS
 
 RTTI_BEGIN_CLASS_NO_DEFAULT_CONSTRUCTOR(nap::RenderService, "Main interface for GPU Render (2D/3D) and Compute operations")
@@ -1370,11 +1371,14 @@ namespace nap
 		if (!window.isEmbedded())
 		{
 			// Set default window icon
-			auto* window_icon = getOrCreateDefaultWindowIcon(getModule());
-			if (window_icon != nullptr && !SDL_SetWindowIcon(window.getNativeWindow(), window_icon))
+			if (mSetWindowIcon)
 			{
-				Logger::error("Unable to set '%s' icon: %s",
-					window.mID.c_str(), SDL::getSDLError().c_str());
+				auto* window_icon = getOrCreateDefaultWindowIcon(getModule());
+				if (window_icon != nullptr && !SDL_SetWindowIcon(window.getNativeWindow(), window_icon))
+				{
+					Logger::error("Unable to set '%s' icon: %s",
+						window.mID.c_str(), SDL::getSDLError().c_str());
+				}
 			}
 
 			// Enable text input
@@ -1766,11 +1770,13 @@ namespace nap
 	// Set the currently active renderer
 	bool RenderService::init(nap::utility::ErrorState& errorState)
 	{
+		// Get config
+		auto* config = getConfiguration<RenderServiceConfiguration>();
+
 		// Attempt to initialize SDL video subsystem if not yet available
 		// TODO: Try to find a more clean, optimized way of handling this.
 		if (!SDL::videoInitialized())
 		{
-			auto* config = getConfiguration<RenderServiceConfiguration>();
 			mSDLInitialized = SDL::initVideo(config->mVideoDriver, errorState);
 			if (!errorState.check(mSDLInitialized, "Failed to init video subsystem"))
 				return false;
@@ -1779,7 +1785,10 @@ namespace nap
 		// Store selected video back-end
 		mVideoDriver = fromString(SDL::getCurrentVideoDriver());
 		Logger::info("Video backend: %s", toString(mVideoDriver).c_str());
-
+		
+		// Store config property
+		mSetWindowIcon = config->mSetWindowIcon;
+		
 		// Initialize engine
 		return initEngine(errorState);
 	}

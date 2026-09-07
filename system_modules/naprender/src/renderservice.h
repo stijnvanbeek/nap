@@ -95,6 +95,7 @@ namespace nap
 		bool							mEnableRobustBufferAccess = false;							///< Property: 'EnableRobustBufferAccess' Enables buffer bounds-checking on the GPU. Only enable this when absolutely necessary for debugging your application.
 		bool							mPrintAvailableLayers = false;								///< Property: 'ShowLayers' If all the available Vulkan layers are printed to console
 		bool							mPrintAvailableExtensions = false;							///< Property: 'ShowExtensions' If all the available Vulkan extensions are printed to console
+		bool							mSetWindowIcon = true;										///< Property: 'SetWindowIcon' Whether app window icons should automatically be overriden with the default NAP icon.
 
 		rtti::TypeInfo					getServiceType() const override								{ return RTTI_OF(RenderService); }
 
@@ -1346,5 +1347,8 @@ namespace nap
 
 		// Video backend driver
 		EVideoDriver mVideoDriver = EVideoDriver::Unknown;
+		
+		// Whether to set the window icon of added windows to the default NAP icon.
+		bool									mSetWindowIcon = true;
 	};
 } // nap

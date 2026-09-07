@@ -730,14 +730,14 @@ namespace nap
 
 		// If the next image is for some reason out of date, recreate the framebuffer the next frame and record nothing.
 		// This situation occurs when the swapchain dimensions don't match the current extent, ie: window has been resized.
-		if (result == VK_ERROR_OUT_OF_DATE_KHR)
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
 		{
 			mRecreateSwapchain = true;
 			return VK_NULL_HANDLE;
 		}
 
 		// We expect to have a working image here, otherwise something is seriously wrong.
-		NAP_ASSERT_MSG(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR,
+		NAP_ASSERT_MSG(result == VK_SUCCESS,
 			"Unable to retrieve the index of the next available presentable image");
 
 		// Reset command buffer for current frame
