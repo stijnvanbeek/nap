@@ -15,29 +15,39 @@
 
 using namespace nap::qt;
 
+FilterTree_::FilterTree_(QWidget* parent) : QTreeView(parent)
+{
+}
+
+QRect FilterTree_::visualRectFor(const QItemSelection& selection) const
+{
+	return QTreeView::visualRegionForSelection(selection).boundingRect();
+}
+
 FilterTreeView::FilterTreeView(QTreeView* treeview)
 {
-	mTreeView = new QTreeView(this);
+	if (treeview == nullptr)
+		treeview = new FilterTree_(this);
+
+	mTreeView = treeview;
+	mTreeView->setParent(this);
 	mTreeView->setSortingEnabled(false);
-	mTreeView->setFocusPolicy(Qt::StrongFocus);
 
-	mProxyModel.setFilterCaseSensitivity(Qt::CaseInsensitive);
-	mProxyModel.setFilterKeyColumn(-1); // Filter all columns
-	mTreeView->setModel(&mProxyModel);
-
-	mLineEditFilter.setPlaceholderText("filter...");
-	mLineEditFilter.setClearButtonEnabled(true);
-	mLineEditFilter.setFocusPolicy(Qt::StrongFocus);
-
-	mLayout.addWidget(&mLineEditFilter);
-	mLayout.addWidget(mTreeView);
 	mLayout.setContentsMargins(0, 0, 0, 0);
 	mLayout.setSpacing(0);
 	setLayout(&mLayout);
 
+	mProxyModel.setFilterCaseSensitivity(Qt::CaseInsensitive);
+	mProxyModel.setFilterKeyColumn(-1); // Filter all columns
+
+	mLineEditFilter.setPlaceholderText("filter...");
+	mLineEditFilter.setClearButtonEnabled(true);
+	connect(&mLineEditFilter, &QLineEdit::textChanged, this, &FilterTreeView::onFilterChanged);
+	mLayout.addWidget(&mLineEditFilter);
+	mTreeView->setModel(&mProxyModel);
+	mLayout.addWidget(mTreeView);
 	setContextMenuPolicy(Qt::CustomContextMenu);
 
-	connect(&mLineEditFilter, &QLineEdit::textChanged, this, &FilterTreeView::onFilterChanged);
 	connect(this, &QWidget::customContextMenuRequested, this, &FilterTreeView::onCustomContextMenuRequested);
 	connect(mTreeView, &QTreeView::doubleClicked, this, &FilterTreeView::doubleClicked);
 }
@@ -78,7 +88,7 @@ void FilterTreeView::select(const QStandardItem* item, bool expand)
 
 QStandardItem* FilterTreeView::getSelectedItem()
 {
-	for (const auto& idx : getSelectedIndexes())
+	for (auto idx : getSelectedIndexes())
 		return getModel()->itemFromIndex(idx);
 	return nullptr;
 }
@@ -87,7 +97,7 @@ QStandardItem* FilterTreeView::getSelectedItem()
 QList<QStandardItem*> FilterTreeView::getSelectedItems() const
 {
 	QList<QStandardItem*> ret;
-	for (const auto& idx : getSelectedIndexes())
+	for (auto idx : getSelectedIndexes())
 		ret.append(getModel()->itemFromIndex(idx));
 	return ret;
 }
@@ -96,7 +106,7 @@ QList<QStandardItem*> FilterTreeView::getSelectedItems() const
 QList<QModelIndex> FilterTreeView::getSelectedIndexes() const
 {
 	QList<QModelIndex> ret;
-	for (const auto& idx : getSelectionModel()->selectedRows())
+	for (auto idx : getSelectionModel()->selectedRows())
 		ret.append(mProxyModel.mapToSource(idx));
 	return ret;
 }
@@ -104,10 +114,8 @@ QList<QModelIndex> FilterTreeView::getSelectedIndexes() const
 
 void FilterTreeView::onFilterChanged(const QString& text)
 {
-	sortingStarted();
 	mProxyModel.setFilterRegularExpression(text);
 	mProxyModel.clearExemptions();
-	sortingEnded();
 }
 
 
@@ -142,34 +150,5 @@ void nap::qt::FilterTreeView::disableSorting()
 void nap::qt::FilterTreeView::expand(const QStandardItem& item) const
 {
 	mTreeView->expand(getProxyModel().mapFromSource(item.index()));
-}
-
-
-QModelIndex nap::qt::FilterTreeView::getLastVisibleItemIndex(const QModelIndex& index) const
-{
-	int row_count = mProxyModel.rowCount(index);
-	if (row_count > 0)
-	{
-		// Find the last item in this level of hierarchy.
-		int col_count = mProxyModel.columnCount(index) - 1;
-		QModelIndex last_idx = mProxyModel.index(row_count - 1, col_count, index);
-		return mProxyModel.hasChildren(last_idx) && mTreeView->isExpanded(last_idx) ?
-			getLastVisibleItemIndex(last_idx) : last_idx;
-	}
-	return QModelIndex();
-}
-
-
-QRect nap::qt::FilterTreeView::getVisibleRect() const
-{
-	auto last_idx = getLastVisibleItemIndex();
-	if (!last_idx.isValid())
-		return QRect();
-
-	// Construct and return visible rect based on top left and bottom right index
-	return {
-		mTreeView->visualRect(mTreeView->model()->index(0, 0)).topLeft(),
-		mTreeView->visualRect(last_idx).bottomRight()
-	};
 }
 

@@ -164,7 +164,8 @@ namespace nap
 			scriptArgs.clear();
 			scriptArgs << QLatin1String("-e") << QLatin1String("tell application \"Finder\" to activate");
 			QProcess::execute("/usr/bin/osascript", scriptArgs);
-#elif defined(__linux__)
+#else
+			// Linux
 			// We don't have a reliable way of selecting the file after revealing, just open the file browser
 			QString dirname = QFileInfo(filename).dir().path();
 			QProcess::startDetached("xdg-open " + dirname, {});
@@ -183,10 +184,9 @@ namespace nap
 		{
 #ifdef _WIN32
 			return "Explorer";
-
 #elif defined(__APPLE__)
 			return "Finder";
-#elif defined(__linux__)
+#else
 			return "file browser";
 #endif
 		}

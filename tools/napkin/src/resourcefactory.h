@@ -5,8 +5,8 @@
 #pragma once
 
 #include <QtGui/QIcon>
-#include <QtCore/QMap>
 #include <rtti/object.h>
+#include <QtCore/QMap>
 
 namespace napkin 
 {
@@ -49,26 +49,26 @@ namespace napkin
 		 * @param object the rtti object to get the icon for
 		 * @return an icon for the given rtti object
 		 */
-        QIcon getIcon(const nap::rtti::TypeInfo& type) const;
+        const QIcon getIcon(const nap::rtti::TypeInfo& type) const;
 
 		/**
 		 * @param object the rtti object to get the icon for
 		 * @return an icon for the given rtti object
 		 */
-        QIcon getIcon(const nap::rtti::Object& object) const;
+        const QIcon getIcon(const nap::rtti::Object& object) const;
 
 		/**
 		 * @param path the path to load the icon from 
 		 * @return an icon loaded from the given path
 		 */
-		QIcon getIcon(const QString& path) const;
+		const QIcon getIcon(const QString& path) const;
 
 		/**
 		 * Get a Qt-compatible file filter for the given property.
 		 * @param prop The property that will point to a filename
 		 * @return A string that may be used for file browse dialogs for example.
 		 */
-		QString getFileFilter(const nap::rtti::Property& prop) const;
+		const QString getFileFilter(const nap::rtti::Property& prop) const;
 
     private:
         /**

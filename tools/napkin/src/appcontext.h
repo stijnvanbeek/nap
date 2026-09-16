@@ -9,7 +9,6 @@
 #include "document.h"
 #include "resourcefactory.h"
 #include "serviceconfig.h"
-#include "appletsdleventsink.h"
 
 #include <vector>
 #include <QApplication>
@@ -33,7 +32,6 @@ namespace napkin
 	/**
 	 * The AppContext (currently a singleton) holds the 'globally' kept application state. 
 	 * All authored objects reside here.
-	 * 
 	 * It has signals to notify the other application components of global state changes such as data file access and
 	 * provides the client with convenience methods that may change the application state.
 	 *
@@ -236,11 +234,6 @@ namespace napkin
 		nap::RenderService* getRenderService() const;
 
 		/**
-		 * Returns the applet process loop, nullptr if project not loaded
-		 */
-		AppletSDLEventSink* getEventLoop() const;
-
-		/**
 		 * Convenience method to retrieve this QApplication's instance.
 		 * @return The QApplication singleton.
 		 */
@@ -257,7 +250,7 @@ namespace napkin
 		ThemeManager& getThemeManager();
 
 		/**
-		 * @param command The command to be executed on the current document
+		 * @param command THe command to be executed on the current document
 		 */
 		void executeCommand(QUndoCommand* cmd);
 
@@ -285,7 +278,7 @@ namespace napkin
 		/**
 		 * Disable opening of project from recently opened file list on startup
 		 */
-		void setOpenProjectOnStartup(bool b);
+		void setOpenRecentProjectOnStartup(bool b);
 
 	Q_SIGNALS:
 		/**
@@ -305,34 +298,35 @@ namespace napkin
 		 * Fired when the global selection has changed.
 		 * TODO: This will need to be changed into a multi-level/hierarchical selection context
 		 */
-		void selectionChanged(const QList<nap::rtti::Object*>& obj);
+		void selectionChanged(QList<nap::rtti::Object*> obj);
+
 
 		/**
 		 * Qt Signal
 		 * Fired when another property must be selected
 		 */
-		void propertySelectionChanged(const PropertyPath& prop);
+		void propertySelectionChanged(PropertyPath prop);
 
 		/**
 		 * Qt Signal
 		 * Fired after a file has been opened and its objects made available.
 		 * @param filename Name of the file that was opened
 		 */
-		void documentOpened(const QString& filename);
+		void documentOpened(QString filename);
 
 		/**
 		* Qt Signal
 		* Fired after a file has been closed and its objects are destructed
 		* @param filename Name of the file that was opened
 		*/
-		void documentClosing(const QString& doc);
+		void documentClosing(QString doc);
 
 		/**
 		 * Qt Signal
 		 * Fires after a document has finished saving.
 		 * @param filename The file the data was saved to.
 		 */
-		void documentSaved(const QString& filename);
+		void documentSaved(QString filename);
 
 		/**
 		 * Qt Signal
@@ -417,7 +411,7 @@ namespace napkin
 		 * @param object The object that has the changed property
 		 * @param path The path to the property that has changed
 		 */
-		void propertyValueChanged(const PropertyPath& path);
+		void propertyValueChanged(const PropertyPath path);
 
 		/**
 		 * Qt Signal
@@ -448,7 +442,7 @@ namespace napkin
 		 * Will be used to relay thread-unsafe nap::Logger calls onto the Qt UI thread
 		 * @param msg The log message being handled
 		 */
-		void logMessage(const nap::LogMessage& msg);
+		void logMessage(nap::LogMessage msg);
 
 		/**
 		 * Shows a progress dialog based on given fraction and message.
@@ -468,7 +462,7 @@ namespace napkin
 		 * Qt Signal
 		 * Emits this signal when service configuration file is about to change
 		 */
-		void serviceConfigurationClosing(const QString& file);
+		void serviceConfigurationClosing(QString file);
 
 	private:
 		/**
@@ -499,7 +493,7 @@ namespace napkin
 		ResourceFactory mResourceFactory;											// Le resource factory
 		bool mOpenRecentProjectAtStartup = true;									// Whether to load recent project at startup
 		nap::RenderService* mRenderService = nullptr;								// The render service (if available)
-		std::unique_ptr<napkin::AppletSDLEventSink> mAppletEventLoop = nullptr;				// The SDL applet event loop
+
 		std::unique_ptr<nap::ProjectInfo> mProjectInfo = nullptr;					// Clone of core project info
 		std::unique_ptr<Document> mDocument = nullptr; 								// Keep objects here
 		QString mCurrentFilename;													// The currently opened file
@@ -509,4 +503,3 @@ namespace napkin
 	};
 
 };
-

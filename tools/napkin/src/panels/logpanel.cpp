@@ -43,28 +43,31 @@ LogModel::LogModel() : QStandardItemModel()
 
 void LogModel::onLog(nap::LogMessage msg)
 {
-	auto level_name = QString::fromStdString(msg.level().name());
-	auto log_text = QString::fromStdString(msg.text());
+	auto levelname = QString::fromStdString(msg.level().name());
+	auto logtext = QString::fromStdString(msg.text());
+
 
 	QRegularExpression re("([a-z]+:(\\/\\/)[^\\s&^'&^\"]+)");
-	auto level_item = new LevelItem(msg);
-	level_item->setEditable(false);
-	auto text_item = new LogTextItem(msg);
-	text_item->setToolTip(log_text);
-	text_item->setEditable(false);
+	auto levelitem = new LevelItem(msg);
+	levelitem->setEditable(false);
+	auto textitem = new LogTextItem(msg);
+	textitem->setToolTip(logtext);
+	textitem->setEditable(false);
 
 	auto match = re.match(QString::fromStdString(msg.text()));
 	if (match.hasMatch())
 	{
-		text_item->setLink(match.captured(1));
-		auto font = text_item->font();
+		textitem->setLink(match.captured(1));
+		auto font = textitem->font();
 		font.setUnderline(true);
-		text_item->setFont(font);
+		textitem->setFont(font);
 	}
 
-	// Add and limit
-	appendRow({level_item, text_item});
-	removeRows(0, nap::math::max<int>(rowCount() - mMaxRows, 0));
+	appendRow({levelitem, textitem});
+
+	// Keep maximum amount of rows
+	while (rowCount() > mMaxRows)
+		removeRow(0);
 }
 
 
@@ -136,38 +139,21 @@ void LogPanel::onDoubleClicked(const QModelIndex& index)
 void LogPanel::onRowsAboutToBeInserted(const QModelIndex& parent, int first, int last)
 {
 	auto scrollBar = mTreeView.getTreeView().verticalScrollBar();
-	mScrolledToBottom = scrollBar->value() == scrollBar->maximum();
+	wasMaxScroll = scrollBar->value() == scrollBar->maximum();
 }
 
 
 void LogPanel::onRowInserted(const QModelIndex &parent, int first, int last)
 {
-	// Extract lvl item
-	auto lvl_idx = mTreeView.getModel()->index(last, 0, parent);
-	auto qt_item = mTreeView.getModel()->itemFromIndex(lvl_idx);
-	auto* lvl_item = qitem_cast<LogEntryItem*>(qt_item);
-	assert(lvl_item != nullptr);
-
-	// Check if message is of importance
-	int cutoff_lvl = nap::math::max<int>(getCurrentLevel().level(), nap::Logger::warnLevel().level());
-	bool important_msg = lvl_item->getMessage().level().level() >= cutoff_lvl;
-	bool scroll = mScrolledToBottom || important_msg;
-
-	// Scroll to bottom
-	if (scroll)
+	auto scrollBar = mTreeView.getTreeView().verticalScrollBar();
+	if (wasMaxScroll)
 	{
-		auto scrollBar = mTreeView.getTreeView().verticalScrollBar();
 		QTimer::singleShot(0, [scrollBar]()
-			{
-				scrollBar->setValue(scrollBar->maximum());
-			});
+		{
+			scrollBar->setValue(scrollBar->maximum());
+		});
 	}
-
-	// Notify
-	if (important_msg)
-		importantMessageReceived(lvl_item->getMessage());
 }
-
 
 
 void LogPanel::showEvent(QShowEvent* event)
@@ -219,7 +205,7 @@ int LogPanel::getLevelIndex(const nap::LogLevel& level) const
 
 void napkin::LogPanel::themeChanged(const Theme& theme)
 {
-	theme.changeWidgetFont(mTreeView.getTreeView(), napkin::theme::font::mono);
+		theme.changeWidgetFont(mTreeView.getTreeView(), napkin::theme::font::mono);
 }
 
 
@@ -227,8 +213,6 @@ void LogPanelWidgetStorer::store(const LogPanel& widget, const QString& key, QSe
 {
 	s.setValue(key + "_LOGLEVEL", widget.getLevelIndex(widget.getCurrentLevel()));
 }
-
-
 void LogPanelWidgetStorer::restore(LogPanel& widget, const QString& key, const QSettings& s) const
 {
 	const auto levels = nap::Logger::getLevels();

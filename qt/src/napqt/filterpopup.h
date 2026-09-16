@@ -15,16 +15,12 @@ namespace nap
 	namespace qt
 	{
 		/**
-		 * Simple text model with tooltip, supports nested entries
+		 * Simple text model with tooltip.
 		 * Replacement for QStringListModel, which doesn't support tooltips.
 		 */
 		class StringModel final : public QStandardItemModel
 		{
 		public:
-
-			struct Entry;
-			using Entries = QList<Entry>;
-
 			/**
 			 * Single text model item entry with optional tooltip
 			 */
@@ -40,19 +36,8 @@ namespace nap
 
 				QString mText = "";		///< The text to display
 				QString mTooltip;		///< The tooltip to display
-
-				// Reparent child to this entry
-				void addChild(Entry&& child)	{ mChildren.emplace_back(std::move(child)); }
-
-				// Add an icon to this entry
-				void addIcon(QIcon&& icon)		{ mIcon = std::move(icon); }
-
-				// All children
-				Entries mChildren;
-
-				// Icon
-				QIcon mIcon;
 			};
+			using Entries = QList<Entry>;
 
 			/**
 			 * Single text model item, wraps an entry
@@ -60,15 +45,9 @@ namespace nap
 			class Item final : public QStandardItem
 			{
 			public:
-				Item(Entry&& entry);
+				Item(Entry&& entry) : QStandardItem(entry.mText), mEntry(std::move(entry)) { }
 				Entry mEntry;
 			};
-
-			/**
-			 * Move Constructor
-			 * @param items movable item data
-			 */
-			StringModel(Entries&& items);
 
 			/**
 			 * Returns text or tooltip data
@@ -83,19 +62,17 @@ namespace nap
 			static void sort(Entries& ioEntries, bool reverseSort = false);
 
 			/**
-			 * @return if this model contains nested items
+			 * Move Constructor
+			 * @param items movable item data
 			 */
-			bool nested() const { return mNested; }
-
-		private:
-			bool mNested = false;
+			StringModel(Entries&& items);
 		};
 
 
 		/**
 		 * A popup of selectable string items that can be filtered
 		 */
-		class FilterPopup : public QDialog
+		class FilterPopup : public QMenu
 		{
 		private:
 			// Construct popup with items (from entries) to select from
@@ -120,9 +97,9 @@ namespace nap
 		protected:
 			void keyPressEvent(QKeyEvent* event) override;
 			void showEvent(QShowEvent* event) override;
-			virtual bool eventFilter(QObject* watched, QEvent* event) override;
 
 		private:
+			void moveSelection(int d);
 			void accept();
 			void computeSize();
 
@@ -136,21 +113,3 @@ namespace nap
 	} // namespace qt
 
 } // namespace nap
-
-
-//////////////////////////////////////////////////////////////////////////
-// Hashes
-//////////////////////////////////////////////////////////////////////////
-
-namespace std
-{
-	// Makes the entry hash-able for std containers
-	template <>
-	struct hash<nap::qt::StringModel::Entry>
-	{
-		size_t operator()(const nap::qt::StringModel::Entry& v) const
-		{
-			return std::hash<std::string>()(v.mText.toStdString());
-		}
-	};
-}
