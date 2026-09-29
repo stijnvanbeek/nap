@@ -89,6 +89,7 @@ RTTI_BEGIN_CLASS(nap::RenderServiceConfiguration, "Render service configuration"
 	RTTI_PROPERTY("EnableRobustBufferAccess",	&nap::RenderServiceConfiguration::mEnableRobustBufferAccess,	nap::rtti::EPropertyMetaData::Default, "Enables buffer bounds-checking on the GPU, only necessary for debugging purposes")
 	RTTI_PROPERTY("ShowLayers",					&nap::RenderServiceConfiguration::mPrintAvailableLayers,		nap::rtti::EPropertyMetaData::Default, "Print all available Vulkan layers to console")
 	RTTI_PROPERTY("ShowExtensions",				&nap::RenderServiceConfiguration::mPrintAvailableExtensions,	nap::rtti::EPropertyMetaData::Default, "Print all available Vulkan extensions to console")
+	RTTI_PROPERTY("SetWindowIcon",				&nap::RenderServiceConfiguration::mSetWindowIcon,	nap::rtti::EPropertyMetaData::Default, "Show NAP logo as app window icon")
 RTTI_END_CLASS
 
 RTTI_BEGIN_CLASS_NO_DEFAULT_CONSTRUCTOR(nap::RenderService, "Main interface for GPU Render (2D/3D) and Compute operations")
@@ -593,7 +594,6 @@ namespace nap
 		inst_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 		inst_info.pNext = NULL;
 #ifdef __APPLE__
-		// inst_info.flags = 0;
 		inst_info.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 #else
 		inst_info.flags = 0;
@@ -1379,11 +1379,14 @@ namespace nap
 				// Set default window icon
 				if (getCore().getProjectInfo() != nullptr)
 				{
-					auto* window_icon = getOrCreateDefaultWindowIcon(getModule());
-					if (window_icon != nullptr && !SDL_SetWindowIcon(window.getNativeWindow(), window_icon))
+					if (mSetWindowIcon)
 					{
-						Logger::error("Unable to set '%s' icon: %s",
-							window.mID.c_str(), SDL::getSDLError().c_str());
+						auto* window_icon = getOrCreateDefaultWindowIcon(getModule());
+						if (window_icon != nullptr && !SDL_SetWindowIcon(window.getNativeWindow(), window_icon))
+						{
+							Logger::error("Unable to set '%s' icon: %s",
+								window.mID.c_str(), SDL::getSDLError().c_str());
+						}
 					}
 				}
 
@@ -1799,6 +1802,10 @@ namespace nap
 		if (!result)
 			return false;
 
+		// Store config property
+		auto* config = getConfiguration<RenderServiceConfiguration>();
+		mSetWindowIcon = config->mSetWindowIcon;
+
 		// Initialize engine
 		return initEngine(errorState);
 	}
@@ -1911,19 +1918,12 @@ namespace nap
 #endif // __APPLE__
 
 		// Add displays
-		bool result = false;
-		getCore().runOnMainThread([&]()
+		for (const auto& display : SDL::getDisplays())
 		{
-			for (const auto& display : SDL::getDisplays())
-			{
-				if (!errorState.check(display.isValid(), "Display: %d, unable to extract required information"))
-					return;
-				nap::Logger::info(display.toString());
-			}
-			result = true;
-		});
-		if (!result)
-			return false;
+			if (!errorState.check(display.isValid(), "Display: %d, unable to extract required information"))
+				return false;
+			nap::Logger::info(display.toString());
+		}
 
 		// Initialize shader compilation
 		mShInitialized = ShInitialize() != 0;
