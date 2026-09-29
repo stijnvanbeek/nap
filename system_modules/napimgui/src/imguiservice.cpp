@@ -308,6 +308,7 @@ namespace nap
 	static constexpr int modControl = 0;
 	static constexpr int modAlt = 1;
 	static constexpr int modShift = 2;
+	static constexpr int modSuper = 3;
 	static constexpr int modNone = -1;
 
 	static int getModKeyIndex(nap::EKeyCode key)
@@ -323,6 +324,9 @@ namespace nap
 		case EKeyCode::KEY_LSHIFT:
 		case EKeyCode::KEY_RSHIFT:
 			return modShift;
+		case EKeyCode::KEY_LGUI:
+		case EKeyCode::KEY_RGUI:
+			return modSuper;
 		default:
 			break;
 		}
@@ -864,7 +868,8 @@ namespace nap
 		io.KeyCtrl = context.mModPressed[modControl];
 		io.KeyAlt = context.mModPressed[modAlt];
 		io.KeyShift = context.mModPressed[modShift];
-
+		io.KeySuper = context.mModPressed[modSuper];
+		
 		for (auto i = 0; i < context.mModRelease.size(); i++)
 		{
 			// If a modifier was released -> disable the mod for the next frame

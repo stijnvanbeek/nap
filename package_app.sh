@@ -10,6 +10,7 @@ echo "-e Include the Napkin editor"
 echo "-s MacOS code signature"
 echo "-n MacOS notarization profile"
 echo "-t Perform testing"
+echo "-E Include MacOS Entitlements file"
 
 # Make sure cmake is installed
 if ! [ -x "$(command -v cmake)" ]; then
@@ -55,8 +56,11 @@ zip_output=false
 include_napkin=false
 perform_testing=false
 delete_output=false
+entitlements_file=""
+include_entitlements=false
 
-while getopts 'b:s:n:zetd' OPTION; do
+
+while getopts 'b:s:n:E:zetd' OPTION; do
   case "$OPTION" in
     b)
       build_directory="$OPTARG"
@@ -73,6 +77,11 @@ while getopts 'b:s:n:zetd' OPTION; do
       notary_profile="$OPTARG"
       notarize=true
       echo "Using MacOS notarization profile: $OPTARG"
+      ;;
+    E)
+      entitlements_file="$OPTARG"
+      include_entitlements=true
+      echo "Using Entitlements file: $OPTARG"
       ;;
     z)
       zip_output=true
@@ -95,7 +104,7 @@ while getopts 'b:s:n:zetd' OPTION; do
       ;;
   esac
 done
-echo
+
 
 # Remove bin directory from previous builds
 # This is important otherwise artifacts from previous builds could be included in the app installation
@@ -221,16 +230,26 @@ fi
 if [ "$(uname)" = "Darwin" ]; then
   # Codesign MacOS app bundle
   if [ $codesign = true ]; then
-    echo Codesigning MacOS bundle...
-    codesign -s "$code_signature" -f "install/$app_directory" --options runtime
+    echo "Codesigning MacOS bundle..."
+
+    # Sign with entitlements file if it was given
+    if [ $include_entitlements = true ]; then
+      echo Signing with entitlements file: "$entitlements_file"
+      codesign -s "$code_signature" -f "install/$app_directory" --options runtime --entitlements "$entitlements_file"
+    else
+      echo "Signing without entitlements file..."
+      codesign -s "$code_signature" -f "install/$app_directory" --options runtime
+    fi
+    
     if ! [ $? -eq 0 ]; then
+      echo "Codesigning failed"
       exit 2
     fi
   fi
 
   # Perform notarization
   if [ $notarize = true ]; then
-    echo Performing MacOS notarization
+    echo "Performing MacOS notarization"
     cd install
 
     # Zip app bundle to upload for notarization
@@ -240,6 +259,7 @@ if [ "$(uname)" = "Darwin" ]; then
     # Notarize
     xcrun notarytool submit "${notary_zip}" --keychain-profile "${notary_profile}" --wait
     if ! [ $? -eq 0 ]; then
+      echo "Notarization failed"
       exit 2
     fi
 
@@ -251,6 +271,7 @@ if [ "$(uname)" = "Darwin" ]; then
     # Run stapler
     xcrun stapler staple "${app_directory}"
     if ! [ $? -eq 0 ]; then
+      echo "Stapling failed"
       exit 2
     fi
 
@@ -287,6 +308,6 @@ fi
 
 # Remove the build directory if it wasn't specified
 if [ $temp_build_directory = true ]; then
-  echo Removing build directory...
+  echo "Removing build directory..."
   rm -rf ${build_directory}
 fi
