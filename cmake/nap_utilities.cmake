@@ -47,9 +47,12 @@ endfunction()
 # include_dir: Path to the include directories for the library.
 function(add_import_library target_name implib dll include_dir)
     # Resolve symbolic links
-    get_filename_component(implib ${implib} REALPATH)
-    get_filename_component(dll ${dll} REALPATH)
-    get_filename_component(include_dir ${include_dir} REALPATH)
+#    get_filename_component(implib ${implib} REALPATH)
+#    get_filename_component(dll ${dll} REALPATH)
+#    get_filename_component(include_dir ${include_dir} REALPATH)
+    file(REAL_PATH "${implib}" implib)
+    file(REAL_PATH "${dll}" dll)
+    file(REAL_PATH "${include_dir}" include_dir)
 
     if (NOT EXISTS ${dll})
         message(WARNING "Dynamic library for ${target_name} not found for this platform. Tried: ${dll}")
@@ -70,6 +73,48 @@ function(add_import_library target_name implib dll include_dir)
     set_property(TARGET ${target_name} PROPERTY IMPORTED_LOCATION ${dll})
     set_property(TARGET ${target_name} PROPERTY IMPORTED_IMPLIB ${implib})
     set_property(TARGET ${target_name} PROPERTY INCLUDE_DIRECTORIES ${include_dir})
+
+    if (UNIX)
+        get_filename_component(library_name ${dll} NAME)
+        if (APPLE)
+            # The library id needs to be set once on every dylib to @rpath/[library filename]:
+            # install_name_tool -id @rpath/[library filename] [path to library]
+            # The line below automates this, however when generating multiple configurations at the same time the processes clash.
+            # To avoid this issue it only operates on release configurations, which is the relevant configuration for packaged apps.
+            message("Try change install name ${library_name}")
+            if (DEFINED CMAKE_BUILD_TYPE)
+                string(TOLOWER ${CMAKE_BUILD_TYPE} lowercase_build_type)
+                if (${lowercase_build_type} STREQUAL "release")
+                    message("Changing install name ${library_name} ${dll}")
+                    execute_process(COMMAND install_name_tool -id
+                            @rpath/${library_name}
+                            ${dll}
+                            RESULT_VARIABLE EXIT_CODE)
+                    if(NOT ${EXIT_CODE} EQUAL 0)
+                        message(FATAL_ERROR "Failed to set RPATH on ${library_name} using install_name_tool -id.")
+                    endif()
+                endif()
+            endif()
+
+            if (DEFINED ENV{MACOS_CODE_SIGNATURE})
+                # Codesign the executable with signature in environment variable
+                execute_process(COMMAND codesign --force -s $ENV{MACOS_CODE_SIGNATURE} ${dll})
+            else ()
+                # Perform ad hoc signing
+                execute_process(COMMAND codesign --force -s - ${dll})
+            endif ()
+
+        else ()
+            # Set so name or rpath for linux
+            execute_process(COMMAND patchelf --set-soname
+                    ${library_name}
+                    ${dll}
+                    RESULT_VARIABLE EXIT_CODE)
+            if(NOT ${EXIT_CODE} EQUAL 0)
+                message(FATAL_ERROR "Failed to set RPATH on ${library_name} using patchelf. Is patchelf installed?")
+            endif()
+        endif()
+    endif()
 endfunction()
 
 
