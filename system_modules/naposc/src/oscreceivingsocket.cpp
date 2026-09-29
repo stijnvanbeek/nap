@@ -51,6 +51,10 @@ namespace nap
 				Logger::warn("Exception receiving OSC: %s", e.what());
 				stopped = false;
 			}
+			catch (...)
+			{
+				stopped = false;
+			}
 		}
 	}
 

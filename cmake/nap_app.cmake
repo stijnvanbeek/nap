@@ -33,7 +33,7 @@ if (TARGET nap${PROJECT_NAME})
     target_link_libraries(${PROJECT_NAME} nap${PROJECT_NAME})
 endif()
 
-set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN/lib")
+set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN/${LIB_RPATH}")
 
 # Create the cache directory in source
 set(cache_dir ${CMAKE_CURRENT_SOURCE_DIR}/cache)
@@ -135,13 +135,14 @@ add_custom_command(
         ${cache_dir}/build_app.json
         ${BIN_DIR}/${PROJECT_NAME}.json)
 
-# Run FBX converter post-build within bin data dir
-add_dependencies(${PROJECT_NAME} fbxconverter)
 set(source_data_dir ${CMAKE_CURRENT_SOURCE_DIR}/data)
-add_custom_command(TARGET ${PROJECT_NAME}
-        POST_BUILD
-        COMMAND ${BIN_DIR}/fbxconverter -o ${source_data_dir} ${source_data_dir}/*.fbx
-        COMMENT "Exporting FBX in '${source_data_dir}'")
+
+## Run FBX converter post-build within bin data dir
+#add_dependencies(${PROJECT_NAME} fbxconverter)
+#add_custom_command(TARGET ${PROJECT_NAME}
+#        POST_BUILD
+#        COMMAND ${BIN_DIR}/fbxconverter -o ${source_data_dir} ${source_data_dir}/*.fbx
+#        COMMENT "Exporting FBX in '${source_data_dir}'")
 
 # Copy data directory to app specific bin
 set(bin_data_dir ${app_install_data_dir}/data)

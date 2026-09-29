@@ -1,0 +1,14 @@
+{
+    "Type": "nap::PathMapping",
+    "mID": "DefaultPathMapping",
+    "ProjectExeToRoot": ".",
+    "NapkinExeToRoot": ".",
+    "ModulePaths":
+    [
+        "{ROOT}",
+        "{ROOT}/lib",
+        "{ROOT}/../Resources/lib"
+    ],
+    "BuildPath": "{PROJECT_DIR}",
+    "DataPath":  "{PROJECT_DIR}/../Resources/"
+}

@@ -18,7 +18,7 @@ if(APPLE)
                 src/nap/osx/directorywatcher.cpp
                 src/nap/osx/module.cpp
                 src/nap/osx/core_env.cpp
-                src/nap/native/modulemanager_ext.cpp
+                src/nap/native/modulecache_ext.cpp
                 src/nap/native/logger_ext.cpp
                 src/nap/native/core_ext.cpp
                 src/nap/native/resourcemanager_ext.cpp
@@ -29,7 +29,7 @@ elseif(MSVC)
                 src/nap/win32/directorywatcher.cpp
                 src/nap/win32/module.cpp
                 src/nap/win32/core_env.cpp
-                src/nap/native/modulemanager_ext.cpp
+                src/nap/native/modulecache_ext.cpp
                 src/nap/native/logger_ext.cpp
                 src/nap/native/core_ext.cpp
                 src/nap/native/resourcemanager_ext.cpp
@@ -44,7 +44,7 @@ elseif(UNIX)
                 src/nap/linux/directorywatcher.cpp
                 src/nap/linux/module.cpp
                 src/nap/linux/core_env.cpp
-                src/nap/native/modulemanager_ext.cpp
+                src/nap/native/modulecache_ext.cpp
                 src/nap/native/logger_ext.cpp
                 src/nap/native/core_ext.cpp
                 src/nap/native/resourcemanager_ext.cpp

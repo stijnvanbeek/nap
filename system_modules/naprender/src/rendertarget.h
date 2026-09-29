@@ -7,6 +7,7 @@
 // Local Includes
 #include "irendertarget.h"
 #include "rendertexture2d.h"
+#include "texturelink.h"
 
 // External Includes
 #include <nap/resource.h>
@@ -43,12 +44,6 @@ namespace nap
 	 *		}
 	 *		mRenderService->endFrame();
 	 * ~~~~~
-	 *
-	 * nap::RenderTarget can also be used to hook up a nap::DepthRenderTexture2D as a depth attachment. This lets you
-	 * use the depth buffer as a shader resource in a subsequent render operation. The property `DepthTexture` is optional.
-	 * When empty, an internal depth attachment is created to use during rendering and calls to
-	 * `nap::RenderTarget::getDepthTexture()` will fail (always make sure `hasDepthTexture()` returns true first). When a
-	 * depth texture is set, `nap::RenderTarget::getDepthTexture()` return a reference to the resource successfully.
 	 */
 	class NAPAPI RenderTarget : public Resource, public IRenderTarget
 	{
@@ -138,21 +133,9 @@ namespace nap
 		virtual VkRenderPass getRenderPass() const override						{ return mRenderPass; }
 
 		/**
-		 * @return whether this render target writes to a specified depth texture resource
-		 */
-		bool hasDepthTexture() const											{ return mHasDepthTexture; }
-
-		/**
 		 * @return the texture that holds the result of the render pass.
 		 */
 		RenderTexture2D& getColorTexture();
-
-		/**
-		 * Returns the depth texture resource if available, asserts if this is not the case.
-		 * Always make sure `hasDepthTexture()` returns true before calling this function.
-		 * @return the depth texture that holds the result of the render pass, asserts otherwise.
-		 */
-		DepthRenderTexture2D& getDepthTexture();
 
 		/**
 		 * @return render target color format. This is the format of the linked in color texture.
@@ -174,12 +157,17 @@ namespace nap
 		 */
 		virtual bool getSampleShadingEnabled() const override;
 
+		/**
+		 * @return layout of the texture when render pass ends
+		 */
+		virtual VkImageLayout getFinalLayout() const override									{ return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; }
+
 	public:	
 		bool								mSampleShading = true;								///< Property: 'SampleShading' Reduces texture aliasing when enabled, at higher computational cost.
 		RGBAColorFloat						mClearColor = { 0.0f, 0.0f, 0.0f, 0.0f };			///< Property: 'ClearColor' color selection used for clearing the render target
 		ERasterizationSamples				mRequestedSamples = ERasterizationSamples::One;		///< Property: 'Samples' The number of samples used during Rasterization. For better results turn on 'SampleShading'.
 		ResourcePtr<RenderTexture2D>		mColorTexture;										///< Property: 'ColorTexture' texture to render to
-		ResourcePtr<DepthRenderTexture2D>	mDepthTexture;										///< Property: 'DepthTexture' optional depth texture to render to
+        bool                                mClear = true;                                      ///< Property: 'Clear' whether to clear the render target at the start of each render pass
 
 	private:
 		RenderService*						mRenderService;
@@ -188,6 +176,6 @@ namespace nap
 		VkSampleCountFlagBits				mRasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 		ImageData							mDepthImage;
 		ImageData							mColorImage;
-		bool								mHasDepthTexture = false;
+		Texture2DTargetLink					mTextureLink;
 	};
 }

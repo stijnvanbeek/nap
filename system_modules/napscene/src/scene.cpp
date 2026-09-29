@@ -13,7 +13,7 @@
 #include <rtti/rttiutilities.h>
 #include <nap/objectgraph.h>
 
-RTTI_BEGIN_CLASS(nap::RootEntity)
+RTTI_BEGIN_STRUCT(nap::RootEntity)
 	RTTI_PROPERTY("Entity",				&nap::RootEntity::mEntity,				nap::rtti::EPropertyMetaData::Required)
 	RTTI_PROPERTY("InstanceProperties", &nap::RootEntity::mInstanceProperties,	nap::rtti::EPropertyMetaData::Default)
 RTTI_END_CLASS
