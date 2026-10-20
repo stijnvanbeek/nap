@@ -1,0 +1,17 @@
+---
+name: write-nap-shader
+description: |
+Write or fix a vertex shader (.vert) or fragment shader (.frag).
+Triggers on "write <type> shader", "fix shader", "edit shader", "implement <type> shader"
+  Write or fix a ChaiScript (.chai) file, especially a nap engine GUI/component script class. Triggers on "write a chai script", "fix this .chai", "implement draw()/init() in the chai class", "ChaiScript grammar/syntax".
+---
+
+# Write shader
+
+A shader is a script written in the GLSL (shader) language that is used in NAP for rendering.
+GLSL grammer is documented online.
+
+## When to use
+- Writing a new `.frag` or `.vert` script from scratch.
+- Fixing a `.frag` or `.vert` file that fails to load or throws at runtime.
+- Making changes to a `.frag` or `.vert` script when requested.
