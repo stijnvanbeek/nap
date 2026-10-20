@@ -63,8 +63,15 @@ namespace nap
 			
 			return true;
 		}
-		
-		
+
+
+		void OutputComponentInstance::onDestroy()
+		{
+			for (auto& outputNode : mOutputs)
+				mAudioService->getNodeManager().unregisterRootProcess(outputNode.get());
+		}
+
+
 		void OutputComponentInstance::setInput(AudioComponentBaseInstance& input)
 		{
 			OutputComponent* resource = getComponent<OutputComponent>();

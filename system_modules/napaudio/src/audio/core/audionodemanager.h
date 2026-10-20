@@ -214,7 +214,7 @@ namespace nap
 
 		private:
 			// Used by the nodes and audio processes to register themselves on construction
-			void registerProcess(SafePtr<Process> process);
+			void registerProcess(Process& process);
 
 			// Used by all nodes and audio processes to unregister themselves from their destructor. Threadsafe.
 			void unregisterProcess(Process& process);

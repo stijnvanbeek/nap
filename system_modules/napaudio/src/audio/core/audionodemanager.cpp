@@ -171,7 +171,7 @@ namespace nap
 		}
 
 
-		void NodeManager::registerProcess(SafePtr<Process> process)
+		void NodeManager::registerProcess(Process& process)
 		{
 			process.setSampleRate(mSampleRate);
 			process.setBufferSize(mInternalBufferSize);
