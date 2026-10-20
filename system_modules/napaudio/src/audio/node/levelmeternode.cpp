@@ -23,24 +23,19 @@ namespace nap
 	namespace audio
 	{
 
-		LevelMeterNode::LevelMeterNode(NodeManager& nodeManager, TimeValue analysisWindowSize, bool rootProcess) : Node(nodeManager), mRootProcess(rootProcess), mAnalysisWindowSize(analysisWindowSize)
+		LevelMeterNode::LevelMeterNode(NodeManager& nodeManager, TimeValue analysisWindowSize) : Node(nodeManager), mAnalysisWindowSize(analysisWindowSize)
 		{
 			mWindowSizeInSamples = getNodeManager().getSamplesPerMillisecond() * mAnalysisWindowSize;
-			mSquaredBuffer.resize(mWindowSizeInSamples);
-            
-			if (rootProcess)
-				getNodeManager().registerRootProcess(*this);
+			mSquaredBuffer.resize(mWindowSizeInSamples, 0.f);
 		}
 
 
 		LevelMeterNode::~LevelMeterNode()
 		{
-			if (mRootProcess)
-				getNodeManager().unregisterRootProcess(*this);
 		}
 
 
-		float LevelMeterNode::getLevel()
+		float LevelMeterNode::getLevel() const
 		{
 			return mType == EType::RMS ? std::sqrt(mValue.load()) : mValue.load();
 		}
@@ -50,9 +45,17 @@ namespace nap
 		{
 			auto inputBuffer = input.pull();
 
+			auto& outputBuffer = getOutputBuffer(output);
 			if (inputBuffer == nullptr)
+			{
+				std::fill(outputBuffer.begin(), outputBuffer.end(), 0.f);
 				return;
-            
+			}
+			outputBuffer = *inputBuffer;
+
+			if (mWindowSizeInSamples == 0)
+				return;
+
 			switch (mType)
 			{
 				case EType::PEAK:
@@ -64,7 +67,7 @@ namespace nap
 							newValue = -newValue;
 						if (newValue > mPeakTemp)
 							mPeakTemp = newValue;
-						
+
 						// reset temp and update the output value once every 'window'
 						mIndex++;
 						if (mIndex == mWindowSizeInSamples)
@@ -74,7 +77,7 @@ namespace nap
 							mIndex = 0;
 						}
 					}
-					
+
 					mValue.store(mPeak);
 					break;
 
@@ -85,22 +88,33 @@ namespace nap
 						mSquaredSum -= mSquaredBuffer[mIndex];
 						mSquaredBuffer[mIndex] = sample * sample;
 						mSquaredSum += mSquaredBuffer[mIndex];
-						
+
 						// increment index
 						mIndex++;
 						if (mIndex == mSquaredBuffer.size())
+						{
+							// Recalculate the squared sum and reset the index
+							mSquaredSum = 0.f;
+							for (auto& squaredSample : mSquaredBuffer)
+								mSquaredSum += squaredSample;
 							mIndex = 0;
+						}
 					}
-					
+
 					mValue.store(mSquaredSum / (float)mSquaredBuffer.size());
 					break;
 			}
 		}
 
+
 		void LevelMeterNode::sampleRateChanged(float sampleRate)
 		{
 			mWindowSizeInSamples = getNodeManager().getSamplesPerMillisecond() * mAnalysisWindowSize;
-			mSquaredBuffer.resize(mWindowSizeInSamples);
+			mSquaredBuffer.resize(mWindowSizeInSamples, 0.f);
+			mIndex = 0;
+			mSquaredSum = 0.f;
+			mPeak = 0.f;
+			mPeakTemp = 0.f;
 		}
 
 	}

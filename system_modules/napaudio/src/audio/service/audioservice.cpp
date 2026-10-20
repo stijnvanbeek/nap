@@ -7,6 +7,7 @@
 
 // Audio includes
 #include "audioservice.h"
+#include <audio/core/audionode.h>
 
 // Nap includes
 #include <nap/logger.h>
@@ -15,6 +16,11 @@
 #ifdef NAP_AUDIOFILE_SUPPORT
     #include <mpg123.h>
 #endif
+
+RTTI_BEGIN_CLASS(nap::audio::AudioServiceConfiguration)
+	RTTI_PROPERTY("ReserveProcesses", &nap::audio::AudioServiceConfiguration::mReserveProcesses, nap::rtti::EPropertyMetaData::Default)
+	RTTI_PROPERTY("ReserveRootProcesses", &nap::audio::AudioServiceConfiguration::mReserveRootProcesses, nap::rtti::EPropertyMetaData::Default)
+RTTI_END_CLASS
 
 RTTI_BEGIN_CLASS_NO_DEFAULT_CONSTRUCTOR(nap::audio::AudioService)
 	RTTI_CONSTRUCTOR(nap::ServiceConfiguration*)
@@ -25,11 +31,18 @@ namespace nap
 {
 	namespace audio
 	{
-		AudioService::AudioService(ServiceConfiguration* configuration) :
-				Service(configuration), mNodeManager(mDeletionQueue)
-		{ }
-		
-		
+		AudioService::AudioService(ServiceConfiguration* configuration) : Service(configuration)
+		{
+			auto config = rtti_cast<AudioServiceConfiguration>(configuration);
+			mNodeManager = std::make_unique<NodeManager>(mDeletionQueue, config->mReserveProcesses, config->mReserveRootProcesses);
+		}
+
+
+		AudioService::~AudioService()
+		{
+		}
+
+
 		bool AudioService::init(nap::utility::ErrorState& errorState)
 		{
 #ifdef NAP_AUDIOFILE_SUPPORT
@@ -38,36 +51,51 @@ namespace nap
 			mMpg123Initialized = true;
 #endif
 			checkLockfreeTypes();
-            return true;
+
+			// Start garbage collector
+			mGarbageCollectorThread = std::thread([this](){ garbageCollectorLoop(); });
+
+			return true;
 		}
 
 
 		void AudioService::shutdown()
 		{
+			mDeletionQueue.clear();
+
 #ifdef NAP_AUDIOFILE_SUPPORT
 			// Close mpg123 library
 			if (mMpg123Initialized)
 				mpg123_exit();
 #endif
+
+			mStopGarbageCollector.store(true);
+			mGarbageCollectorThread.join();
 		}
 
 
 		NodeManager& AudioService::getNodeManager()
 		{
-			return mNodeManager;
+			return *mNodeManager;
 		}
 
 
 		void AudioService::onAudioCallback(float** inputBuffer, float** outputBuffer, unsigned long framesPerBuffer)
 		{
-			// Lock the mutex used to lock the audio thread.
-			std::lock_guard<std::mutex> lock(mMutex);
-
 			// process the node manager
-			mNodeManager.process(inputBuffer, outputBuffer, framesPerBuffer);
-			
-			// clean the trash bin with nodes and resources that are no longer used and scheduled for destruction
-			mDeletionQueue.clear();
+			mNodeManager->process(inputBuffer, outputBuffer, framesPerBuffer);
+
+			// Move objects from the deletion queue to the trash bin.
+			// Execute audioCleanup() method for audio::SafeObject descendants.
+			auto deletedData = std::move(mDeletionQueue.try_dequeue());
+			while (deletedData != nullptr)
+			{
+				auto object = deletedData->getSafeObject();
+				if (object != nullptr)
+					object->audioCleanup();
+				mTrashBin.enqueue(std::move(deletedData));
+				deletedData = std::move(mDeletionQueue.try_dequeue());
+			}
 		}
 		
 
@@ -97,5 +125,18 @@ namespace nap
             if (!enumVar.is_lock_free())
                 Logger::warn("%s is not lockfree on current platform", "atomic enum");
 		}
+
+
+		void AudioService::garbageCollectorLoop()
+		{
+			while (!mStopGarbageCollector.load())
+			{
+				auto result = std::move(mTrashBin.wait_dequeue(100000));
+				result = nullptr;
+			}
+
+			while (mTrashBin.try_dequeue());
+		}
+
 	}
 }

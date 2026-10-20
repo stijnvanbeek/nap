@@ -17,18 +17,13 @@ namespace nap
 	namespace audio
 	{
 		
-		OutputNode::OutputNode(NodeManager& nodeManager, bool rootProcess) : Node(nodeManager),
-		                                                                     mRootProcess(rootProcess)
+		OutputNode::OutputNode(NodeManager& nodeManager) : Node(nodeManager)
 		{
-			if (rootProcess)
-				getNodeManager().registerRootProcess(*this);
 		}
 		
 		
 		OutputNode::~OutputNode()
 		{
-			if (mRootProcess && isRegisteredWithNodeManager())
-				getNodeManager().unregisterRootProcess(*this);
 		}
 		
 		
@@ -36,8 +31,8 @@ namespace nap
 		{
 			auto outputChannel = mOutputChannel.load();
 			
-			SampleBuffer* buffer = audioInput.pull();
-			if (buffer)
+			auto buffer = audioInput.pull();
+			if (buffer != nullptr)
 				getNodeManager().provideOutputBufferForChannel(buffer, outputChannel);
 		}
 		

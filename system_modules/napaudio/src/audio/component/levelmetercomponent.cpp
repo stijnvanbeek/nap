@@ -62,11 +62,18 @@ namespace nap
 			else {
 				mMeter->input.connect(*mInput->getOutputForChannel(mResource->mChannel));
 			}
+			nodeManager.registerRootProcess(mMeter.get());
 			
 			return true;
 		}
-		
-		
+
+
+		void LevelMeterComponentInstance::onDestroy()
+		{
+			mAudioService->getNodeManager().unregisterRootProcess(mMeter.get());
+		}
+
+
 		ControllerValue LevelMeterComponentInstance::getLevel()
 		{
 			return mMeter->getLevel();
