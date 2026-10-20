@@ -10,6 +10,7 @@
 // nap includes
 #include <utility/dllexport.h>
 #include <nap/numeric.h>
+#include <rtti/typeinfo.h>
 
 namespace nap
 {
@@ -39,6 +40,7 @@ namespace nap
 		 */
 		class NAPAPI MultiSampleBuffer
 		{
+			RTTI_ENABLE()
 		public:
 			MultiSampleBuffer() = default;
 			
@@ -61,6 +63,15 @@ namespace nap
 			}
 			
 			/**
+			 * Used to access the samples in the buffer
+			 * example: myBuffer[channelNumber][sampleIndex]
+			 */
+			const SampleBuffer& operator[](std::size_t index) const
+			{
+				return channels[index];
+			}
+
+			/**
 			 * @return: number of channels in the buffer
 			 */
 			std::size_t getChannelCount() const { return channels.size(); }
@@ -75,11 +86,11 @@ namespace nap
 			 * @param channelCount: new number of channels
 			 * @param size: new size in samples
 			 */
-			void resize(std::size_t channelCount, std::size_t size)
+			void resize(std::size_t channelCount, std::size_t size, SampleValue value = 0.f)
 			{
 				channels.resize(channelCount);
 				for (auto& channel : channels)
-					channel.resize(size);
+					channel.resize(size, value);
 			}
 			
 			/**
@@ -101,10 +112,33 @@ namespace nap
 			{
 				channels.clear();
 			}
-			
+
+			/**
+			 * Moves a channel of audio data into a new channel of the MultiSampleBuffer.
+			 * Doesn't allocate or deallocate sample data.
+			 * @param buffer The buffer to move, will be emptied after the call.
+			 */
+			void addChannel(SampleBuffer&& buffer)
+			{
+				channels.emplace_back(std::move(buffer));
+			}
+
+			/**
+			 * Moves the last channel out of the MultiSampleBuffer and returns it.
+			 * Doesn't allocate or deallocate sample data.
+			 * @return The moved last channel.
+			 */
+			SampleBuffer popChannel()
+			{
+				SampleBuffer result = std::move(channels.back());
+				channels.pop_back();
+				return std::move(result);
+			}
+
+		private:
 			std::vector<SampleBuffer> channels;
 		};
-		
+
 		
 		/**
 		 * Value of control parameter

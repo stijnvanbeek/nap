@@ -19,18 +19,33 @@ namespace nap
 		// Forward declarations
 		class AudioService;
 
+
+		class NAPAPI AudioServiceConfiguration : public ServiceConfiguration
+		{
+			RTTI_ENABLE(ServiceConfiguration)
+
+		public:
+			AudioServiceConfiguration() = default;
+
+			int mReserveProcesses = 10000; ///< Property: 'ReserveProcesses' Initial size of the process registry
+			int mReserveRootProcesses = 1000; ///< Property: 'ReserveRootProcesses' Initial size of the root process registry
+
+			rtti::TypeInfo getServiceType() const override { return RTTI_OF(AudioService); }
+		};
+
+
 		/**
 		 * Service that provides audio input and output processing directly for hardware audio devices.
 		 * Provides static methods to poll the current system for available audio devices using portaudio.
 		 */
 		class NAPAPI AudioService final : public Service
 		{
-		RTTI_ENABLE(nap::Service)
+			RTTI_ENABLE(nap::Service)
 
 		public:
 			AudioService(ServiceConfiguration* configuration);
 
-			~AudioService() = default;
+			~AudioService();
 
 			/**
 			 * Initializes portaudio.
@@ -59,15 +74,7 @@ namespace nap
 			/**
 			 * Enqueue a task to be executed within the process() method for thread safety
 			 */
-			void enqueueTask(TaskQueue::Task task) { mNodeManager.enqueueTask(task); }
-
-			/**
-			 * This mutex can be used to lock the audio thread in occasional cases.
-			 * Locking the audio thread might cause the audio callback to be late and the output to glitch.
-			 * Don't use in performance critical sitiuations.
-			 * @return Mutex to lock the audio thread.
-			 */
-			std::mutex& getMutex() { return mMutex; }
+			void enqueueTask(TaskQueue::Task&& task) { mNodeManager->enqueueTask(std::move(task)); }
 
         private:
 			/*
@@ -75,15 +82,22 @@ namespace nap
 			 */
 			void checkLockfreeTypes();
 
+			// The garbage collector thread in a loop emties the trash bin queue and deallocates the objects in it.
+			void garbageCollectorLoop();
+			std::atomic<bool> mStopGarbageCollector = { false };
+			std::thread mGarbageCollectorThread;
+
 		private:
-			NodeManager mNodeManager; // The node manager that performs the audio processing.
+			std::unique_ptr<NodeManager> mNodeManager = nullptr; // The node manager that performs the audio processing.
 			bool mMpg123Initialized	   = false;	// If mpg123 is initialized
 
 			// DeletionQueue with nodes that are no longer used and that can be cleared and destructed safely on the next audio callback.
-			// Clearing is performed on the audio callback to make sure the node can not be destructed while it is being processed.
+			// The DeletionQueue is emptied on the audio callback to make sure the node can not be destructed while it is being processed.
 			DeletionQueue mDeletionQueue;
 
-			std::mutex mMutex; // Mutex to lock the audio thread
+			// Objects from mDeletionQueue that have been disconnected using their audioCleanup() method are disposed of into the thrash bin.
+			// The trashbin is emptied in the garbage collector thread where the objects are destructed and deallocated without slowing down the audio thread.
+			DeletionQueue mTrashBin;
 		};
 	}
 }

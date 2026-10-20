@@ -37,18 +37,19 @@ namespace nap
 			/**
 			 * @param nodeManager: the node manager
 			 * @param analysisWindowSize: the time window in milliseconds that will be used to generate one single output value. Also the period that corresponds to the analysis frequency.
-			 * @param rootProcess: indicates that the node is registered as root process with the AudioNodeManager and is processed automatically.
 			 */
-			LevelMeterNode(NodeManager& nodeManager, TimeValue analysisWindowSize = 10, bool rootProcess = true);
+			LevelMeterNode(NodeManager& nodeManager, TimeValue analysisWindowSize = 10);
 
 			virtual ~LevelMeterNode();
 
 			InputPin input = {this}; /**< The input for the audio signal that will be analyzed. */
 
+			OutputPin output = { this }; /**< If this output is connected the LevelMeterNode will output its input. */
+
 			/**
 			 * @return: The current level of the analyzed signal.
 			 */
-			float getLevel();
+			float getLevel() const;
 
 			/**
 			 * Set the Type of the analysis. PEAK means the highest absolute amplitude within the analyzed window will be output. RMS means the root mean square of all values within the analyzed window will be output.

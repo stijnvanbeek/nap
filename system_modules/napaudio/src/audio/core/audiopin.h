@@ -25,7 +25,6 @@ namespace nap
 		class InputPin;
 		class OutputPin;
 
-
 		/**
 		 * Interface for InputPin and MultiInputPin classes
 		 */
@@ -34,6 +33,7 @@ namespace nap
 			RTTI_ENABLE()
 
 			friend class OutputPin;
+			friend class Node;
 
 		public:
 			InputPinBase(Node* node);
@@ -107,7 +107,7 @@ namespace nap
 			 * @return Pointer to the sample buffer containing the input coming in through the pin. If the InputPin is not connected or somewhere down the graph silence is being output nullptr can be returned.
 			 */
 			SampleBuffer* pull();
-			
+
 		private:
 			/**
 			 * Connects another node's OutputPin to this input.
@@ -221,7 +221,7 @@ namespace nap
 			 * Used by InputPin to poll this output for a new buffer of output samples
 			 * @return nullptr if no output is available.
 			 */
-			SampleBuffer* pull();
+			SampleBuffer& pull();
 
 			/**
 			 * @return the node that owns this output.

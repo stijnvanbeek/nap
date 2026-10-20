@@ -66,6 +66,20 @@ namespace nap
 
 
 		/**
+		 * Convert a frequency in Herz to a midi notenumber format pitch (floating point for microtonal precision).
+		 * @param frequency in Hz.
+		 * @return pitch in semitones. A pitch of 57 equals 220Hz.
+		 */
+		inline float ftom(float frequency)
+		{
+			auto res = log2(frequency / 220.0);
+			res *= 12.0;
+			res += 57.0;
+			return res;
+		}
+
+
+		/**
 		 * Convert amplitude to decibel value.
 		 * @param amplitude Amplitude scaling factor. A value of 1.0 results in 0dB.
 		 * @return intensity in dB.
