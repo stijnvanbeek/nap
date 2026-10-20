@@ -57,6 +57,7 @@ namespace nap
 			
 			// Initialize the component
 			bool init(utility::ErrorState& errorState) override;
+			void onDestroy() override;
 			
 			/**
 			 * Connects a different audio component as input to be sent to the audio interface.

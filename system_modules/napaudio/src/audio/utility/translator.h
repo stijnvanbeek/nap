@@ -27,6 +27,7 @@ namespace nap
 		template<typename T>
 		class Translator
 		{
+			RTTI_ENABLE()
 		public:
 			virtual ~Translator() { }
 			

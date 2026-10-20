@@ -40,7 +40,11 @@ namespace nap
 			using OutputMapping = std::vector<std::vector<SampleBuffer*>>;
 
 		public:
-			NodeManager(DeletionQueue& deletionQueue) : mDeletionQueue(deletionQueue) { }
+			NodeManager(DeletionQueue& deletionQueue, int reserveProcesses = 0, int reserveRootProcesses = 0) : mDeletionQueue(deletionQueue)
+			{
+				mProcesses.reserve(reserveProcesses);
+				mRootProcesses.reserve(reserveRootProcesses);
+			}
 
 			~NodeManager();
 
@@ -73,7 +77,7 @@ namespace nap
 			 * This way modifications to the processing chain can be made in a threadsafe manner from outside of the audio thread, with a timing accuracy that corresponds to the internal buffer size.
 			 * @param task Lamba without arguments that will be called on the next audio callback
 			 */
-			void enqueueTask(nap::TaskQueue::Task task);
+			void enqueueTask(nap::TaskQueue::Task&& task);
 
 			/**
 			 * @return: the number of input channels that will be fed into the node system
@@ -168,7 +172,7 @@ namespace nap
 				if (process != nullptr)
 				{
 					process->mSelf = owner.get();
-					registerProcess(owner.get());
+					registerProcess(*process);
 				}
 
 				return owner;
@@ -212,7 +216,7 @@ namespace nap
 			// Used by the nodes and audio processes to register themselves on construction
 			void registerProcess(SafePtr<Process> process);
 
-			// Used by the nodes and audio processes to unregister themselves on destruction
+			// Used by all nodes and audio processes to unregister themselves from their destructor. Threadsafe.
 			void unregisterProcess(Process& process);
 
 		private:
@@ -249,10 +253,12 @@ namespace nap
 
 			std::vector<float*> mInputBuffer; //  Pointing to the audio input that this node manager has to process. The format is a non-interleaved array containing a float array for each channel.
 
-			std::vector<Process*> mProcesses; // all the audio processes managed by this node manager
-			std::vector<SafePtr<Process>> mRootProcesses; // the nodes that will be processed directly by the manager on every audio callback
+			std::unordered_set<Process*> mProcesses; // all the audio processes managed by this node manager
+			std::mutex mProcessesMutex; // Mutex to protext mProcesses
 
-			nap::TaskQueue mTaskQueue = { 256 }; // Queue with lambda functions to be executed before processing the next internal buffer.
+			std::unordered_set<SafePtr<Process>> mRootProcesses; // the nodes that will be processed directly by the manager on every audio callback
+
+			nap::TaskQueue mTaskQueue = { 4096 }; // Queue with lambda functions to be executed before processing the next internal buffer.
 			DeletionQueue& mDeletionQueue; // Deletion queue used to safely create and destruct nodes in a threadsafe manner.
 		};
 

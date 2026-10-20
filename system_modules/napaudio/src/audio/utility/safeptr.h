@@ -13,6 +13,10 @@
 #include <utility/dllexport.h>
 #include <readerwriterqueue.h>
 
+#include <blockingconcurrentqueue.h>
+#include <rtti/rtticast.h>
+#include <rtti/typeinfo.h>
+
 namespace nap
 {
 
@@ -27,11 +31,35 @@ namespace nap
 		template<typename T>
 		class SafePtr;
 
+
+		/**
+		 * Base class to objects that have specific cleanup code that needs to be executed on the audio thread before their deletion.
+		 * This of disconnection of audio Nodes for example.
+		 * This can be achieved by implementing the audioCleanup() method and enclosing the object in a SafeOwner.
+		 */
+		class NAPAPI SafeObject
+		{
+			RTTI_ENABLE()
+
+		public:
+			SafeObject() = default;
+			virtual ~SafeObject() = default;
+			SafeObject(const SafeObject&) = delete;
+			SafeObject& operator=(const SafeObject&) = delete;
+
+			/**
+			 * Implement this with any cleanup code that needs to run on the audio thread before deletion of the object.
+			 */
+			virtual void audioCleanup() { }
+		};
+
+
 		/**
 		 * Base class for SafeOwner<T> template
 		 */
 		class NAPAPI SafeOwnerBase
 		{
+			RTTI_ENABLE()
 			friend class DeletionQueue;
 
 		protected:
@@ -39,6 +67,12 @@ namespace nap
 			{
 			public:
 				virtual ~Data() = default;
+
+				/**
+				 * SafeOwner can contain any type of object. If it contains a SafeObject, this method will return it.
+				 * @return If the SafeOwner contains a SafeObject descendant, this method will return it, otherwise it returns nullptr.
+				 */
+				virtual SafeObject* getSafeObject() const = 0;
 			};
 
 		public:
@@ -67,8 +101,8 @@ namespace nap
 
 		/**
 		 * The DeletionQueue holds the data that was previously owned by SafeOwner smart-pointers before they went out of scope.
-		 * SafeOwner's destructor disposes it's owned data in the DeletionQueue and the DeletionQueue takes over ownership over this data.
-		 * The DeletionQueue needs to be cleared regularly using the clear() method to free the heap of disposed data. When the DeletionQueue is cleared all SafePtrs that point to an object held by the queue will be cleared as well.
+		 * SafeOwner's destructor disposes it's owned data in the DeletionQueue and the DeletionQueue takes over ownership of this data.
+		 * The DeletionQueue needs to be cleared regularly using the clear() or the try_dequeue() methods to free the heap of disposed data.
 		 * By making use of the DeletionQueue in combination with SafeOwner and SafePtr the programmer can control or restrict the moment where objects are destructed and also choose the thread on which this will happen.
 		 */
 		class NAPAPI DeletionQueue final
@@ -84,12 +118,35 @@ namespace nap
 			~DeletionQueue();
 
 			/**
-			 * This method is used by SafeOwner to dispose it's data when it goes out of scope.
+			 * This method is used by SafeOwner to dispose its data when it goes out of scope.
 			 * The disposed data will be kept by the DeletionQueue and will be destructed and freed on the next call of clear().
 			 */
 			void enqueue(std::unique_ptr<SafeOwnerBase::Data> ownerData)
 			{
 				mQueue.enqueue(std::move(ownerData));
+			}
+
+			/**
+			 * Tries to dequeue an element from the queue.
+			 * @return Abstraction of object contained by a SafeOwner.
+			 */
+			std::unique_ptr<SafeOwnerBase::Data> try_dequeue()
+			{
+				std::unique_ptr<SafeOwnerBase::Data> result = nullptr;
+				mQueue.try_dequeue(result);
+				return std::move(result);
+			}
+
+			/**
+			 * Blocks until an element is dequeued from the queue.
+			 * @param timeOut in usec
+			 * @return Abstraction of object contained by a SafeOwner.
+			 */
+			std::unique_ptr<SafeOwnerBase::Data> wait_dequeue(int timeOut)
+			{
+				std::unique_ptr<SafeOwnerBase::Data> result = nullptr;
+				mQueue.wait_dequeue_timed(result, timeOut);
+				return std::move(result);
 			}
 
 			/**
@@ -99,15 +156,15 @@ namespace nap
 			void clear();
 
 		private:
-			moodycamel::ReaderWriterQueue<std::unique_ptr<SafeOwnerBase::Data>> mQueue; // Lockfree queue that holds SafeOwner::Data objects to be deleted because the enclosing SafeOwner went out of scope.
+			moodycamel::BlockingConcurrentQueue<std::unique_ptr<SafeOwnerBase::Data>, moodycamel::ConcurrentQueueDefaultTraits> mQueue; // Lockfree queue that holds SafeOwner::Data objects to be deleted because the enclosing SafeOwner went out of scope.
 		};
 
 
 		/**
 		 * SafeOwner is a special case smart pointer to an object that is used in multiple threads. It serves the purpose of making sure that the object is destructed in a thread safe manner when the SafeOwner goes out of scope.
-		 * It works very much like unique_ptr in such that it takes ownership over the object it points to and takes responsibility for it's destruction.
+		 * It works very much like unique_ptr in such that it takes ownership over the object it points to and takes responsibility for its destruction.
 		 * The difference to unique_ptr is that instead of letting the object destruct itself when the pointer goes out of scope, it throws the object in a DeletionQueue.
-		 * Objects in the DeletionQueue are kept alive until the DeletionQueue is cleared at a moment when there is noone else using the object anymore.
+		 * Objects in the DeletionQueue are kept alive until the DeletionQueue is cleared at a safe moment when there is noone else using the object anymore.
 		 * This is done to prevent the objects to be destroyed while they are possibly being used in another thread at the same time.
 		 */
 		template<typename T>
@@ -133,6 +190,15 @@ namespace nap
 				~Data() override
 				{
 					*mSharedSafePtr = nullptr;
+				}
+
+				/**
+				 * Inherited from SafeOwnerBase::Data
+				 * @return The data cast to a SafeObject, nullptr if the cast is invalid.
+				 */
+				SafeObject *getSafeObject() const override
+				{
+					return rtti_cast<SafeObject>(mObject.get());
 				}
 
 			public:
@@ -446,23 +512,35 @@ namespace nap
 			template<typename OTHER>
 			bool operator==(const OTHER* ptr) const
 			{
-				return ptr ? isValid() && (*mOwnerData)->mObject.get() == ptr : !isValid();
+				return ptr ? isValid() && ((*mOwnerData)->mObject.get() == ptr) : !isValid();
 			}
 
 			template<typename OTHER>
 			bool operator!=(const OTHER* ptr) const
 			{
-				return ptr ? isValid() && (*mOwnerData)->mObject.get() != ptr : !isValid();
+				return ptr ? isValid() && ((*mOwnerData)->mObject.get() != ptr) : !isValid();
 			}
 
 			bool operator==(const std::nullptr_t) const
 			{
-				return !isValid() || (*mOwnerData)->mEnqueuedForDeletion == true;
+				return (isValid() == false) || ((*mOwnerData)->mEnqueuedForDeletion);
 			}
 
 			bool operator!=(const std::nullptr_t) const
 			{
-				return isValid() && (*mOwnerData)->mEnqueuedForDeletion == false;
+				return isValid() && ((*mOwnerData)->mEnqueuedForDeletion == false);
+			}
+
+			template<typename OTHER>
+			bool operator==(const SafePtr<OTHER> ptr) const
+			{
+				return ptr.isValid() ? isValid() && ((*mOwnerData)->mObject.get() == ptr.get()) : !isValid();
+			}
+
+			template<typename OTHER>
+			bool operator!=(const SafePtr<OTHER> ptr) const
+			{
+				return ptr.isValid() ? isValid() && ((*mOwnerData)->mObject.get() != ptr.get()) : !isValid();
 			}
 
 			T* get() const
@@ -505,8 +583,21 @@ namespace nap
 			std::shared_ptr<typename SafeOwner<T>::Data*> mOwnerData = nullptr; ///< The data pointed to by this SafePtr, managed by SafeOwner or by the DeletionQueue.
 		};
 
-
 	}
 
 }
+
+// Std lib hash specialization to allow SafePtr<> to be used in std::unordered_set
+template<typename T>
+struct std::hash<nap::audio::SafePtr<T>>
+{
+	size_t operator()(const nap::audio::SafePtr<T>& ptr) const noexcept
+	{
+		// Hash the raw pointer value
+		return hash<T*>()(ptr.get());
+	}
+};
+
+
+
 

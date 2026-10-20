@@ -51,12 +51,12 @@ namespace nap
 		{
 			auto outputPin = &pinToConnect;
 			auto inputPin = this;
-			
+
 			// Get the safeptrs of the nodes to pass to the lambda, so these ptrs can be checked before trying to make a connection (preventing calling connectNow() with Nodes that are (being) removed).
 			auto inputNode = getNode().getSafe();
 			auto outputNode = outputPin->getNode().getSafe();
 
-			getNode().getNodeManager().enqueueTask([inputPin, outputPin, inputNode, outputNode](){
+			getNode().getNodeManager().enqueueTask([inputPin, outputPin, inputNode, outputNode]() {
 				if (inputNode != nullptr && outputNode != nullptr)
 				{
 					auto inputNodeRaw = rtti_cast<Node>(inputNode.get());
@@ -65,7 +65,6 @@ namespace nap
 					assert(outputNodeRaw != nullptr);
 					if (inputNodeRaw->mInputs.find(inputPin) == inputNodeRaw->mInputs.end())
 					{
-
 						Logger::warn("InputPinBase::connect(): Input pin not found for Node with type: %s", inputNodeRaw->get_type().get_name().to_string().c_str());
 					}
 					else if (outputNodeRaw->mOutputs.find(outputPin) == outputNodeRaw->mOutputs.end())
@@ -95,7 +94,6 @@ namespace nap
 					assert(outputNodeRaw != nullptr);
 					if (inputNodeRaw->mInputs.find(inputPin) == inputNodeRaw->mInputs.end())
 					{
-
 						Logger::warn("InputPinBase::disconnect(): Input pin not found for Node with type: %s", inputNodeRaw->get_type().get_name().to_string().c_str());
 					}
 					else if (outputNodeRaw->mOutputs.find(outputPin) == outputNodeRaw->mOutputs.end())
@@ -142,7 +140,7 @@ namespace nap
 		SampleBuffer* InputPin::pull()
 		{
 			if (mInput)
-				return mInput->pull();
+				return &mInput->pull();
 			else
 				return nullptr;
 		}
@@ -201,7 +199,7 @@ namespace nap
 
 			result.resize(mInputsCache.size());
 			for (auto i = 0; i < mInputsCache.size(); ++i)
-				result[i] = mInputsCache[i]->pull();
+				result[i] = &mInputsCache[i]->pull();
 		}
 
 
@@ -271,10 +269,10 @@ namespace nap
 		}
 
 
-		SampleBuffer* OutputPin::pull()
+		SampleBuffer& OutputPin::pull()
 		{
 			mNode->update();
-			return &mBuffer;
+			return mBuffer;
 		}
 
 

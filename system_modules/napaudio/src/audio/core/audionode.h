@@ -46,9 +46,15 @@ namespace nap
 			Node(NodeManager& manager);
 
 			/**
+			 * Inherited from SafeObject
+			 * Disconnects the Node from other Nodes.
+			 */
+			void audioCleanup() override;
+
+			/**
 			 * @return all this node's outputs
 			 */
-			const std::set<OutputPin*>& getOutputs() const
+			const std::unordered_set<OutputPin*>& getOutputs() const
 			{
 				return mOutputs;
 			}
@@ -56,13 +62,22 @@ namespace nap
 			/**
 			 * @return all this node's inputs
 			 */
-			const std::set<InputPinBase*>& getInputs() const { return mInputs; }
+			const std::unordered_set<InputPinBase*>& getInputs() const { return mInputs; }
 
 			/*
 			 * Override this method to do the actual audio processing and fill the buffers of this node's outputs with new audio data
 			 * Use @getOutputBuffer() to access the buffers that have to be filled.
 			 */
 			void process() override { }
+
+			/**
+			 * Use this method to set the mLabel member variable to help debugging more complex node graphs.
+			 * In non debug builds this method does nothing.
+			 * @param label Value of the mLabel member.
+			 */
+			void setLabel(const std::string& label);
+
+			const std::string& getLabel() const;
 
 		protected:
 			/**
@@ -78,8 +93,12 @@ namespace nap
 			 */
 			void setBufferSize(int bufferSize) override;
 
-			std::set<OutputPin*> mOutputs; // Used internally by the node to keep track of all its outputs.
-			std::set<InputPinBase*> mInputs; // Used internally by the node to keep track of all its inputs.
+			std::unordered_set<OutputPin*> mOutputs; // Used internally by the node to keep track of all its outputs.
+			std::unordered_set<InputPinBase*> mInputs; // Used internally by the node to keep track of all its inputs.
+
+#if !NDEBUG
+			std::string mLabel; // Used for debugging purposes only.
+#endif
 		};
 
 

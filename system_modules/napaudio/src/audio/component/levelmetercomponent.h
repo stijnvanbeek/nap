@@ -62,6 +62,7 @@ namespace nap
 
 			// Initialize the component
 			bool init(utility::ErrorState& errorState) override;
+			void onDestroy() override;
 
 			/**
 			 * @return the current level for a certain channel

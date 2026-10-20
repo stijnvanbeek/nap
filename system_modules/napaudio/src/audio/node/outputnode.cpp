@@ -31,8 +31,8 @@ namespace nap
 		{
 			auto outputChannel = mOutputChannel.load();
 			
-			SampleBuffer* buffer = audioInput.pull();
-			if (buffer)
+			auto buffer = audioInput.pull();
+			if (buffer != nullptr)
 				getNodeManager().provideOutputBufferForChannel(buffer, outputChannel);
 		}
 		

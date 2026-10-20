@@ -59,7 +59,7 @@ namespace nap
 		{
 			auto res = pitch - 57;
 			res /= 12.0;
-			res = powf(2.0, res);
+			res = pow(2.0, res);
 			res *= 220.0;
 			return res;
 		}
@@ -72,13 +72,9 @@ namespace nap
 		 */
 		inline float ftom(float frequency)
 		{
-			if (frequency <= 0.0f)
-				return 0.0f;  // Handle invalid frequency
-
-			float res = frequency / 220.0f;
-			res = log2(res);
-			res *= 12.0f;
-			res += 57.0f;
+			auto res = log2(frequency / 220.0);
+			res *= 12.0;
+			res += 57.0;
 			return res;
 		}
 

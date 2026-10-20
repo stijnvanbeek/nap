@@ -21,6 +21,7 @@ namespace nap
 		NodeManager::~NodeManager()
 		{
 			// Tell the nodes that their node manager is outta here, so they won't try to unregister themselves in their dtors.
+			std::lock_guard lock(mProcessesMutex);
 			for (auto& process : mProcesses)
 			{
 				process->mNodeManager = nullptr;
@@ -74,7 +75,7 @@ namespace nap
 			}
 
 			if (mInternalBufferOffset != framesPerBuffer)
-				nap::Logger::warn("Internal buffer does not fit PortAudio buffer");
+				nap::Logger::warn("Internal buffer does not fit external buffer: %i", framesPerBuffer);
 
 #ifdef __XSIMD__
             // Reset previous denormal handling mode
@@ -123,9 +124,9 @@ namespace nap
 		}
 
 
-		void NodeManager::enqueueTask(nap::TaskQueue::Task task)
+		void NodeManager::enqueueTask(nap::TaskQueue::Task&& task)
 		{
-			auto result = mTaskQueue.enqueue(task);
+			auto result = mTaskQueue.enqueue(std::move(task));
 			assert(result);
 		}
 
@@ -150,8 +151,11 @@ namespace nap
 		void NodeManager::setInternalBufferSize(int size)
 		{
 			mInternalBufferSize = size;
-			for (auto& process : mProcesses)
-				process->setBufferSize(size);
+			{
+				std::lock_guard lock(mProcessesMutex);
+				for (auto& process : mProcesses)
+					process->setBufferSize(size);
+			}
 		}
 
 
@@ -159,40 +163,32 @@ namespace nap
 		{
 			mSampleRate = sampleRate;
 			mSamplesPerMillisecond = sampleRate / 1000.;
-			for (auto& process : mProcesses)
-				process->setSampleRate(sampleRate);
+			{
+				std::lock_guard lock(mProcessesMutex);
+				for (auto& process : mProcesses)
+					process->setSampleRate(sampleRate);
+			}
 		}
 
 
 		void NodeManager::registerProcess(SafePtr<Process> process)
 		{
-			process->setSampleRate(mSampleRate);
-			process->setBufferSize(mInternalBufferSize);
-			auto oldSampleRate = mSampleRate;
-			auto oldBufferSize = mInternalBufferSize;
+			process.setSampleRate(mSampleRate);
+			process.setBufferSize(mInternalBufferSize);
 
-			enqueueTask([&, oldSampleRate, oldBufferSize, process]() {
-				// Check if the Process is not (being) deleted
-				if (process == nullptr)
-					return;
-
-				// In the extremely rare case the buffersize or the samplerate of the node manager have been changed in between the enqueueing of the task and its execution on the audio thread, we set them again.
-				// However we prefer not to, in order to avoid memory allocation on the audio thread.
-				if (oldSampleRate != mSampleRate)
-					process->setSampleRate(mSampleRate);
-				if (oldBufferSize != mInternalBufferSize)
-					process->setBufferSize(mInternalBufferSize);
-				process->mRegisteredWithNodeManager.store(true);
-				mProcesses.emplace_back(process.get());
-			});
+			{
+				std::lock_guard lock(mProcessesMutex);
+				process.mRegisteredWithNodeManager.store(true);
+				mProcesses.emplace(&process);
+			}
 		}
 
 
 		void NodeManager::unregisterProcess(Process& process)
 		{
-			auto it = std::find_if(mProcesses.begin(), mProcesses.end(), [&](auto& el){ return el == &process; });
-			if (it != mProcesses.end())
-				mProcesses.erase(it);
+			std::lock_guard lock(mProcessesMutex);
+			process.mRegisteredWithNodeManager.store(false);
+			mProcesses.erase(&process);
 		}
 
 
@@ -202,7 +198,7 @@ namespace nap
 			{
 				if (rootProcess == nullptr)
 					return;
-				mRootProcesses.emplace_back(rootProcess);
+				mRootProcesses.emplace(rootProcess);
 			});
 		}
 
@@ -211,11 +207,8 @@ namespace nap
 		{
 			enqueueTask([&, rootProcess]()
 			{
-				if (rootProcess == nullptr)
-					return;
-				auto it = std::find_if(mRootProcesses.begin(), mRootProcesses.end(), [&](auto &el){ return el.get() == rootProcess.get(); });
-				if (it != mRootProcesses.end())
-					mRootProcesses.erase(it);
+				// In case rootProcess == nullptr this will also try to erase any nullptr element in the set.
+				mRootProcesses.erase(rootProcess);
 			});
 		}
 

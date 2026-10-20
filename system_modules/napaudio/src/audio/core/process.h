@@ -33,9 +33,9 @@ namespace nap
 		 * Processes can be child processes to parent processes that run their child processes.
 		 * Base class to Node.
 		 */
-		class NAPAPI Process
+		class NAPAPI Process : public SafeObject
 		{
-			RTTI_ENABLE()
+			RTTI_ENABLE(SafeObject)
 
 			friend class NodeManager;
 
@@ -58,6 +58,9 @@ namespace nap
 			Process& operator=(const Process&) = delete;
 
 			virtual ~Process();
+
+			// Inherited from SafeObject
+			void audioCleanup() override;
 
 			/*
 			 * Invoked by OutputPin::pull() methods and by parent processes.
@@ -91,7 +94,12 @@ namespace nap
 			/**
 			 * Returns SafePtr to this Process.
 			 */
-			SafePtr<Process> getSafe() { return mSelf; }
+			SafePtr<Process>& getSafe() { return mSelf; }
+
+			/**
+			 * Returns const SafePtr to this Process.
+			 */
+			const SafePtr<Process>& getSafe() const { return mSelf; }
 
 		protected:
 			/**
@@ -162,18 +170,13 @@ namespace nap
 			 * Constructor
 			 * @param nodeManager the node manager the process runs on
 			 * @param threadPool the threadpool used for parallelization when the ParentProcess is set to parallel mode.
-			 * @param observer AsyncObserver object used to help the child processes signal the caller when they are done in the case of parallel processing mode.
 			 */
-			ParentProcess(NodeManager& nodeManager, ThreadPool& threadPool, AsyncObserver& observer) : Process(
-					nodeManager), mThreadPool(threadPool), mAsyncObserver(observer)
-			{}
+			ParentProcess(NodeManager& nodeManager, ThreadPool& threadPool, int reserveChildren = 0);
 
 			/**
-			 * Constructor that takes the parent process of this process as argument in order to use its ThreadPool, AsyncObserver end NodeManager.
+			 * Constructor that takes the parent process of this process as argument in order to use its ThreadPool.
 			 */
-			ParentProcess(ParentProcess& parent) : Process(parent), mThreadPool(parent.mThreadPool),
-			                                       mAsyncObserver(parent.mAsyncObserver)
-			{ }
+			ParentProcess(ParentProcess& parent, int reserveChildren = 0);
 
 			/**
 			 * Add a reference to a child process whose processing will be triggered by this parent process.
@@ -214,10 +217,22 @@ namespace nap
 			 */
 			void processSequential();
 
+			/**
+			 * Creates the mThreadData vector that indicates which children are processed on which thread.
+			 */
+			void sortChildrenByThread();
+
 			ThreadPool& mThreadPool;
-			AsyncObserver& mAsyncObserver;
-			std::vector<SafePtr<Process>> mChildren;
+			std::unordered_set<SafePtr<Process>> mChildren;
 			std::atomic<Mode> mMode = {Mode::Sequential};
+
+			// The data structure that indicates which children are processed on which thread.
+			struct ThreadData
+			{
+				std::unordered_set<SafePtr<Process>> mChildren;
+				std::atomic<bool> mFinished = { false };
+			};
+			std::unordered_set<std::unique_ptr<ThreadData>> mThreadData;
 		};
 
 
