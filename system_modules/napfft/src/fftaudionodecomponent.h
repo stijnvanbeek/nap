@@ -50,6 +50,7 @@ namespace nap
 			
 		// Initialize the component
 		virtual bool init(utility::ErrorState& errorState) override;
+		void onDestroy() override;
 			
 		/**
 		 * Connects a different audio component as input to be analyzed.

@@ -50,8 +50,15 @@ namespace nap
 		mFFTNode = node_manager.makeSafe<FFTNode>(node_manager, mResource->mFFTBufferSize);
 		mFFTNode->mInput.connect(*mInput->getOutputForChannel(mResource->mChannel));
 		mFFTBuffer = &mFFTNode->getFFTBuffer();
+		node_manager.registerRootProcess(mFFTNode.get());
 
 		return true;
+	}
+
+
+	void FFTAudioNodeComponentInstance::onDestroy()
+	{
+		mAudioService->getNodeManager().unregisterRootProcess(mFFTNode.get());
 	}
 
 

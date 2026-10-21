@@ -18,13 +18,11 @@ namespace nap
 		audio::Node(nodeManager)
 	{
 		mFFTBuffer = std::make_unique<FFTBuffer>(fftBufferSize, overlaps);
-		getNodeManager().registerRootProcess(*this);
 	}
 
 
 	FFTNode::~FFTNode()
 	{
-		getNodeManager().unregisterRootProcess(*this);
 	}
 
 
