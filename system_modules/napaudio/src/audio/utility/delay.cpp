@@ -14,6 +14,9 @@ namespace nap
 		
 		Delay::Delay(unsigned int bufferSize)
 		{
+			// Check bufferSize is a power of two
+			assert((bufferSize & (bufferSize - 1)) == 0);
+
 			mBuffer.resize(bufferSize, 0.0);
 			mWriteIndex = 0;
 		}
