@@ -20,7 +20,7 @@ elseif (WIN32)
     set(bin_dir ${platform_dir}/bin)
     set(static_lib ${bin_dir}/freetype.lib)
     add_import_library(${PROJECT_NAME} ${implib} ${dll} ${include_dir})
-    add_static_import_library(${PROJECT_NAME}${static_suffix} ${static_lib} ${include_dir}) # Use dynamic library for static builds for now
+    add_static_import_library(${PROJECT_NAME}${static_suffix} ${static_lib} ${include_dir})
 else ()
     set(lib_dir ${platform_dir}/lib)
     set(implib ${lib_dir}/${implib_prefix}${PROJECT_NAME}${implib_suffix})
