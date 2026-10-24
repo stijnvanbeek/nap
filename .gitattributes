@@ -1,2 +1,4 @@
 system_modules/naprender/thirdparty/assimp/msvc/x86_64/static/assimp-vc143-mt.lib filter=lfs diff=lfs merge=lfs -text
 system_modules/naprender/thirdparty/assimp/msvc/x86_64/static/assimp-vc143-mtd.lib filter=lfs diff=lfs merge=lfs -text
+system_modules/napvideo/thirdparty/ffmpeg/macos/universal/lib/*.a filter=lfs diff=lfs merge=lfs -text
+system_modules/napvideo/thirdparty/ffmpeg/macos/universal/lib/*.dylib filter=lfs diff=lfs merge=lfs -text
