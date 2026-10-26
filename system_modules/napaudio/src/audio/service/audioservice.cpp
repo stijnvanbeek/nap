@@ -61,16 +61,26 @@ namespace nap
 
 		void AudioService::shutdown()
 		{
-			mDeletionQueue.clear();
+			// Stop the garbage collector first: no concurrent destruction while we drain the queue.
+			mStopGarbageCollector.store(true);
+			if (mGarbageCollectorThread.joinable())
+				mGarbageCollectorThread.join();
+
+			// Disconnect everything before destruction, same invariant onAudioCallback() maintains.
+			auto deletedData = std::move(mDeletionQueue.try_dequeue());
+			while (deletedData != nullptr)
+			{
+				if (auto object = deletedData->getSafeObject(); object != nullptr)
+					object->audioCleanup();
+				deletedData = std::move(mDeletionQueue.try_dequeue());
+			}
+			mDeletionQueue.clear();  // now order-independent: no node references another
 
 #ifdef NAP_AUDIOFILE_SUPPORT
 			// Close mpg123 library
 			if (mMpg123Initialized)
 				mpg123_exit();
 #endif
-
-			mStopGarbageCollector.store(true);
-			mGarbageCollectorThread.join();
 		}
 
 
