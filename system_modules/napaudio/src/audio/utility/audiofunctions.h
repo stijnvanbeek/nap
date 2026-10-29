@@ -104,5 +104,33 @@ namespace nap
 			return powf(10, db / 20.0);
 		}
 
+
+		/**
+		 * Convert a frequency in Hz to a normalized value between 0 and 1 logarithmically.
+		 * @param frequency The frequency in HZ to convert
+		 * @param minFrequency The minimum frequency available in the range
+		 * @param maxFrequency The maximum frquency availble in the range
+		 * @return normalized value between 0 and 1.
+		 */
+		inline float freqToNorm(float frequency, float minFrequency, float maxFrequency)
+		{
+			frequency = glm::clamp(frequency, minFrequency, maxFrequency);
+			return std::log(frequency / minFrequency) / std::log(maxFrequency / minFrequency);
+		}
+
+
+		/**
+		 * Convert a value between 0 and 1 to a frequency in Hz logarithmically.
+		 * @param norm Value between 0 and 1.
+		 * @param minFrequency Frequency corresponding to 0.
+		 * @param maxFrequency Frequency corresponding to 1.
+		 * @return frequency in Hz.
+		 */
+		inline float normToFreq(float norm, float minFrequency, float maxFrequency)
+		{
+			norm = glm::clamp(norm, 0.0f, 1.0f);
+			return minFrequency * std::pow(maxFrequency / minFrequency, norm);
+		}
+
 	}
 }
