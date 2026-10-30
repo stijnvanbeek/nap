@@ -1785,9 +1785,21 @@ namespace nap
 		bool result = false;
 		getCore().runOnMainThread([&]()
 		{
+			auto config = static_cast<const RenderService*>(this)->getConfiguration<RenderServiceConfiguration>();
+
+			// In headless mode there is no window to present and nothing is
+			// rendered: skip SDL video initialization entirely so the app can
+			// run without X11/Wayland and without any video device at all.
+			if (config->mHeadless)
+			{
+				mHeadless = true;
+				Logger::info("Video backend: none (headless)");
+				result = true;
+				return;
+			}
+
 			if (!SDL::videoInitialized())
 			{
-				auto config = static_cast<const RenderService*>(this)->getConfiguration<RenderServiceConfiguration>();
 				mSDLInitialized = SDL::initVideo(config->mVideoDriver, errorState);
 				if (!errorState.check(mSDLInitialized, "Failed to init video subsystem"))
 					return;
