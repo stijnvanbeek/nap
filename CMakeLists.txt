@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.19)
-set(CMAKE_OSX_ARCHITECTURES arm64;x86_64)
+if (DEFINED CMAKE_BUILD_TYPE)
+    if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+        set(CMAKE_OSX_ARCHITECTURES arm64;x86_64)
+    endif ()
+endif ()
 
 project(NAP)
 
