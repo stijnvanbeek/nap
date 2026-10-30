@@ -89,8 +89,8 @@ namespace nap
         std::vector<unsigned char> getData() const;
         
     private:
-        Type mType;                             /**< The type of the event */
-        MidiValue mNumber;                      /**< this is the note number or the cc number */
+        Type mType = static_cast<Type>(0);      /**< The type of the event */
+        MidiValue mNumber = MIDI_NUMBER_OMNI;   /**< this is the note number or the cc number */
         MidiValue mValue = MIDI_VALUE_OMNI;     /**< this is the velocity or the cc value */
         MidiValue mChannel = MIDI_CHANNEL_OMNI; /**< the midi channel through which this message is emitted */
         std::string mPort = "";                 /**< the mID of the port object through which the message is emitted */

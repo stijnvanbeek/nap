@@ -53,8 +53,7 @@ namespace nap
     
     MidiEvent::MidiEvent(const std::vector<unsigned char>& data, const std::string& port) : mPort(port)
     {
-        // We only process 3 byte messages for now, midi transport and clock events are not supported yet        
-        if (data.size() < 3)
+        if (data.size() < 2)
             return;
         
         // extract the type from the first 4 bit of the first byte
@@ -62,6 +61,22 @@ namespace nap
         
         // extract the channel from the second 4 bits of the first byte
         mChannel = data[0] - static_cast<int>(mType);
+        
+        // Program change and channel pressure are two byte messages
+        if (mType == Type::programChange || mType == Type::channelPressure)
+        {
+            mNumber = data[1];
+            return;
+        }
+        
+        // We only process 3 byte messages for now, midi transport and clock events are not supported yet
+        if (data.size() < 3)
+        {
+            // Leave the event inert instead of dispatching uninitialized members
+            mType = static_cast<Type>(0);
+            mChannel = MIDI_CHANNEL_OMNI;
+            return;
+        }
         
         mNumber = data[1];
         mValue = data[2];

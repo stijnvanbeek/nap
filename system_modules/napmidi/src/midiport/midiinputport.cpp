@@ -20,6 +20,15 @@ namespace nap
     void midiCallback(double deltatime, std::vector<unsigned char> *message, void *userData)
     {
         auto inputPort = static_cast<MidiInputPort*>(userData);
+        // Ignore empty messages and messages shorter than their type requires:
+        // program change and channel pressure are two byte messages, all other
+        // channel messages are three bytes. Clock and transport messages are not
+        // supported and would otherwise arrive as garbage events.
+        if (message->size() < 2)
+            return;
+        unsigned char type = message->at(0) & 0xF0;
+        if (type != 0xC0 && type != 0xD0 && message->size() < 3)
+            return;
         auto event = std::make_unique<MidiEvent>(*message, inputPort->mID);
 		if (inputPort->mDebugOutput)
 		{
