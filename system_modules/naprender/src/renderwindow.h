@@ -126,6 +126,16 @@ namespace nap
 		const glm::ivec2 getBufferSize() const override;
 
 		/**
+		 * Returns the size of the active swapchain, ie. the size of the actual
+		 * render target of this window. On most platforms this matches
+		 * getBufferSize(), but on macOS the presentation surface reports its
+		 * size in screen coordinates, in which case the swapchain is smaller
+		 * than the drawable size reported by SDL.
+		 * @return the width and height of the swapchain in pixels.
+		 */
+		const glm::ivec2 getSwapchainSize() const;
+
+		/**
 		 * Shows the window and gives it input focus.
 		 * This call also makes sure the window is on top of other windows.
 		 */

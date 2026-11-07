@@ -657,6 +657,12 @@ namespace nap
 	}
 
 
+	const glm::ivec2 RenderWindow::getSwapchainSize() const
+	{
+		return { static_cast<int>(mSwapchainExtent.width), static_cast<int>(mSwapchainExtent.height) };
+	}
+
+
 	const glm::ivec2 RenderWindow::getSize() const
 	{
 		return SDL::getWindowSize(mSDLWindow);
@@ -738,14 +744,19 @@ namespace nap
 
 		// Under a wayland session, 'vkAcquireNextImageKHR' doesn't fail when the active swap chain extent doesn't match the surface.
 		// This path ensures that, under wayland, the swapchain is re-created when the buffer / swap delta exceeds 2 texels.
-		// I don't like this to be the default, because the `vkAcquireNextImageKHR` should  inform us about this.
-		if (mRenderService->getVideoDriver() == EVideoDriver::Wayland)
+		// On macOS (MoltenVK) the surface reports its extent as the current drawable size of the layer, which can
+		// lag behind the window when it moves between displays with a different pixel density, so the same
+		// re-creation is needed there. I don't like this to be the default, because the `vkAcquireNextImageKHR` should inform us about this.
 		{
-			auto diff = glm::abs(getBufferSize() - glm::ivec2(mSwapchainExtent.width, mSwapchainExtent.height));
-			if (diff.x + diff.y > 2)
+			EVideoDriver driver = mRenderService->getVideoDriver();
+			if (driver == EVideoDriver::Wayland || driver == EVideoDriver::Cocoa)
 			{
-				mRecreateSwapchain = true;
-				return VK_NULL_HANDLE;
+				auto diff = glm::abs(getBufferSize() - glm::ivec2(mSwapchainExtent.width, mSwapchainExtent.height));
+				if (diff.x + diff.y > 2)
+				{
+					mRecreateSwapchain = true;
+					return VK_NULL_HANDLE;
+				}
 			}
 		}
 
