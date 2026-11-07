@@ -154,3 +154,4 @@ system_modules/naplicense/thirdparty/cryptopp/linux/*/lib/libcryptopp.a
 !thirdparty/cmake/macos/x86_64/share/*/*
 thirdparty/docker_images/cmake
 
+.cache/
