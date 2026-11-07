@@ -96,10 +96,10 @@ function(add_import_library target_name implib dll include_dir)
 
             if (DEFINED ENV{MACOS_CODE_SIGNATURE})
                 # Codesign the executable with signature in environment variable
-                execute_process(COMMAND codesign --force -s $ENV{MACOS_CODE_SIGNATURE} ${dll})
+                execute_process(COMMAND codesign --force -s $ENV{MACOS_CODE_SIGNATURE} ${dll} ERROR_QUIET)
             else ()
                 # Perform ad hoc signing
-                execute_process(COMMAND codesign --force -s - ${dll})
+                execute_process(COMMAND codesign --force -s - ${dll} ERROR_QUIET)
             endif ()
 
         else ()
@@ -252,9 +252,11 @@ endfunction()
 # Codesign the target's output file post build
 function(codesign_target target)
     if (APPLE)
-        # Codesign the target post build
+        # Codesign the target post build; stderr is suppressed because codesign
+        # prints "replacing existing signature" on every re-signed binary.
         add_custom_command(TARGET ${target} POST_BUILD
-            COMMAND codesign --force -s ${CODE_SIGNATURE} $<TARGET_FILE:${target}>
+            COMMAND /bin/sh -c "codesign --force -s ${CODE_SIGNATURE} '$<TARGET_FILE:${target}>' 2>/dev/null"
+            VERBATIM
         )
     endif ()
 endfunction()
@@ -263,9 +265,12 @@ endfunction()
 # Codesign imported dynamic library
 function(codesign_target_dependency target dependency_path)
     if (APPLE)
-        # Codesign the dependency before the target is being built
+        # Codesign the dependency before the target is being built; stderr is
+        # suppressed because codesign prints "replacing existing signature" on
+        # every re-signed binary.
         add_custom_command(TARGET ${target} PRE_BUILD
-                COMMAND codesign --force -s ${CODE_SIGNATURE} ${dependency_path}
+                COMMAND /bin/sh -c "codesign --force -s ${CODE_SIGNATURE} '${dependency_path}' 2>/dev/null"
+                VERBATIM
         )
     endif ()
 endfunction()
@@ -275,8 +280,11 @@ function(update_install_name library_path)
     get_filename_component(library_file_name ${library_path} NAME)
     if (UNIX)
         if (APPLE)
+            # install_name_tool prints a signature-invalidation warning on every
+            # signed dylib it modifies; suppress stderr but keep the exit code so
+            # real failures still trigger the FATAL_ERROR below.
             execute_process(
-                COMMAND install_name_tool -id @rpath/${library_file_name} ${library_path}
+                COMMAND /bin/sh -c "install_name_tool -id @rpath/${library_file_name} '${library_path}' 2>/dev/null"
                 RESULT_VARIABLE EXIT_CODE
             )
             if(NOT ${EXIT_CODE} EQUAL 0)
@@ -301,8 +309,15 @@ function(update_install_name_dependency target dependency_path)
     get_filename_component(library_file_name ${dependency_path} NAME)
     if (UNIX)
         if (APPLE)
+            # install_name_tool prints a signature-invalidation warning on every
+            # signed dylib it modifies; suppress stderr while keeping the exit
+            # status so build failures still surface. VERBATIM is required: it
+            # makes CMake quote the -c argument as one shell word, without it
+            # CMake backslash-escapes the string (because of the > metachar)
+            # and the shell then passes a stray "2" to install_name_tool.
             add_custom_command(TARGET ${target} PRE_BUILD
-                COMMAND install_name_tool -id @rpath/${library_file_name} ${dependency_path}
+                COMMAND /bin/sh -c "install_name_tool -id @rpath/${library_file_name} '${dependency_path}' 2>/dev/null"
+                VERBATIM
             )
         else ()
             # Set so name or rpath for linux
