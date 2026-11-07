@@ -21,6 +21,11 @@ namespace nap
 		/**
 		 * Multi-purpose DSP filter using the Butterworth filter algorithm to calculate biquad coefficients.
 		 * Is able to apply lowpass and highpass with or without variable resonance peak and bandpass filtering.
+		 *
+		 * Changes of the cutoff frequency and resonance are smoothed over time and the biquad coefficients are
+		 * recalculated from the smoothed parameter values every mCoefficientsUpdateInterval samples while either
+		 * parameter is ramping. This allows fast cutoff sweeps without artifacts, because every intermediate
+		 * coefficient set is a valid filter, unlike interpolation of the coefficients themselves.
 		 */
 		class NAPAPI FilterNode : public Node
 		{
@@ -64,11 +69,13 @@ namespace nap
 			 * Sets the frequency parameter of the filter in Hz. For the different modes this means:
 			 * - Cutoff frequency for highpass and lowpass filters
 			 * - Center frequency for bandpass filtering
+			 * The frequency ramps towards the new value using the smoothing time set by setSmoothing().
 			 */
 			void setFrequency(ControllerValue cutoffFrequency);
 
 			/**
 			 * Sets the resonance peak of the filter. 0 means no resonance, 30 means self-oscillation.
+			 * The resonance ramps towards the new value using the smoothing time set by setSmoothing().
 			 */
 			void setResonance(ControllerValue resonance);
 
@@ -93,7 +100,7 @@ namespace nap
 			void set(EMode mode, ControllerValue frequency, ControllerValue resonance, ControllerValue band, ControllerValue gain);
 
 			/**
-			 * Sets the smoothing time for the filter coefficients to fade to the next value.
+			 * Sets the smoothing time for the cutoff frequency and resonance parameters to fade to their next value.
 			 * @param smoothing Time in ms.
 			 */
 			void setSmoothing(TimeValue smoothing);
@@ -114,7 +121,7 @@ namespace nap
 			ControllerValue getResonance() const { return mResonance; }
 
 			/**
-			 * @return the bandwidth in Hz for bandpass filtering.
+			 * @return the bandwidth in Hz for bandpass filters.
 			 */
 			ControllerValue getBand() const { return mBand; }
 
@@ -128,7 +135,6 @@ namespace nap
 			void process() override;
 			void sampleRateChanged(float sampleRate) override;
 
-			void update();
 			void calcCoeffs();
 
 			std::atomic<EMode> mMode = {EMode::LowPass};
@@ -142,18 +148,25 @@ namespace nap
 			// b0, b1 and b2 multiply the input signal, a1 and a2 the feedback of the output signal.
 			// The denominator is normalized (leading coefficient 1) and the gain sits in the
 			// numerator taps only, so the filter stays stable for any gain.
-			LinearSmoothedValue<ControllerValue> b0 = { 0, 64 };
-			LinearSmoothedValue<ControllerValue> b1 = { 0, 64 };
-			LinearSmoothedValue<ControllerValue> b2 = { 0, 64 };
-			LinearSmoothedValue<ControllerValue> a1 = { 0, 64 };
-			LinearSmoothedValue<ControllerValue> a2 = { 0, 64 };
+			// While the cutoff frequency or resonance is ramping, the coefficients are recalculated
+			// from the smoothed parameter values every mCoefficientsUpdateInterval samples.
+			ControllerValue b0 = 0;
+			ControllerValue b1 = 0;
+			ControllerValue b2 = 0;
+			ControllerValue a1 = 0;
+			ControllerValue a2 = 0;
 			TimeValue mSmoothing = 1.f;
 
-			// Coeffecient destinations before update.
-			ControllerValue b0Dest, b1Dest, b2Dest, a1Dest, a2Dest = 0;
+			// The cutoff frequency and resonance ramp towards the values set by setFrequency() and setResonance().
+			// When none of them is ramping their current value equals their destination value.
+			LinearSmoothedValue<ControllerValue> mSmoothedFrequency = { 440.f, 16 };
+			LinearSmoothedValue<ControllerValue> mSmoothedResonance = { 1.f, 16 };
 
-			Delay mOutput; // Delay line storing the input signal.
-			Delay mInput; // Delay line storing the output signal.
+			// Number of samples between coefficient recalculations while ramping a parameter.
+			static constexpr int mCoefficientsUpdateInterval = 16;
+
+			Delay mOutput; // Delay line storing the output signal.
+			Delay mInput; // Delay line storing the input signal.
 		};
 
 	}
