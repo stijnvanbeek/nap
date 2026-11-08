@@ -365,6 +365,20 @@ namespace nap
 			bool mInitialized = false;
 		};
 
+		/**
+		 * Occurs when resources are about to be loaded by the resource manager
+		 * Forwards the call to all interested services.
+		 * This can only be called when the services have been initialized
+		 */
+		void preResourcesLoaded();
+
+		/**
+		 * Occurs when resources have been successfully loaded by the resource manager
+		 * Forwards the call to all interested services.
+		 * This can only be called when the services have been initialized
+		 */
+		void postResourcesLoaded();
+
 	private:
 		/**
 		 * Locates the project info (app.json) file.
@@ -414,20 +428,6 @@ namespace nap
 		 * @return if service configuration reading succeeded or not
 		 */
 		bool loadServiceConfiguration(const std::string& filename, rtti::DeserializeResult& deserialize_result, utility::ErrorState& errorState);
-
-		/**
-		 * Occurs when resources are about to be loaded by the resource manager
-		 * Forwards the call to all interested services.
-		 * This can only be called when the services have been initialized
-		 */
-		void preResourcesLoaded();
-
-		/**
-		 * Occurs when resources have been successfully loaded by the resource manager
-		 * Forwards the call to all interested services.
-		 * This can only be called when the services have been initialized
-		 */
-		void postResourcesLoaded();
 
 		/**
 		 *	Calculates the framerate over time
