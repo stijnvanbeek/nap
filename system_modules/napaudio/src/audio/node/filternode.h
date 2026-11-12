@@ -24,6 +24,8 @@ namespace nap
 		 */
 		class NAPAPI FilterNode : public Node
 		{
+			RTTI_ENABLE(Node)
+
 		public:
 			enum class EMode
 			{
