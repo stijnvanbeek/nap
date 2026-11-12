@@ -31,12 +31,15 @@ namespace nap
 
 		Process::~Process()
 		{
-			// Unregister as root process, if needed
-			auto it = std::find_if(getNodeManager().mRootProcesses.begin(), getNodeManager().mRootProcesses.end(), [&](auto& e){ return e.get() == this; });
-			if (it != getNodeManager().mRootProcesses.end())
-				getNodeManager().mRootProcesses.erase(it);
+			// NOTE: this destructor runs on the audio garbage-collector thread. Unregistering from
+			// mRootProcesses must NOT happen here: that set is owned by the audio thread, which
+			// concurrently iterates and modifies it. The registration is already removed on the
+			// audio thread, either by Process::audioCleanup() (called before destruction through
+			// AudioService::onAudioCallback()) or by the owning component's explicit
+			// unregisterRootProcess() task. Any stale entry left in mRootProcesses is harmless:
+			// it resolves to nullptr and is skipped during processing.
 
-			// Unregister as process
+			// Unregister as process (mProcesses is protected by a mutex)
 			if (mRegisteredWithNodeManager.load())
 				getNodeManager().unregisterProcess(*this);
 		}
