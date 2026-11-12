@@ -8,6 +8,8 @@
 #include <nap/logger.h>
 #include <nap/core.h>
 
+#include <iterator>
+
 #if defined(__x86_64__) || defined(_M_X64)
 	#define __XSIMD__
     #include <xmmintrin.h>
@@ -57,9 +59,20 @@ namespace nap
 					channelMapping.clear();
 
 				{
-					for (auto& root : mRootProcesses)
-						if (root != nullptr)
-							root->update();
+					auto it = mRootProcesses.begin();
+					while (it != mRootProcesses.end())
+					{
+						if (*it == nullptr)
+						{
+							// Null SafePtr entries (their Process died without unregistering) are erased in place; erase returns the following iterator.
+							it = mRootProcesses.erase(it);
+						}
+						else
+						{
+							(*it)->update();
+							++it;
+						}
+					}
 				}
 
 				for (auto channel = 0; channel < mOutputChannelCount; ++channel) {
@@ -102,9 +115,20 @@ namespace nap
 					channelMapping.clear();
 
 				{
-					for (auto& root : mRootProcesses)
-						if (root != nullptr)
-							root->update();
+					auto it = mRootProcesses.begin();
+					while (it != mRootProcesses.end())
+					{
+						if (*it == nullptr)
+						{
+							// Null SafePtr entries (their Process died without unregistering) are erased in place; erase returns the following iterator.
+							it = mRootProcesses.erase(it);
+						}
+						else
+						{
+							(*it)->update();
+							++it;
+						}
+					}
 				}
 
 				for (auto channel = 0; channel < mOutputChannelCount; ++channel) {
