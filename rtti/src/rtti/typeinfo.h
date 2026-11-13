@@ -185,7 +185,8 @@ namespace nap
 			Video			= 7,	///< Points to a video file, must be used with EPropertyMetaData::FileLink
 			ImageSequence	= 8,	///< Points to a an image sequence, must be used with EPropertyMetaData::FileLink
             Audio           = 9,	///< Points to an audio file, must be used with EPropertyMetaData::FileLink
-			Font			= 10	///< Points to a true type font, must be used with EPropertyMetaData::FileLink
+			Font			= 10,	///< Points to a true type font, must be used with EPropertyMetaData::FileLink
+			Text			= 11	///< Can point to any text or script file, must be used with EPropertyMetaData::FileLink
 		};
 
 		inline EPropertyMetaData operator&(EPropertyMetaData a, EPropertyMetaData b)
