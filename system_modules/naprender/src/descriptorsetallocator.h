@@ -43,6 +43,12 @@ namespace nap
 		 */
 		VkDescriptorSet allocate(VkDescriptorSetLayout layout, int numUBODescriptors, int numSSBODescriptors, int numSamplerDescriptors);
 
+		/**
+		 * Free a previously allocated DescriptorSet, returning it to the pool it was allocated from.
+		 * @param descriptorSet the set to free, must have been allocated by this allocator
+		 */
+		void free(VkDescriptorSet descriptorSet);
+
 	private:
 		/**
 		 * Wrapper around VkDescriptorPool that maintains a use count for amount of sets that are allocated within the pool.

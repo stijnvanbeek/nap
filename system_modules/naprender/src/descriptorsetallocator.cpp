@@ -4,6 +4,7 @@
 
 #include "descriptorsetallocator.h"
 #include <assert.h>
+#include <algorithm>
 
 namespace nap
 {
@@ -96,6 +97,27 @@ namespace nap
 		assert(descriptor_set != VK_NULL_HANDLE);
 		free_descriptor_pool->mAllocatedDescriptorSets.push_back(descriptor_set);
 		return descriptor_set;
+	}
+
+
+	void DescriptorSetAllocator::free(VkDescriptorSet descriptorSet)
+	{
+		// Find the pool the set was allocated from and return it to that pool
+		for (auto& kvp : mDescriptorPools)
+		{
+			for (DescriptorPool& pool : kvp.second)
+			{
+				DescriptorPool::DescriptorSetList& sets = pool.mAllocatedDescriptorSets;
+				DescriptorPool::DescriptorSetList::iterator pos = std::find(sets.begin(), sets.end(), descriptorSet);
+				if (pos != sets.end())
+				{
+					sets.erase(pos);
+					vkFreeDescriptorSets(mDevice, pool.mPool, 1, &descriptorSet);
+					return;
+				}
+			}
+		}
+		assert(false);
 	}
 
 }

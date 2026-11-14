@@ -2445,6 +2445,24 @@ namespace nap
 	{
 	    assert(isInitialized());
 		waitDeviceIdle();
+
+		// Pipeline caches are keyed on raw shader pointers (see PipelineKey). When resources
+		// are (re)loaded, shaders can be destroyed and new ones allocated at the same address,
+		// which would produce a stale cache hit. The device is idle at this point, so the
+		// cached pipelines can be destroyed safely.
+		for (auto kvp : mPipelineCache)
+		{
+			vkDestroyPipeline(mDevice, kvp.second.mPipeline, nullptr);
+			vkDestroyPipelineLayout(mDevice, kvp.second.mLayout, nullptr);
+		}
+		mPipelineCache.clear();
+
+		for (auto kvp : mComputePipelineCache)
+		{
+			vkDestroyPipeline(mDevice, kvp.second.mPipeline, nullptr);
+			vkDestroyPipelineLayout(mDevice, kvp.second.mLayout, nullptr);
+		}
+		mComputePipelineCache.clear();
 	}
 
 

@@ -344,6 +344,30 @@ namespace nap
 	{}
 
 
+	void IMGuiService::preResourcesLoaded()
+	{
+		// Cached descriptors reference image views of textures that are about to be
+		// replaced. Free the descriptor sets and clear the cache; new descriptors are
+		// created on first use. The sets are released once the GPU is idle.
+		mDescriptorDestroyedSlotTrashBin.clear();
+		for (const auto& pair : mDescriptors)
+		{
+			VkDescriptorSet descriptor_set = pair.second;
+			mRenderService->queueVulkanObjectDestructor([this, descriptor_set](RenderService&)
+				{
+					mAllocator->free(descriptor_set);
+				});
+		}
+		mDescriptors.clear();
+
+		// Slots of textures that are about to be destroyed cannot be deleted while their
+		// signal is emitting; move them aside and let them be deleted on the next use.
+		for (auto& pair : mDescriptorDestroyedSlots)
+			mDescriptorDestroyedSlotTrashBin.emplace_back(std::move(pair.second));
+		mDescriptorDestroyedSlots.clear();
+	}
+
+
 	void IMGuiService::draw()
 	{
 		// Get window we're drawing in
@@ -512,6 +536,10 @@ namespace nap
 
 	ImTextureID IMGuiService::getTextureHandle(const nap::Texture2D& texture) const
 	{
+		// Destroy slots of textures that have been destroyed in the meantime; this cannot
+		// happen while their signal is emitting, which is why they are kept aside first.
+		mDescriptorDestroyedSlotTrashBin.clear();
+
 		// Check if the texture has been requested before
 		auto it = mDescriptors.find(&texture);
 		if (it != mDescriptors.end())
@@ -536,7 +564,40 @@ namespace nap
 
 		vkUpdateDescriptorSets(mRenderService->getDevice(), 1, write_desc, 0, NULL);
 		mDescriptors.emplace(std::make_pair(&texture, descriptor_set));
+
+		// Release the cached descriptor set when the texture is destroyed. Slots cannot be
+		// deleted while their signal is emitting, so they are moved into a graveyard first.
+		mDescriptorDestroyedSlots.emplace(&texture, std::make_unique<nap::Slot<>>([this, &texture]()
+			{
+				handleTextureDestroyed(texture);
+			}));
+		// The texture is const here, but connecting to its destroyed signal does not modify it
+		const_cast<nap::Texture2D&>(texture).textureDestroyed.connect(*mDescriptorDestroyedSlots[&texture]);
 		return (ImTextureID)(descriptor_set);
+	}
+
+
+	void IMGuiService::handleTextureDestroyed(const nap::Texture2D& texture) const
+	{
+		// Release the cached descriptor set once the GPU is idle
+		auto it = mDescriptors.find(&texture);
+		if (it != mDescriptors.end())
+		{
+			VkDescriptorSet descriptor_set = it->second;
+			mRenderService->queueVulkanObjectDestructor([this, descriptor_set](RenderService&)
+				{
+					mAllocator->free(descriptor_set);
+				});
+			mDescriptors.erase(it);
+		}
+
+		// Keep the slot alive until after the signal has finished emitting
+		auto slot_it = mDescriptorDestroyedSlots.find(&texture);
+		if (slot_it != mDescriptorDestroyedSlots.end())
+		{
+			mDescriptorDestroyedSlotTrashBin.emplace_back(std::move(slot_it->second));
+			mDescriptorDestroyedSlots.erase(slot_it);
+		}
 	}
 
 

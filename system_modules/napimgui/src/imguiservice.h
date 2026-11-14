@@ -129,6 +129,15 @@ namespace nap
 		void draw();
 
 		/**
+		 * Called right before new resources are loaded. Cached GUI texture descriptors are
+		 * keyed on raw Texture2D pointers; when resources are (re)loaded, textures can be
+		 * destroyed and new ones allocated at the same address, which would return a stale
+		 * descriptor referencing a destroyed image view. All cached descriptors are cleared
+		 * here so they are re-created against the new textures on first use.
+		 */
+		void preResourcesLoaded() override;
+
+		/**
 		 * Select the window all subsequent ImGUI calls apply to.
 		 * Explicit selection is only necessary when there is more than 1 window.
 		 * Only call selectWindow() on application update, not when rendering the GUI to screen.
@@ -414,5 +423,16 @@ namespace nap
 		VkDescriptorSetLayout mDescriptorSetLayout = VK_NULL_HANDLE;					///< GUI texture layout description 
 		VkSampler mSampler = VK_NULL_HANDLE;											///< GUI Texture binding
 		mutable std::unordered_map<const Texture2D*, VkDescriptorSet> mDescriptors;		///< Cached GUI texture descriptors
+
+		/**
+		 * Frees the cached descriptor set of a texture that is about to be destroyed and
+		 * removes all cached data associated with it.
+		 * Attached to mDescriptorDestroyed slots.
+		 * Called by the textureDestroyed signal of every texture cached in mDescriptors.
+		 */
+		void handleTextureDestroyed(const Texture2D& texture) const;
+
+		mutable std::unordered_map<const Texture2D*, std::unique_ptr<nap::Slot<>>> mDescriptorDestroyedSlots;	///< Slots connected to the destruction of every cached texture
+		mutable std::vector<std::unique_ptr<nap::Slot<>>> mDescriptorDestroyedSlotTrashBin;						///< Slots awaiting destruction, kept alive outside signal emission
 	};
 }
