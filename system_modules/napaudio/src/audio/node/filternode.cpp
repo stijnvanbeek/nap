@@ -81,6 +81,20 @@ namespace nap
 		void FilterNode::sampleRateChanged(float sampleRate)
 		{
 			setSmoothing(mSmoothing);
+			// Recompute the biquad coefficients: they depend on the sample rate. Without this the
+			// filter keeps the coefficients computed at construction time (possibly sample rate 0,
+			// which yields NaN) and stays silent after the sample rate changes. The smoothers and
+			// the delay line history must be reset as well: they hold NaN from the old coefficients
+			// and a NaN ramp never converges.
+			mOutput.clear();
+			mInput.clear();
+			calcCoeffs();
+			b0.reset(b0Dest);
+			b1.reset(b1Dest);
+			b2.reset(b2Dest);
+			a1.reset(a1Dest);
+			a2.reset(a2Dest);
+			mIsDirty.set();
 		}
 
 
